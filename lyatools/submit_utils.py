@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from subprocess import call
+from pathlib import Path
 
 
 def make_header(machine='perl', queue='regular', nodes=1, omp_threads=int(128), time='01:00:00',
@@ -133,7 +134,7 @@ def set_umask(mask: str = '0027') -> None:
     _ = os.umask(int(mask, 8))
 
 
-def make_file_executable(f: str) -> None:
+def make_file_executable(f: Path) -> None:
     """Make a file executable
 
     Parameters
