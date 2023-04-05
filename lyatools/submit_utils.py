@@ -2,10 +2,13 @@ import os
 import numpy as np
 from subprocess import call
 from pathlib import Path
+from typing import Union
 
 
-def make_header(machine='perl', queue='regular', nodes=1, omp_threads=int(128), time='01:00:00',
-                job_name='run_script', err_file='run-%j.err', out_file='run-%j.out'):
+def make_header(machine: str = 'perl', queue: str = 'regular', nodes: int = int(1),
+                omp_threads: int = int(128), time: Union[str, float] = '01:00:00',
+                job_name: str = 'run_script', err_file: Union[str, Path] = 'run-%j.err',
+                out_file: Union[str, Path] = 'run-%j.out'):
     """
     Makes a string header for submitting slurm jobs at NERSC. Supports both Perlmutter and Cori.
     Args:
