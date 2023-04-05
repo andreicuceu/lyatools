@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 import argparse
-from lyatools.quickquasars import multi_run_qq, QQ_RUN_ARGS
+from lyatools.multi_run import multi_run_qq
+from lyatools.quickquasars import QQ_RUN_ARGS
 
 
 def main():

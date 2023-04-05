@@ -50,49 +50,6 @@ QQ_RUN_ARGS = {
 }
 
 
-def multi_run_qq(input_dir_all, output_dir_all, qq_seeds, qq_run_type, test_run, no_submit, *args):
-    """Create and submit QQ runs for multiple mock realizations
-
-    Parameters
-    ----------
-    input_dir_all : str
-        Raw directory with all v9.0 lyacolore runs
-    output_dir_all : str
-        Directory that contains all of the qq realisations (dir with v9.0.x).
-    qq_seeds : str
-        QQ seeds to run. Either a single string (e.g. '0') or a range (e.g. '0-5').
-    qq_run_type : str
-        Run type. Must be a key in the QQ_RUN_ARGS dict.
-    test_run : bool
-        Test run flag
-    no_submit : bool
-        Submit flag
-    args : list
-        List with args passed to create_qq_script
-    """
-    # Get list of seeds
-    run_seeds = []
-    for seed in qq_seeds:
-        seed_range = seed.split('-')
-
-        if len(seed_range) == 1:
-            run_seeds.append(int(seed_range[0]))
-        elif len(seed_range) == 2:
-            run_seeds += list(np.arange(int(seed_range[0]), int(seed_range[1])))
-        else:
-            raise ValueError(f'Unknown seed type {seed}. Must be int or range (e.g. 0-5)')
-
-    run_seeds.sort()
-
-    # Submit QQ run for each seed
-    for seed in run_seeds:
-        input_dir = Path(input_dir_all) / f'v9.0.{seed}'
-        output_dir = Path(output_dir_all) / f'v9.0.{seed}'
-        print(f'Submitting QQ run for mock v9.0.{seed}')
-
-        run_qq(qq_run_type, test_run, no_submit, input_dir, output_dir, *args)
-
-
 def run_qq(qq_run_type, test_run, no_submit, *args):
     """Create a QQ run and submit it
 

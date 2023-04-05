@@ -1,4 +1,5 @@
 from os import mkdir
+from typing import Union
 from pathlib import Path
 from subprocess import call
 from dataclasses import dataclass, field
@@ -71,72 +72,77 @@ class AnalysisDir:
     """
     An object that contains the directory structure for our analysis.
     """
-    main_path: str
-    analysis_name: str
-    data_dirname: str = 'data'
-    corr_dirname: str = 'correlations'
-    fits_dirname: str = 'fits'
+    main_path: Union[str, Path]
+    qq_run_name: str
+    analysis_version: str = 'baseline'
     deltas_lya_dirname: str = 'deltas_lya'
     deltas_lyb_dirname: str = 'deltas_lyb'
 
     analysis_dir: Path = field(init=False)
-    data_dir: Path = field(init=False)
     corr_dir: Path = field(init=False)
-    fits_dir: Path = field(init=False)
     deltas_lya_dir: Path = field(init=False)
     deltas_lyb_dir: Path = field(init=False)
-
-    def __post_init__(self):
-        main_path = Path(self.main_path)
-        check_dir(main_path)
-
-        self.analysis_dir = main_path / self.analysis_name
-        check_dir(self.analysis_dir)
-
-        self.data_dir = self.analysis_dir / self.data_dirname
-        check_dir(self.data_dir)
-
-        self.corr_dir = self.analysis_dir / self.corr_dirname
-        check_dir(self.corr_dir)
-
-        self.fits_dir = self.analysis_dir / self.fits_dirname
-        check_dir(self.fits_dir)
-
-        self.deltas_lya_dir = self.data_dir / self.deltas_lya_dirname
-        check_dir(self.deltas_lya_dir)
-
-        self.deltas_lyb_dir = self.data_dir / self.deltas_lyb_dirname
-        check_dir(self.deltas_lyb_dir)
-
-
-@dataclass
-class CorrDir:
-    """
-    An object that contains the directory structure for an individual correlation.
-    """
-    main_path: str
-    corr_dirname: str = 'correlations'
-    results_dirname: str = 'measurements'
-    run_dirname: str = 'run_files'
-    scripts_dirname: str = 'scripts'
-
-    corr_dir: Path = field(init=False)
-    results_dir: Path = field(init=False)
-    run_dir: Path = field(init=False)
+    fits_dir: Path = field(init=False)
+    logs_dir: Path = field(init=False)
     scripts_dir: Path = field(init=False)
 
     def __post_init__(self):
         main_path = Path(self.main_path)
         check_dir(main_path)
 
-        self.corr_dir = main_path / self.corr_dirname
+        main_analysis_dir = main_path / self.qq_run_name
+        check_dir(main_analysis_dir)
+
+        self.analysis_dir = main_analysis_dir / self.analysis_version
+        check_dir(self.analysis_dir)
+
+        self.corr_dir = self.analysis_dir / 'correlations'
         check_dir(self.corr_dir)
 
-        self.results_dir = self.corr_dir / self.results_dirname
-        check_dir(self.results_dir)
+        self.deltas_lya_dir = self.analysis_dir / self.deltas_lya_dirname
+        check_dir(self.deltas_lya_dir)
 
-        self.run_dir = self.corr_dir / self.run_dirname
-        check_dir(self.run_dir)
+        self.deltas_lyb_dir = self.analysis_dir / self.deltas_lyb_dirname
+        check_dir(self.deltas_lyb_dir)
 
-        self.scripts_dir = self.corr_dir / self.scripts_dirname
+        self.fits_dir = self.analysis_dir / 'fits'
+        check_dir(self.fits_dir)
+
+        self.logs_dir = self.analysis_dir / 'logs'
+        check_dir(self.logs_dir)
+
+        self.scripts_dir = self.analysis_dir / 'scripts'
         check_dir(self.scripts_dir)
+
+
+# @dataclass
+# class CorrDir:
+#     """
+#     An object that contains the directory structure for an individual correlation.
+#     """
+#     main_path: str
+#     corr_dirname: str = 'correlations'
+#     results_dirname: str = 'measurements'
+#     run_dirname: str = 'run_files'
+#     scripts_dirname: str = 'scripts'
+
+#     corr_dir: Path = field(init=False)
+#     results_dir: Path = field(init=False)
+#     run_dir: Path = field(init=False)
+#     scripts_dir: Path = field(init=False)
+
+#     def __post_init__(self):
+#         main_path = Path(self.main_path)
+#         check_dir(main_path)
+
+#         self.corr_dir = main_path / self.corr_dirname
+#         check_dir(self.corr_dir)
+
+#         self.results_dir = self.corr_dir / self.results_dirname
+#         check_dir(self.results_dir)
+
+#         self.run_dir = self.corr_dir / self.run_dirname
+#         check_dir(self.run_dir)
+
+#         self.scripts_dir = self.corr_dir / self.scripts_dirname
+#         check_dir(self.scripts_dir)

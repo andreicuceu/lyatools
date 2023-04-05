@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
-from lyatools.delta_extraction import multi_run_delta_extraction
+from lyatools.multi_run import multi_run_delta_extraction
 
 
 def main():
