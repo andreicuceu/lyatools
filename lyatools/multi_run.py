@@ -7,6 +7,7 @@ from lyatools.picca_utils import desi_from_ztarget_to_drq
 from lyatools.quickquasars import run_qq
 from lyatools.delta_extraction import run_true_continuum, run_continuum_fitting
 from lyatools.correlations import make_correlation_runs
+from lyatools.stack import stack_export_correlations
 
 
 def get_seed_list(qq_seeds):
@@ -104,6 +105,9 @@ def multi_run_correlations(args):
         qq_dir = Path(args.qq_dir) / f'v9.0.{seed}' / f'{args.qq_run_type}'
         zcat_file = qq_dir / 'zcat.fits'
 
+        if args.run_type is None:
+            args.run_type = args.qq_run_type
+
         corr_types = []
         if args.run_auto:
             corr_types += ['lya_lya']
@@ -120,8 +124,8 @@ def multi_run_correlations(args):
         if args.run_true_continuum:
             name = 'true_cont'
             if args.analysis_name is not None:
-                name += args.analysis_name
-            analysis_dir = dir_handlers.AnalysisDir(main_path, args.qq_run_type, name)
+                name += f'_{args.analysis_name}'
+            analysis_dir = dir_handlers.AnalysisDir(main_path, args.run_type, name)
 
             make_correlation_runs(args, analysis_dir, corr_types, zcat_file)
 
@@ -129,6 +133,74 @@ def multi_run_correlations(args):
             name = 'baseline'
             if args.analysis_name is not None:
                 name = args.analysis_name
-            analysis_dir = dir_handlers.AnalysisDir(main_path, args.qq_run_type, name)
+            analysis_dir = dir_handlers.AnalysisDir(main_path, args.run_type, name)
 
             make_correlation_runs(args, analysis_dir, corr_types, zcat_file)
+
+
+def multi_export(args):
+    run_seeds = get_seed_list(args.qq_seeds)
+
+    types = {'cf_lya_lya_0_10': 'dmat_lya_lya_0_10', 'cf_lya_lyb_0_10': 'dmat_lya_lyb_0_10',
+             'xcf_lya_qso_0_10': 'xdmat_lya_qso_0_10', 'xcf_lyb_qso_0_10': 'xdmat_lyb_qso_0_10'}
+
+    if args.name_string is not None:
+        name_addon = f'_{args.name_string}'
+        types = {key + name_addon: val + name_addon for key, val in types.items()}
+
+    # Go through each seed and export all correlations we find
+    corr_dict = {key: [] for key in types}
+    for seed in run_seeds:
+        main_path = Path(args.input_dir) / f'v9.0.{seed}' / args.run_type
+        corr_path = main_path / args.analysis_name / 'correlations'
+
+        for cf, dmat in types.items():
+            file = corr_path / f'{cf}.fits.gz'
+            exp_file = corr_path / f'{cf}-exp.fits.gz'
+
+            if file.is_file():
+                corr_dict[cf] += [file]
+
+            if file.is_file() and not exp_file.is_file():
+                # Do the exporting
+                command = f'picca_export.py --data {file} --out {exp_file} '
+
+                if args.add_dmat:
+                    dmat_file = Path(args.dmat_path) / f'{dmat}.fits.gz'
+                    if not dmat_file.is_file():
+                        raise ValueError(f'Asked for dmat, but dmat {dmat_file} could not be found')
+                    command += f'--dmat {dmat_file} '
+
+                run(command, shell=True)
+                submit_utils.print_spacer_line()
+
+    # Stack correlations from different seeds
+    if args.stack_correlations:
+        for cf_name, cf_list in corr_dict.items():
+            if len(cf_list) < 1:
+                continue
+
+            str_list = [str(cf) for cf in cf_list]
+            in_files = ' '.join(str_list)
+
+            global_run_path = Path(args.stack_out_dir) / args.run_type
+            dir_handlers.check_dir(global_run_path)
+
+            global_analysis_path = global_run_path / args.analysis_name
+            dir_handlers.check_dir(global_analysis_path)
+
+            global_corr_path = global_analysis_path / 'correlations'
+            dir_handlers.check_dir(global_corr_path)
+
+            exp_out_file = global_corr_path / f'{cf_name}-exp.fits.gz'
+
+            dmat_file = None
+            if args.add_dmat:
+                dmat = types[cf_name]
+                dmat_file = Path(args.dmat_path) / f'{dmat}.fits.gz'
+                if not dmat_file.is_file():
+                    raise ValueError(f'Asked for dmat, but dmat {dmat_file} could not be found')
+
+            stack_export_correlations(in_files, exp_out_file, dmat_file)
+
+    print('Done')

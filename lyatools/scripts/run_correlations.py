@@ -1,23 +1,47 @@
+#!/usr/bin/env python
+
+import argparse
+from lyatools.multi_run import multi_run_correlations
+
+
+def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('--deltas-dir-lya', type=str, default=None, required=True,
-                        help='Directory containing deltas for lya region')
+    parser.add_argument('-i', '--input-dir', type=str, default=None, required=True,
+                        help='Directory that contains all of the picca outputs')
 
-    parser.add_argument('--deltas-dir-lyb', type=str, default=None, required=False,
-                        help='Directory containing deltas for lyb region')
+    parser.add_argument('--qq-dir', type=str, default=None, required=True,
+                        help='Directory that contains all of the qq realisations')
 
-    parser.add_argument('-c', '--catalogue', type=str, default=None, required=False,
-                        help='Quasar catalogue')
+    parser.add_argument('--qq-seeds', type=str, required=True, nargs='*',
+                        help='Which seeds to run qq on. Either integers or range e.g. 0-5')
 
-    parser.add_argument('-o', '--analysis-dir', type=str, default=None, required=True,
-                        help='Analysis directory where the correlations folder will be stored')
+    parser.add_argument('--qq-run-type', type=str, required=True,
+                        help='Directory names of the qq runs (used to find QSO catalog)')
 
-    parser.add_argument('--corr-types', type=str, default=None, required=False,
-                        nargs='*', choices=corr_types,
-                        help=f'Type of correlations to compute. Choose from {corr_types}')
+    parser.add_argument('--run-type', type=str, default=None, required=False,
+                        help='Directory names of the picca runs')
+
+    parser.add_argument('--analysis-name', type=str, default=None, required=False,
+                        help='Analysis name. One run can have multiple analyses')
+
+    parser.add_argument('--run-true-continuum', action="store_true",
+                        help='Whether to run the true continuum analyses.')
+
+    parser.add_argument('--run-lyb-region', action="store_true",
+                        help='Whether to run the lyb region correlations.')
+
+    parser.add_argument('--run-auto', action="store_true",
+                        help='Whether to run the auto-correlations.')
+
+    parser.add_argument('--run-cross', action="store_true",
+                        help='Whether to run the cross-correlations.')
 
     parser.add_argument('--compute-dmat', action='store_true', required=False,
                         help='Flag for computing distortion matrices')
+
+    parser.add_argument('--no-compute-corr', action='store_true', required=False,
+                        help='Flag for not computing correlation function.s')
 
     parser.add_argument('--name-string', type=str, default=None, required=False,
                         help='Optional name string to append to the end of the filenames')
@@ -36,9 +60,6 @@
 
     parser.add_argument('--num-bins-rt', type=int, default=50, required=False,
                         help='Number of bins in r-transverse [h^-1 Mpc]')
-
-    parser.add_argument('--z-limits', type=float, nargs=2, default=[0, 10], required=False,
-                        help='Bin edges in redshift')
 
     parser.add_argument('--fid-Om', type=float, default=0.31457, required=False,
                         help='Fiducial Omega_matter value at z=0.')
@@ -75,3 +96,9 @@
                         help='make the run scripts but do not submit the jobs')
 
     args = parser.parse_args()
+
+    multi_run_correlations(args)
+
+
+if __name__ == '__main__':
+    main()

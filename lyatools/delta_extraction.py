@@ -9,7 +9,7 @@ def run_true_continuum(args, qq_dir, main_path, zcat_file):
 
     name = 'true_cont'
     if args.analysis_name is not None:
-        name += args.analysis_name
+        name += f'_{args.analysis_name}'
     analysis_dir = dir_handlers.AnalysisDir(main_path, args.qq_run_type, name)
 
     make_delta_runs(args, qq_dir, zcat_file, analysis_dir, true_continuum=True)
