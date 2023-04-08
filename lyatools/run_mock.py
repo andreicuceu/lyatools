@@ -241,16 +241,16 @@ class RunMocks:
         zcat_file = qq_dir / 'zcat.fits'
 
         corr_types = []
-        if self.corr.get('run_auto'):
+        if self.corr.getboolean('run_auto'):
             corr_types += ['lya_lya']
 
-            if self.corr.get('run_lyb_region'):
+            if self.corr.getboolean('run_lyb_region'):
                 corr_types += ['lya_lyb']
 
-        if self.corr.get('run_cross'):
+        if self.corr.getboolean('run_cross'):
             corr_types += ['lya_qso']
 
-            if self.corr.get('run_lyb_region'):
+            if self.corr.getboolean('run_lyb_region'):
                 corr_types += ['lyb_qso']
 
         if len(corr_types) < 1:
