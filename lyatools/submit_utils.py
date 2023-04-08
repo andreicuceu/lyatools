@@ -111,12 +111,12 @@ def run_job(script, dependency_ids=None, no_submit=False):
         if valid_deps:
             dependency = f"--dependency=afterok:{':'.join(valid_deps)} "
 
-    command = f"sbatch {dependency}{script} | tr -dc '0-9'"
+    command = f"sbatch {dependency}{script}"
 
     jobid = None
     if not no_submit:
         print(f'Submitting script {script}')
-        process = run(command, shell=True, capture_output=True)
+        process = run(command + " | tr -dc '0-9'", shell=True, capture_output=True)
 
         if process.returncode != 0:
             raise ValueError(f'Running "sbatch {dependency}{script}" returned non-zero exitcode '

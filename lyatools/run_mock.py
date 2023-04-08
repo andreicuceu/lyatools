@@ -274,10 +274,8 @@ class RunMocks:
             file = analysis_struct.corr_dir / f'{cf}.fits.gz'
             exp_file = analysis_struct.corr_dir / f'{cf}-exp.fits.gz'
 
-            if file.is_file():
-                corr_dict[cf] = file
-
-            if file.is_file() and not exp_file.is_file():
+            corr_dict[cf] = file
+            if not exp_file.is_file():
                 # Do the exporting
                 command = f'picca_export.py --data {file} --out {exp_file} '
 
@@ -288,6 +286,10 @@ class RunMocks:
                     command += f'--dmat {dmat_file} '
 
                 export_commands += [command]
+
+        if len(export_commands) < 1:
+            print(f'No individual mock export needed for seed {seed}.')
+            return corr_dict, None
 
         # Make the header
         header = submit_utils.make_header(self.job.get('nersc_machine'), time=0.2,

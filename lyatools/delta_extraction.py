@@ -39,14 +39,14 @@ def run_delta_extraction(config, job, qq_dir, analysis_struct, catalogue, region
     config_path = analysis_struct.scripts_dir / f'deltas_{region_name}_{type}.ini'
 
     # Create the config file for running picca_delta_extraction
+    nproc = config.getint('nproc', 64)
     spectra_dir = qq_dir / 'spectra-16'
     create_config(config, config_path, spectra_dir, catalogue, deltas_dirname,
-                  lambda_rest_min, lambda_rest_max, true_continuum)
+                  lambda_rest_min, lambda_rest_max, true_continuum, nproc)
 
     run_name = f'picca_delta_extraction_{region_name}_{type}'
     script_path = analysis_struct.scripts_dir / f'run_{run_name}.sh'
 
-    nproc = config.getint('nproc', 64)
     slurm_hours = config.getfloat('slurm_hours', None)
     if slurm_hours is None:
         slurm_hours = 0.5 if true_continuum else 1.5
@@ -73,14 +73,14 @@ def run_delta_extraction(config, job, qq_dir, analysis_struct, catalogue, region
 
 
 def create_config(config, config_path, spectra_dir, catalogue, deltas_dir,
-                  lambda_rest_min, lambda_rest_max, true_continuum):
+                  lambda_rest_min, lambda_rest_max, true_continuum, nproc):
     """Create picca_delta_extraction config file.
     See https://github.com/igmhub/picca/blob/master/tutorials/
     /delta_extraction/picca_delta_extraction_configuration_tutorial.ipynb
     """
     out_config = ConfigParser()
 
-    out_config['general'] = {'out dir': deltas_dir, 'num processors': config.get('nproc'),
+    out_config['general'] = {'out dir': deltas_dir, 'num processors': str(nproc),
                              'overwrite': 'True'}
 
     out_config['data'] = {'type': 'DesisimMocks',
