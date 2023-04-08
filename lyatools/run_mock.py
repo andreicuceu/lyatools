@@ -117,7 +117,7 @@ class RunMocks:
         if self.export.getboolean('stack_correlations'):
             global_struct, true_global_struct, raw_global_struct = self.get_global_struct()
 
-            add_dmat = self.export.get('add_dmat')
+            add_dmat = self.export.getboolean('add_dmat')
             dmat_path = self.export.get('dmat_path')
             name_string = self.corr.get('name_string', None)
 
@@ -276,7 +276,7 @@ class RunMocks:
                              'Correlations are *not* recomputed if they already exist.')
 
         corr_dict, job_id = make_export_runs(seed, analysis_struct, corr_paths, self.job,
-                                             add_dmat=self.export.get('add_dmat'),
+                                             add_dmat=self.export.getboolean('add_dmat'),
                                              dmat_path=self.export.get('dmat_path'),
                                              corr_job_ids=corr_job_ids)
 
