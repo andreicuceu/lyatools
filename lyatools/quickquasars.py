@@ -78,15 +78,16 @@ def run_qq(qq_run_type, seed, test_run, no_submit, *args):
     qq_args += f' --seed {seed}'
     print(qq_args)
 
-    qq_script = create_qq_script(qq_run_type, qq_args, test_run, *args)
+    qq_script = create_qq_script(qq_run_type, qq_args, seed, test_run, *args)
 
     job_id = submit_utils.run_job(qq_script, no_submit=no_submit)
 
     return job_id
 
 
-def create_qq_script(qq_dirname, qq_args, test_run, input_dir, output_dir, nersc_machine='perl',
-                     slurm_hours=0.5, slurm_queue='regular', nodes=8, nproc=32, env_command=None):
+def create_qq_script(qq_dirname, qq_args, seed, test_run, input_dir, output_dir,
+                     nersc_machine='perl', slurm_hours=0.5, slurm_queue='regular',
+                     nodes=8, nproc=32, env_command=None):
 
     submit_utils.set_umask()
 
