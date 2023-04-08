@@ -160,7 +160,8 @@ class RunMocks:
         corr_job_ids = None
         if self.run_corr_flag:
             print(f'Starting correlation jobs for seed {seed}.')
-            corr_job_ids = self.run_correlations(seed, analysis_struct, delta_job_ids=delta_job_ids)
+            corr_types, corr_job_ids = self.run_correlations(seed, analysis_struct,
+                                                             delta_job_ids=delta_job_ids)
         submit_utils.print_spacer_line()
 
         # Run export
@@ -168,7 +169,8 @@ class RunMocks:
         job_id = None
         if self.run_export_flag:
             print(f'Starting export jobs for seed {seed}.')
-            corr_files, job_id = self.run_export(seed, analysis_struct, corr_job_ids=corr_job_ids)
+            corr_files, job_id = self.run_export(seed, analysis_struct, corr_types,
+                                                 corr_job_ids=corr_job_ids)
         submit_utils.print_spacer_line()
 
         return corr_files, job_id
@@ -259,20 +261,20 @@ class RunMocks:
         corr_job_ids = make_correlation_runs(self.corr, self.job, analysis_struct, corr_types,
                                              zcat_file, delta_job_ids)
 
-        return corr_job_ids
+        return corr_types, corr_job_ids
 
-    def run_export(self, seed, analysis_struct, corr_job_ids=None):
-        types = copy.deepcopy(CORR_TYPES)
-        name_string = self.corr.get('name_string', None)
-        if name_string is not None:
-            name_addon = f'_{name_string}'
-            types = {key + name_addon: val + name_addon for key, val in CORR_TYPES.items()}
+    def run_export(self, seed, analysis_struct, corr_types, corr_job_ids=None):
+        types = copy.deepcopy(corr_types)
+        name_string = self.corr.get('name_string', '')
+        name_string = '_' + name_string
 
+        # TODO implement other options for redshift bins
+        zmin, zmax = 0, 10
         corr_dict = {}
         export_commands = []
         for cf, dmat in types.items():
-            file = analysis_struct.corr_dir / f'{cf}.fits.gz'
-            exp_file = analysis_struct.corr_dir / f'{cf}-exp.fits.gz'
+            file = analysis_struct.corr_dir / f'{cf}_{zmin}_{zmax}{name_string}.fits.gz'
+            exp_file = analysis_struct.corr_dir / f'{cf}_{zmin}_{zmax}{name_string}-exp.fits.gz'
 
             corr_dict[cf] = file
             if not exp_file.is_file():
