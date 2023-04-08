@@ -37,6 +37,9 @@ class RunMocks:
         self.run_type = self.config['mock_setup'].get('run_type')
         self.analysis_name = self.config['mock_setup'].get('analysis_name')
 
+        if self.job.getboolean('test_run'):
+            self.qq_run_type = 'desi-test'
+
         if self.run_type is None:
             self.run_type = self.qq_run_type
 
@@ -68,7 +71,10 @@ class RunMocks:
             zcat_job_id = None
             if self.run_qq_flag:
                 qq_job_id = self.run_qq(seed)
+                submit_utils.print_spacer_line()
+
                 zcat_job_id = self.run_zcat(seed, qq_job_id)
+                submit_utils.print_spacer_line()
 
             analysis_struct, true_analysis_struct, \
                 raw_analysis_struct = self.get_analysis_dirs(seed)
@@ -117,16 +123,22 @@ class RunMocks:
                 print('Starting stack and export job for raw deltas.')
                 _ = self.stack_correlations(raw_corr_dict, raw_global_struct,
                                             exp_job_ids=raw_exp_job_ids)
+                submit_utils.print_spacer_line()
 
             if self.run_true_cont_flag:
                 print('Starting stack and export job for true deltas.')
                 _ = self.stack_correlations(true_corr_dict, true_global_struct,
                                             exp_job_ids=true_exp_job_ids)
+                submit_utils.print_spacer_line()
+
             if not self.no_run_cont_fit_flag:
                 print('Starting stack and export job for fitted deltas.')
                 _ = self.stack_correlations(corr_dict, global_struct, exp_job_ids=exp_job_ids)
+                submit_utils.print_spacer_line()
 
+        submit_utils.print_spacer_line()
         print('Done')
+        submit_utils.print_spacer_line()
 
     def run_analysis(self, seed, analysis_struct, true_continuum=False, raw_analysis=False,
                      zcat_job_id=None):
@@ -141,12 +153,14 @@ class RunMocks:
                 delta_job_ids = self.run_delta_extraction(seed, analysis_struct,
                                                           true_continuum=true_continuum,
                                                           zcat_job_id=zcat_job_id)
+        submit_utils.print_spacer_line()
 
         # Run correlations
         corr_job_ids = None
         if self.run_corr_flag:
             print('Starting correlation jobs for seed {seed}.')
             corr_job_ids = self.run_correlations(seed, analysis_struct, delta_job_ids=delta_job_ids)
+        submit_utils.print_spacer_line()
 
         # Run export
         corr_files = {}
@@ -154,6 +168,7 @@ class RunMocks:
         if self.run_export_flag:
             print('Starting export jobs for seed {seed}.')
             corr_files, job_id = self.run_export(seed, analysis_struct, corr_job_ids=corr_job_ids)
+        submit_utils.print_spacer_line()
 
         return corr_files, job_id
 
@@ -162,8 +177,8 @@ class RunMocks:
         output_dir = Path(self.qq_dir) / f'v9.0.{seed}'
         print(f'Submitting QQ run for mock v9.0.{seed}')
 
-        qq_job_id = run_qq(self.qq_run_type, self.job['test_run'], self.job['no_submit'],
-                           input_dir, output_dir)
+        qq_job_id = run_qq(self.qq_run_type, seed, self.job.getboolean('test_run'),
+                           self.job.getboolean('no_submit'), input_dir, output_dir)
 
         return qq_job_id
 
@@ -179,7 +194,7 @@ class RunMocks:
 
         print('Making DESI zcat')
         header = submit_utils.make_header(self.job.get('nersc_machine'), nodes=1, time=0.2,
-                                          omp_threads=128, job_name='make_zcat',
+                                          omp_threads=128, job_name=f'zcat_{seed}',
                                           err_file=qq_struct.log_dir/'run-%j.err',
                                           out_file=qq_struct.log_dir/'run-%j.out')
 
@@ -206,7 +221,7 @@ class RunMocks:
                                         run_lyb_region=self.deltas.getboolean('run_lyb_region'),
                                         delta_lambda=self.deltas.getfloat('delta_lambda'),
                                         max_num_spec=self.deltas.getfloat('max_num_spec'),
-                                        use_old_weights=self.deltas.getboolean('max_num_spec'))
+                                        use_old_weights=self.deltas.getboolean('use_old_weights'))
 
         return delta_job_ids
 

@@ -46,7 +46,7 @@ QQ_RUN_ARGS = {
 }
 
 
-def run_qq(qq_run_type, test_run, no_submit, *args):
+def run_qq(qq_run_type, seed, test_run, no_submit, *args):
     """Create a QQ run and submit it
 
     Parameters
@@ -66,15 +66,17 @@ def run_qq(qq_run_type, test_run, no_submit, *args):
         print('Test run enabled, overriding arguments to setup it up.')
         qq_run_type = 'desi-test'
 
-    submit_utils.print_spacer_line()
-
     # Print run config
     print(f'Submitting quickquasars runs with configuration {qq_run_type}')
 
     run_args = QQ_RUN_ARGS[qq_run_type]
+
+    print('Found the following arguments to pass to quickquasars:')
     qq_args = ''
     for key, val in run_args.items():
         qq_args += f' --{key} {val}'
+    qq_args += f' --seed {seed}'
+    print(qq_args)
 
     qq_script = create_qq_script(qq_run_type, qq_args, test_run, *args)
 
@@ -89,17 +91,16 @@ def create_qq_script(qq_dirname, qq_args, test_run, input_dir, output_dir, nersc
     submit_utils.set_umask()
 
     if test_run:
-        print('INFO: test run enabled, only using first 10 transmission files.')
+        print('Test run enabled, only using first 10 transmission files.')
         slurm_queue = 'debug'
         nodes = 1
         nproc = 2
         slurm_hours = 0.25
 
-    qq_string = ''
-    for arg in qq_args:
-        qq_string += (' ' + arg)
-    print('INFO: Found the following arguments to pass to quickquasars:')
-    print(qq_string)
+    # # qq_string = ''
+    # for arg in qq_args:
+    #     qq_string += (' ' + arg)
+    # print(qq_string)
 
     # Set up the directory structure to put everything into.
     qq_dir = dir_handlers.QQDir(output_dir, qq_dirname)
@@ -107,14 +108,14 @@ def create_qq_script(qq_dirname, qq_args, test_run, input_dir, output_dir, nersc
     # Make the header
     time = submit_utils.convert_job_time(slurm_hours)
     header = submit_utils.make_header(nersc_machine, slurm_queue, nodes, time=time,
-                                      omp_threads=nproc, job_name='run_quickquasars',
+                                      omp_threads=nproc, job_name=f'qq_{seed}',
                                       err_file=qq_dir.run_dir/'run-%j.err',
                                       out_file=qq_dir.run_dir/'run-%j.out')
 
     # Create the main qq run command
     qq_run = f'    command="srun -N 1 -n 1 -c {nproc} '
     qq_run += f'quickquasars -i $tfiles --nproc {nproc} '
-    qq_run += f'--outdir {qq_dir.spectra_dir} {qq_string}"\n'
+    qq_run += f'--outdir {qq_dir.spectra_dir} {qq_args}"\n'
 
     # Make the text body of the script.
     text = '\n\n'
