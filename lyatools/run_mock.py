@@ -1,4 +1,3 @@
-import copy
 import configparser
 from pathlib import Path
 
@@ -7,9 +6,7 @@ from lyatools.raw_deltas import make_raw_deltas
 from lyatools.quickquasars import run_qq
 from lyatools.delta_extraction import make_delta_runs
 from lyatools.correlations import make_correlation_runs
-
-CORR_TYPES = {'cf_lya_lya_0_10': 'dmat_lya_lya_0_10', 'cf_lya_lyb_0_10': 'dmat_lya_lyb_0_10',
-              'xcf_lya_qso_0_10': 'xdmat_lya_qso_0_10', 'xcf_lyb_qso_0_10': 'xdmat_lyb_qso_0_10'}
+from lyatools.export import make_export_runs, stack_correlations
 
 
 class RunMocks:
@@ -120,21 +117,29 @@ class RunMocks:
         if self.export.getboolean('stack_correlations'):
             global_struct, true_global_struct, raw_global_struct = self.get_global_struct()
 
+            add_dmat = self.export.get('add_dmat')
+            dmat_path = self.export.get('dmat_path')
+            name_string = self.corr.get('name_string', None)
+
             if self.run_raw_flag:
                 print('Starting stack and export job for raw deltas.')
-                _ = self.stack_correlations(raw_corr_dict, raw_global_struct,
-                                            exp_job_ids=raw_exp_job_ids)
+                _ = stack_correlations(raw_corr_dict, raw_global_struct, self.job,
+                                       add_dmat=add_dmat, dmat_path=dmat_path,
+                                       name_string=name_string, exp_job_ids=raw_exp_job_ids)
                 submit_utils.print_spacer_line()
 
             if self.run_true_cont_flag:
                 print('Starting stack and export job for true deltas.')
-                _ = self.stack_correlations(true_corr_dict, true_global_struct,
-                                            exp_job_ids=true_exp_job_ids)
+                _ = stack_correlations(true_corr_dict, true_global_struct, self.job,
+                                       add_dmat=add_dmat, dmat_path=dmat_path,
+                                       name_string=name_string, exp_job_ids=true_exp_job_ids)
                 submit_utils.print_spacer_line()
 
             if not self.no_run_cont_fit_flag:
                 print('Starting stack and export job for fitted deltas.')
-                _ = self.stack_correlations(corr_dict, global_struct, exp_job_ids=exp_job_ids)
+                _ = stack_correlations(corr_dict, global_struct, self.job,
+                                       add_dmat=add_dmat, dmat_path=dmat_path,
+                                       name_string=name_string, exp_job_ids=exp_job_ids)
                 submit_utils.print_spacer_line()
 
         submit_utils.print_spacer_line()
@@ -157,10 +162,11 @@ class RunMocks:
         submit_utils.print_spacer_line()
 
         # Run correlations
+        corr_paths = None
         corr_job_ids = None
         if self.run_corr_flag:
             print(f'Starting correlation jobs for seed {seed}.')
-            corr_types, corr_job_ids = self.run_correlations(seed, analysis_struct,
+            corr_paths, corr_job_ids = self.run_correlations(seed, analysis_struct,
                                                              delta_job_ids=delta_job_ids)
         submit_utils.print_spacer_line()
 
@@ -169,7 +175,7 @@ class RunMocks:
         job_id = None
         if self.run_export_flag:
             print(f'Starting export jobs for seed {seed}.')
-            corr_files, job_id = self.run_export(seed, analysis_struct, corr_types,
+            corr_files, job_id = self.run_export(seed, analysis_struct, corr_paths,
                                                  corr_job_ids=corr_job_ids)
         submit_utils.print_spacer_line()
 
@@ -258,108 +264,23 @@ class RunMocks:
         if len(corr_types) < 1:
             raise ValueError('Did not find anything to run. Add "run_auto" and/or "run_cross".')
 
-        corr_job_ids = make_correlation_runs(self.corr, self.job, analysis_struct, corr_types,
-                                             zcat_file, delta_job_ids)
+        corr_paths, corr_job_ids = make_correlation_runs(self.corr, self.job, analysis_struct,
+                                                         corr_types, zcat_file, delta_job_ids)
 
-        return corr_types, corr_job_ids
+        return corr_paths, corr_job_ids
 
-    def run_export(self, seed, analysis_struct, corr_types, corr_job_ids=None):
-        types = copy.deepcopy(corr_types)
-        name_string = self.corr.get('name_string', '')
-        name_string = '_' + name_string
+    def run_export(self, seed, analysis_struct, corr_paths, corr_job_ids=None):
+        if corr_paths is None:
+            raise ValueError('Export only runs must include correlation runs as well. '
+                             'In the [control] section set "run_corr" to True. '
+                             'Correlations are *not* recomputed if they already exist.')
 
-        # TODO implement other options for redshift bins
-        zmin, zmax = 0, 10
-        corr_dict = {}
-        export_commands = []
-        for cf, dmat in types.items():
-            file = analysis_struct.corr_dir / f'{cf}_{zmin}_{zmax}{name_string}.fits.gz'
-            exp_file = analysis_struct.corr_dir / f'{cf}_{zmin}_{zmax}{name_string}-exp.fits.gz'
-
-            corr_dict[cf] = file
-            if not exp_file.is_file():
-                # Do the exporting
-                command = f'picca_export.py --data {file} --out {exp_file} '
-
-                if self.export.getboolean('add_dmat'):
-                    dmat_file = Path(self.export.get('dmat_path')) / f'{dmat}.fits.gz'
-                    if not dmat_file.is_file():
-                        raise ValueError(f'Asked for dmat, but dmat {dmat_file} could not be found')
-                    command += f'--dmat {dmat_file} '
-
-                export_commands += [command]
-
-        if len(export_commands) < 1:
-            print(f'No individual mock export needed for seed {seed}.')
-            return corr_dict, None
-
-        # Make the header
-        header = submit_utils.make_header(self.job.get('nersc_machine'), time=0.2,
-                                          omp_threads=64, job_name=f'export_{seed}',
-                                          err_file=analysis_struct.logs_dir/f'export-{seed}-%j.err',
-                                          out_file=analysis_struct.logs_dir/f'export-{seed}-%j.out')
-
-        # Create the script
-        text = header
-        env_command = self.job.get('env_command')
-        text += f'{env_command}\n\n'
-        for command in export_commands:
-            text += command + '\n'
-
-        # Write the script.
-        script_path = analysis_struct.scripts_dir / f'export-{seed}.sh'
-        submit_utils.write_script(script_path, text)
-
-        job_id = submit_utils.run_job(script_path, dependency_ids=corr_job_ids,
-                                      no_submit=self.job.getboolean('no_submit'))
+        corr_dict, job_id = make_export_runs(seed, analysis_struct, corr_paths, self.job,
+                                             add_dmat=self.export.get('add_dmat'),
+                                             dmat_path=self.export.get('dmat_path'),
+                                             corr_job_ids=corr_job_ids)
 
         return corr_dict, job_id
-
-    def stack_correlations(self, corr_dict, global_struct, exp_job_ids=None):
-        # Stack correlations from different seeds
-        export_commands = []
-        for cf_name, cf_list in corr_dict.items():
-            if len(cf_list) < 1:
-                continue
-
-            str_list = [str(cf) for cf in cf_list]
-            in_files = ' '.join(str_list)
-
-            exp_out_file = global_struct.corr_dir / f'{cf_name}-exp.fits.gz'
-
-            command = f'lyatools-stack-export --data {in_files} --out {exp_out_file} '
-
-            if self.export.getboolean('add_dmat'):
-                dmat = CORR_TYPES[cf_name]
-                dmat_file = Path(self.export.get('dmat_path')) / f'{dmat}.fits.gz'
-                if not dmat_file.is_file():
-                    raise ValueError(f'Asked for dmat, but dmat {dmat_file} could not be found')
-
-                command += f'--dmat {dmat_file} '
-
-                export_commands += [command]
-
-        # Make the header
-        header = submit_utils.make_header(self.job.get('nersc_machine'), time=0.2,
-                                          omp_threads=64, job_name='stack_export',
-                                          err_file=global_struct.logs_dir/'stack_export-%j.err',
-                                          out_file=global_struct.logs_dir/'stack_export-%j.out')
-
-        # Create the script
-        text = header
-        env_command = self.job.get('env_command')
-        text += f'{env_command}\n\n'
-        for command in export_commands:
-            text += command + '\n'
-
-        # Write the script.
-        script_path = global_struct.scripts_dir / 'stack_export.sh'
-        submit_utils.write_script(script_path, text)
-
-        job_id = submit_utils.run_job(script_path, dependency_ids=exp_job_ids,
-                                      no_submit=self.job.getboolean('no_submit'))
-
-        return job_id
 
     def get_analysis_dirs(self, seed):
         main_path = Path(self.analysis_dir) / f'v9.0.{seed}'

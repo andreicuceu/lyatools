@@ -8,47 +8,50 @@ JOB_CONFIGS = {'cf_lya_lya': 2.0, 'dmat_lya_lya': 2.0,
 
 def make_correlation_runs(config, job, analysis_struct, corr_types, catalogue, delta_job_ids=None):
     submit_utils.set_umask()
-    job_ids = []
+    cf_out = []
+    dmat_out = []
 
     no_comput_corr = config.getboolean('no_compute_corr')
     compute_dmat = config.getboolean('compute_dmat')
 
     if 'lya_lya' in corr_types:
         if not no_comput_corr:
-            job_ids.append(run_correlation(config, job, analysis_struct, name='cf_lya_lya',
-                                           delta_job_ids=delta_job_ids))
+            cf_out.append(run_correlation(config, job, analysis_struct, name='cf_lya_lya',
+                                          delta_job_ids=delta_job_ids))
         if compute_dmat:
-            job_ids.append(run_correlation(config, job, analysis_struct, dmat=True,
-                                           name='dmat_lya_lya', delta_job_ids=delta_job_ids))
+            dmat_out.append(run_correlation(config, job, analysis_struct, dmat=True,
+                                            name='dmat_lya_lya', delta_job_ids=delta_job_ids))
 
     if 'lya_lyb' in corr_types:
         if not no_comput_corr:
-            job_ids.append(run_correlation(config, job, analysis_struct, lyb=True,
-                                           name='cf_lya_lyb', delta_job_ids=delta_job_ids))
+            cf_out.append(run_correlation(config, job, analysis_struct, lyb=True,
+                                          name='cf_lya_lyb', delta_job_ids=delta_job_ids))
         if compute_dmat:
-            job_ids.append(run_correlation(config, job, analysis_struct, lyb=True, dmat=True,
-                                           name='dmat_lya_lyb', delta_job_ids=delta_job_ids))
+            dmat_out.append(run_correlation(config, job, analysis_struct, lyb=True, dmat=True,
+                                            name='dmat_lya_lyb', delta_job_ids=delta_job_ids))
 
     if 'lya_qso' in corr_types:
         if not no_comput_corr:
-            job_ids.append(run_correlation(config, job, analysis_struct, catalogue, cross=True,
-                                           name='xcf_lya_qso', delta_job_ids=delta_job_ids))
+            cf_out.append(run_correlation(config, job, analysis_struct, catalogue, cross=True,
+                                          name='xcf_lya_qso', delta_job_ids=delta_job_ids))
         if compute_dmat:
-            job_ids.append(run_correlation(config, job, analysis_struct, catalogue, cross=True,
-                                           dmat=True, name='xdmat_lya_qso',
-                                           delta_job_ids=delta_job_ids))
+            dmat_out.append(run_correlation(config, job, analysis_struct, catalogue, cross=True,
+                                            dmat=True, name='xdmat_lya_qso',
+                                            delta_job_ids=delta_job_ids))
 
     if 'lyb_qso' in corr_types:
         if not no_comput_corr:
-            job_ids.append(run_correlation(config, job, analysis_struct, catalogue, cross=True,
-                                           lyb=True, name='xcf_lyb_qso',
-                                           delta_job_ids=delta_job_ids))
+            cf_out.append(run_correlation(config, job, analysis_struct, catalogue, cross=True,
+                                          lyb=True, name='xcf_lyb_qso',
+                                          delta_job_ids=delta_job_ids))
         if compute_dmat:
-            job_ids.append(run_correlation(config, job, analysis_struct, catalogue, cross=True,
-                                           lyb=True, dmat=True, name='xdmat_lyb_qso',
-                                           delta_job_ids=delta_job_ids))
+            dmat_out.append(run_correlation(config, job, analysis_struct, catalogue, cross=True,
+                                            lyb=True, dmat=True, name='xdmat_lyb_qso',
+                                            delta_job_ids=delta_job_ids))
 
-    return job_ids
+    cf_paths = [out[0] for out in cf_out]
+    job_ids = [out[1] for out in cf_out] + [out[1] for out in dmat_out]
+    return cf_paths, job_ids
 
 
 def run_correlation(config,  job, analysis_struct, catalogue=None, cross=False, lyb=False,
@@ -72,6 +75,10 @@ def run_correlation(config,  job, analysis_struct, catalogue=None, cross=False, 
         output_path = analysis_struct.corr_dir / f'{name}_{zmin}_{zmax}.fits.gz'
     else:
         output_path = analysis_struct.corr_dir / f'{name}_{zmin}_{zmax}_{name_string}.fits.gz'
+
+    if output_path.is_file():
+        print(f'Correlation already exists, skipping: {output_path}.')
+        return output_path, None
 
     # Get setting we need
     env_command = job.get('env_command')
@@ -133,4 +140,4 @@ def run_correlation(config,  job, analysis_struct, catalogue=None, cross=False, 
     job_id = submit_utils.run_job(script_path, dependency_ids=delta_job_ids,
                                   no_submit=job.getboolean('no_submit'))
 
-    return job_id
+    return output_path, job_id
