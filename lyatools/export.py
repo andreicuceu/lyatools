@@ -93,6 +93,8 @@ def stack_correlations(corr_dict, global_struct, job, add_dmat=False, dmat_path=
 
         name_ext = '' if name_string is None else '_' + name_string
         exp_out_file = global_struct.corr_dir / f'{cf_name}{name_ext}-exp.fits.gz'
+        if exp_out_file.is_file():
+            raise ValueError(f'Exported correlation already exists: {exp_out_file}')
 
         command = f'lyatools-stack-export --data {in_files} --out {exp_out_file} '
 
@@ -100,7 +102,7 @@ def stack_correlations(corr_dict, global_struct, job, add_dmat=False, dmat_path=
             dmat_file = find_dmat(dmat_path, cf_name)
             command += f'--dmat {dmat_file} '
 
-            export_commands += [command]
+        export_commands += [command]
 
     # Make the header
     header = submit_utils.make_header(job.get('nersc_machine'), time=0.2,
