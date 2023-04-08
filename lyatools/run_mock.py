@@ -87,7 +87,7 @@ class RunMocks:
                                                        true_continuum=False, raw_analysis=True,
                                                        zcat_job_id=zcat_job_id)
                 raw_exp_job_ids += [job_id]
-                for key, file in corr_files:
+                for key, file in corr_files.items():
                     if key not in raw_corr_dict:
                         raw_corr_dict[key] = []
                     raw_corr_dict[key] += [file]
@@ -99,7 +99,7 @@ class RunMocks:
                                                        true_continuum=True, raw_analysis=False,
                                                        zcat_job_id=zcat_job_id)
                 true_exp_job_ids += [job_id]
-                for key, file in corr_files:
+                for key, file in corr_files.items():
                     if key not in true_corr_dict:
                         true_corr_dict[key] = []
                     true_corr_dict[key] += [file]
@@ -110,7 +110,7 @@ class RunMocks:
                 corr_files, job_id = self.run_analysis(seed, analysis_struct, true_continuum=False,
                                                        raw_analysis=False, zcat_job_id=zcat_job_id)
                 exp_job_ids += [job_id]
-                for key, file in corr_files:
+                for key, file in corr_files.items():
                     if key not in corr_dict:
                         corr_dict[key] = []
                     corr_dict[key] += [file]
