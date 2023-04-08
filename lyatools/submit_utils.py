@@ -9,8 +9,10 @@ import lyatools
 
 def get_seed_list(qq_seeds):
     # Get list of seeds
+    seed_list = qq_seeds.split(',')
+
     run_seeds = []
-    for seed in qq_seeds:
+    for seed in seed_list:
         seed_range = seed.split('-')
 
         if len(seed_range) == 1:
