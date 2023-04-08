@@ -131,6 +131,6 @@ def run_correlation(config,  job, analysis_struct, catalogue=None, cross=False, 
     submit_utils.write_script(script_path, text)
 
     job_id = submit_utils.run_job(script_path, dependency_ids=delta_job_ids,
-                                  no_submit=config.getboolean('no_submit'))
+                                  no_submit=job.getboolean('no_submit'))
 
     return job_id

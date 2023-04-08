@@ -116,7 +116,7 @@ def run_job(script, dependency_ids=None, no_submit=False):
     jobid = None
     if not no_submit:
         print(f'Submitting script {script}')
-        process = run(command, capture_output=True)
+        process = run(command, shell=True, capture_output=True)
 
         if process.returncode != 0:
             raise ValueError(f'Running "sbatch {dependency}{script}" returned non-zero exitcode '
