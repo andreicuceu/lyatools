@@ -26,9 +26,9 @@ def run_raw_deltas(input_dir, zcat_file, analysis_struct, job, zcat_job_id=None,
                    region_name='lya', lambda_rest_min=1040., lambda_rest_max=1200.,
                    delta_lambda=0.8, max_num_spec=None, use_old_weights=False):
     if region_name == 'lya':
-        deltas_dir = analysis_struct.deltas_lya_dir
+        deltas_dir = analysis_struct.deltas_lya_dir / 'Delta'
     elif region_name == 'lyb':
-        deltas_dir = analysis_struct.deltas_lyb_dir
+        deltas_dir = analysis_struct.deltas_lyb_dir / 'Delta'
     else:
         raise ValueError('Unkown region name. Choose from ["lya", "lyb"].')
 
@@ -45,8 +45,10 @@ def run_raw_deltas(input_dir, zcat_file, analysis_struct, job, zcat_job_id=None,
     # text += f'lambda_min={args.lambda_min}, lambda_max={args.lambda_max}, '
     text += f'lambda_min_rest_frame={lambda_rest_min}, '
     text += f'lambda_max_rest_frame={lambda_rest_max}, '
-    text += f'delta_lambda={delta_lambda}, lin_spaced=True, '
-    text += f'max_num_spec={max_num_spec}, nproc=128, '
+    text += f'delta_lambda={delta_lambda}, lin_spaced=True, nproc=128, '
+
+    if (max_num_spec is not None) and (max_num_spec > 0):
+        text += f'max_num_spec={max_num_spec},  '
 
     if use_old_weights:
         text += 'use_old_weights=True)\n\n'

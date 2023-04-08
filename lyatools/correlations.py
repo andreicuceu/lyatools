@@ -48,9 +48,6 @@ def make_correlation_runs(config, job, analysis_struct, corr_types, catalogue, d
                                            lyb=True, dmat=True, name='xdmat_lyb_qso',
                                            delta_job_ids=delta_job_ids))
 
-    if len(job_ids) < 1:
-        job_ids = None
-
     return job_ids
 
 
@@ -78,14 +75,14 @@ def run_correlation(config,  job, analysis_struct, catalogue=None, cross=False, 
 
     # Get setting we need
     env_command = job.get('env_command')
-    rp_min = job.getfloat('rp_min')
-    rp_max = job.getfloat('rp_max')
-    rt_max = job.getfloat('rt_max')
-    num_bins_rp = job.getint('num_bins_rp')
-    num_bins_rt = job.getint('num_bins_rt')
-    fid_Om = job.getfloat('fid_Om')
-    dmat_rejection = job.getfloat('dmat_rejection')
-    rebin_factor = job.getint('rebin_factor', None)
+    rp_min = config.getfloat('rp_min')
+    rp_max = config.getfloat('rp_max')
+    rt_max = config.getfloat('rt_max')
+    num_bins_rp = config.getint('num_bins_rp')
+    num_bins_rt = config.getint('num_bins_rt')
+    fid_Om = config.getfloat('fid_Om')
+    dmat_rejection = config.getfloat('dmat_rejection')
+    rebin_factor = config.getint('rebin_factor', None)
 
     # Create the script
     text = header

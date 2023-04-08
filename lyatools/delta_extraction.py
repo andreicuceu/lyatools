@@ -18,9 +18,6 @@ def make_delta_runs(config, job, qq_dir, zcat_file, analysis_struct, zcat_job_id
                                   zcat_job_id=zcat_job_id, true_continuum=true_continuum)
         job_ids += [id]
 
-    if len(job_ids) < 1:
-        return None
-
     return job_ids
 
 
@@ -31,9 +28,9 @@ def run_delta_extraction(config, job, qq_dir, analysis_struct, catalogue, region
     submit_utils.set_umask()
 
     if region_name == 'lya':
-        deltas_dirname = analysis_struct.deltas_lya_dir
+        deltas_dirname = analysis_struct.deltas_lya_dir / 'Delta'
     elif region_name == 'lyb':
-        deltas_dirname = analysis_struct.deltas_lyb_dir
+        deltas_dirname = analysis_struct.deltas_lyb_dir / 'Delta'
     else:
         raise ValueError('Unkown region name. Choose from ["lya", "lyb"].')
 

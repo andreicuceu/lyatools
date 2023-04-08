@@ -55,6 +55,7 @@ class RunMocks:
 
     def run_mocks(self):
         print(f'Running Lyman-alpha forest mocks with seeds {self.qq_seeds}.')
+        submit_utils.print_spacer_line()
 
         run_seeds = submit_utils.get_seed_list(self.qq_seeds)
 
@@ -146,10 +147,10 @@ class RunMocks:
         delta_job_ids = None
         if self.run_deltas_flag:
             if raw_analysis:
-                print('Starting raw deltas jobs for seed {seed}.')
+                print(f'Starting raw deltas jobs for seed {seed}.')
                 delta_job_ids = self.run_raw_deltas(seed, analysis_struct, zcat_job_id=zcat_job_id)
             else:
-                print('Starting delta extraction jobs for seed {seed}.')
+                print(f'Starting delta extraction jobs for seed {seed}.')
                 delta_job_ids = self.run_delta_extraction(seed, analysis_struct,
                                                           true_continuum=true_continuum,
                                                           zcat_job_id=zcat_job_id)
@@ -158,7 +159,7 @@ class RunMocks:
         # Run correlations
         corr_job_ids = None
         if self.run_corr_flag:
-            print('Starting correlation jobs for seed {seed}.')
+            print(f'Starting correlation jobs for seed {seed}.')
             corr_job_ids = self.run_correlations(seed, analysis_struct, delta_job_ids=delta_job_ids)
         submit_utils.print_spacer_line()
 
@@ -166,7 +167,7 @@ class RunMocks:
         corr_files = {}
         job_id = None
         if self.run_export_flag:
-            print('Starting export jobs for seed {seed}.')
+            print(f'Starting export jobs for seed {seed}.')
             corr_files, job_id = self.run_export(seed, analysis_struct, corr_job_ids=corr_job_ids)
         submit_utils.print_spacer_line()
 

@@ -107,7 +107,7 @@ def run_job(script, dependency_ids=None, no_submit=False):
     if isinstance(dependency_ids, int) and dependency_ids > 0:
         dependency = f"--dependency=afterok:{dependency_ids} "
     elif isinstance(dependency_ids, list) and len(dependency_ids) > 0:
-        valid_deps = [str(j) for j in dependency_ids if j > 0]
+        valid_deps = [str(j) for j in dependency_ids if (j is not None and j > 0)]
         if valid_deps:
             dependency = f"--dependency=afterok:{':'.join(valid_deps)} "
 
