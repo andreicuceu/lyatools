@@ -34,7 +34,7 @@ class QQDir:
     """
     An object that contains the directory structure for a quickquasars run.
     """
-    main_path: str
+    main_path: Union[str, Path]
     qq_dirname: str
     spectra_dirname: str = 'spectra-16'
     run_dirname: str = 'run_files'

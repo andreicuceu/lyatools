@@ -1,5 +1,3 @@
-from subprocess import run
-
 from . import submit_utils
 
 JOB_CONFIGS = {'cf_lya_lya': 2.0, 'dmat_lya_lya': 2.0,
@@ -8,118 +6,134 @@ JOB_CONFIGS = {'cf_lya_lya': 2.0, 'dmat_lya_lya': 2.0,
                'xcf_lyb_qso': 0.25, 'xdmat_lyb_qso': 0.25}
 
 
-def make_correlation_runs(args, analysis_dir, corr_types, catalogue):
+def make_correlation_runs(config, job, analysis_struct, corr_types, catalogue, delta_job_ids=None):
     submit_utils.set_umask()
+    job_ids = []
+
+    no_comput_corr = config.getboolean('no_compute_corr')
+    compute_dmat = config.getboolean('compute_dmat')
 
     if 'lya_lya' in corr_types:
-        if not args.no_compute_corr:
-            run_correlation(args, analysis_dir, run_name='cf_lya_lya')
-        if args.compute_dmat:
-            run_correlation(args, analysis_dir, dmat=True, run_name='dmat_lya_lya')
+        if not no_comput_corr:
+            job_ids.append(run_correlation(config, job, analysis_struct, name='cf_lya_lya',
+                                           delta_job_ids=delta_job_ids))
+        if compute_dmat:
+            job_ids.append(run_correlation(config, job, analysis_struct, dmat=True,
+                                           name='dmat_lya_lya', delta_job_ids=delta_job_ids))
 
     if 'lya_lyb' in corr_types:
-        if args.deltas_dir_lyb is None:
-            raise ValueError('Asked for lya_lyb correlation, but did not give path to lyb deltas')
-
-        if not args.no_compute_corr:
-            run_correlation(args, analysis_dir, lyb=True, run_name='cf_lya_lyb')
-        if args.compute_dmat:
-            run_correlation(args, analysis_dir, lyb=True, dmat=True, run_name='dmat_lya_lyb')
+        if not no_comput_corr:
+            job_ids.append(run_correlation(config, job, analysis_struct, lyb=True,
+                                           name='cf_lya_lyb', delta_job_ids=delta_job_ids))
+        if compute_dmat:
+            job_ids.append(run_correlation(config, job, analysis_struct, lyb=True, dmat=True,
+                                           name='dmat_lya_lyb', delta_job_ids=delta_job_ids))
 
     if 'lya_qso' in corr_types:
-        if args.catalogue is None:
-            raise ValueError('Asked for lya_qso correlation, but did not give path to qso catalog')
-
-        if not args.no_compute_corr:
-            run_correlation(args, analysis_dir, catalogue, cross=True, run_name='xcf_lya_qso')
-        if args.compute_dmat:
-            run_correlation(args, analysis_dir, catalogue, cross=True, dmat=True,
-                            run_name='xdmat_lya_qso')
+        if not no_comput_corr:
+            job_ids.append(run_correlation(config, job, analysis_struct, catalogue, cross=True,
+                                           name='xcf_lya_qso', delta_job_ids=delta_job_ids))
+        if compute_dmat:
+            job_ids.append(run_correlation(config, job, analysis_struct, catalogue, cross=True,
+                                           dmat=True, name='xdmat_lya_qso',
+                                           delta_job_ids=delta_job_ids))
 
     if 'lyb_qso' in corr_types:
-        if args.deltas_dir_lyb is None:
-            raise ValueError('Asked for lyb_qso correlation, but did not give path to lyb deltas')
-        if args.catalogue is None:
-            raise ValueError('Asked for lya_qso correlation, but did not give path to qso catalog')
+        if not no_comput_corr:
+            job_ids.append(run_correlation(config, job, analysis_struct, catalogue, cross=True,
+                                           lyb=True, name='xcf_lyb_qso',
+                                           delta_job_ids=delta_job_ids))
+        if compute_dmat:
+            job_ids.append(run_correlation(config, job, analysis_struct, catalogue, cross=True,
+                                           lyb=True, dmat=True, name='xdmat_lyb_qso',
+                                           delta_job_ids=delta_job_ids))
 
-        if not args.no_compute_corr:
-            run_correlation(args, analysis_dir, catalogue, cross=True, lyb=True,
-                            run_name='xcf_lyb_qso')
-        if args.compute_dmat:
-            run_correlation(args, analysis_dir, catalogue, cross=True, lyb=True, dmat=True,
-                            run_name='xdmat_lyb_qso')
+    if len(job_ids) < 1:
+        job_ids = None
+
+    return job_ids
 
 
-def run_correlation(args, analysis_dir, catalogue=None, cross=False, lyb=False, dmat=False,
-                    run_name='cf_lya_lya'):
-    time_hours = args.slurm_hours
-    if time_hours is None:
-        time_hours = JOB_CONFIGS[run_name]
+def run_correlation(config,  job, analysis_struct, catalogue=None, cross=False, lyb=False,
+                    dmat=False, name='cf_lya_lya', delta_job_ids=None):
+    slurm_hours = config.getfloat(f'{name}_slurm_hours', None)
+    if slurm_hours is None:
+        slurm_hours = JOB_CONFIGS[name]
 
-    time = submit_utils.convert_job_time(time_hours)
-
+    nproc = job.getint('nproc')
     # Make the header
-    header = submit_utils.make_header(args.nersc_machine, args.queue, time=time,
-                                      omp_threads=args.nproc, job_name=run_name,
-                                      err_file=analysis_dir.logs_dir/f'{run_name}-%j.err',
-                                      out_file=analysis_dir.logs_dir/f'{run_name}-%j.out')
+    header = submit_utils.make_header(job.get('nersc_machine'), job.get('slurm_queue'),
+                                      time=slurm_hours, omp_threads=nproc, job_name=name,
+                                      err_file=analysis_struct.logs_dir/f'{name}-%j.err',
+                                      out_file=analysis_struct.logs_dir/f'{name}-%j.out')
 
-    zmin, zmax = args.z_limits
-    script_type = run_name.split('_')[0]
-    if args.name_string is None:
-        output_path = analysis_dir.corr_dir / f'{run_name}_{zmin}_{zmax}.fits.gz'
+    # TODO implement other options for redshift bins
+    zmin, zmax = 0, 10
+    script_type = name.split('_')[0]
+    name_string = config.get('name_string', None)
+    if name_string is None:
+        output_path = analysis_struct.corr_dir / f'{name}_{zmin}_{zmax}.fits.gz'
     else:
-        output_path = analysis_dir.corr_dir / f'{run_name}_{zmin}_{zmax}_{args.name_string}.fits.gz'
+        output_path = analysis_struct.corr_dir / f'{name}_{zmin}_{zmax}_{name_string}.fits.gz'
+
+    # Get setting we need
+    env_command = job.get('env_command')
+    rp_min = job.getfloat('rp_min')
+    rp_max = job.getfloat('rp_max')
+    rt_max = job.getfloat('rt_max')
+    num_bins_rp = job.getint('num_bins_rp')
+    num_bins_rt = job.getint('num_bins_rt')
+    fid_Om = job.getfloat('fid_Om')
+    dmat_rejection = job.getfloat('dmat_rejection')
+    rebin_factor = job.getint('rebin_factor', None)
 
     # Create the script
     text = header
-    text += f'{args.env_command}\n\n'
-    text += f'srun -n 1 -c {args.nproc} picca_{script_type}.py '
+    text += f'{env_command}\n\n'
+    text += f'srun -n 1 -c {nproc} picca_{script_type}.py '
     text += f'--out {output_path} '
 
     if cross and lyb:
-        text += f'--in-dir {analysis_dir.deltas_lyb_dir} '
+        text += f'--in-dir {analysis_struct.deltas_lyb_dir} '
     else:
-        text += f'--in-dir {analysis_dir.deltas_lya_dir} '
+        text += f'--in-dir {analysis_struct.deltas_lya_dir} '
 
     if lyb and not cross:
-        text += f'--in-dir2 {analysis_dir.deltas_lyb_dir} '
+        text += f'--in-dir2 {analysis_struct.deltas_lyb_dir} '
 
     if cross:
         text += f'--drq {catalogue} --mode desi_mocks --z-evol-obj 1.44 --rp-min -200 '
     else:
-        text += f'--rp-min {args.rp_min} '
+        text += f'--rp-min {rp_min} '
 
-    text += f'--rp-max {args.rp_max} --rt-max {args.rt_max} --nt {args.num_bins_rt} '
+    text += f'--rp-max {rp_max} --rt-max {rt_max} --nt {num_bins_rt} '
     if cross:
-        text += f'--np {2*args.num_bins_rp} '
+        text += f'--np {2*num_bins_rp} '
     else:
-        text += f'--np {args.num_bins_rp} '
+        text += f'--np {num_bins_rp} '
 
-    text += f'--z-cut-min {zmin} --z-cut-max {zmax} --fid-Om {args.fid_Om} --nproc {args.nproc} '
+    text += f'--z-cut-min {zmin} --z-cut-max {zmax} --fid-Om {fid_Om} --nproc {nproc} '
     text += '--fid-Or 7.97505418919554e-05 '
 
-    if args.no_project:
+    if config.getboolean('no_project'):
         text += '--no-project '
 
     if dmat:
-        text += f'--rej {args.dmat_rejection} '
+        text += f'--rej {dmat_rejection} '
 
-    if cross and args.no_remove_mean_lambda_obs:
+    if cross and config.getboolean('no_remove_mean_lambda_obs'):
         text += '--no-remove-mean-lambda-obs '
 
-    if args.rebin_factor is not None:
-        text += f'--rebin-factor {args.rebin_factor} '
+    if rebin_factor is not None:
+        text += f'--rebin-factor {rebin_factor} '
 
     text += '\n\n'
 
-    slurm_script_path = analysis_dir.scripts_dir / f'{run_name}_{zmin}_{zmax}.sh'
+    script_path = analysis_struct.scripts_dir / f'{name}_{zmin}_{zmax}.sh'
 
-    # Write the script.
-    with open(slurm_script_path, 'w') as f:
-        f.write(text)
-    submit_utils.make_file_executable(slurm_script_path)
+    submit_utils.write_script(script_path, text)
 
-    # Run the script
-    if not args.no_submit and not output_path.is_file():
-        run(['sbatch', slurm_script_path])
+    job_id = submit_utils.run_job(script_path, dependency_ids=delta_job_ids,
+                                  no_submit=config.getboolean('no_submit'))
+
+    return job_id

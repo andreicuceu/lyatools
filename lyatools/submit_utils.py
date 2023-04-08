@@ -1,8 +1,27 @@
 import os
 import numpy as np
-from subprocess import call
+from subprocess import run
 from pathlib import Path
 from typing import Union
+
+import lyatools
+
+
+def get_seed_list(qq_seeds):
+    # Get list of seeds
+    run_seeds = []
+    for seed in qq_seeds:
+        seed_range = seed.split('-')
+
+        if len(seed_range) == 1:
+            run_seeds.append(int(seed_range[0]))
+        elif len(seed_range) == 2:
+            run_seeds += list(np.arange(int(seed_range[0]), int(seed_range[1])))
+        else:
+            raise ValueError(f'Unknown seed type {seed}. Must be int or range (e.g. 0-5)')
+
+    run_seeds.sort()
+    return run_seeds
 
 
 def make_header(machine: str = 'perl', queue: str = 'regular', nodes: int = int(1),
@@ -44,7 +63,7 @@ def make_header(machine: str = 'perl', queue: str = 'regular', nodes: int = int(
         machine_string = 'haswell'
         assert omp_threads <= 64
     else:
-        raise ValueError(f'make_header called with uknown machine name {machine}.'
+        raise ValueError(f'make_header called with unknown machine name {machine}.'
                          ' Choose from ["perl", "cori"].')
 
     header = ''
@@ -65,28 +84,47 @@ def make_header(machine: str = 'perl', queue: str = 'regular', nodes: int = int(
     return header
 
 
-def run_job(header: str, command: str, path: str, no_submit: bool = False) -> None:
+def write_script(script_path, text):
+    with open(script_path, 'w+') as f:
+        f.write(text)
+
+    make_file_executable(script_path)
+
+
+def run_job(script, dependency_ids=None, no_submit=False):
     """Make a job script and run it
 
     Parameters
     ----------
-    header : str
-        Job header (output of make_header function)
-    command : str
-        Command for job to execute
-    path : str
+    script : str
         Path where script will pe written
     no_submit : bool, optional
         flag for submitting the job, by default False
     """
-    script_text = header + '\n' + command
+    dependency = ""
+    if isinstance(dependency_ids, int) and dependency_ids > 0:
+        dependency = f"--dependency=afterok:{dependency_ids} "
+    elif isinstance(dependency_ids, list) and len(dependency_ids) > 0:
+        valid_deps = [str(j) for j in dependency_ids if j > 0]
+        if valid_deps:
+            dependency = f"--dependency=afterok:{':'.join(valid_deps)} "
 
-    with open(path, 'w+') as script:
-        script.write(script_text)
+    command = f"sbatch {dependency}{script} | tr -dc '0-9'"
 
+    jobid = None
     if not no_submit:
-        # Send the run script.
-        _ = call(f'sbatch {script}', shell=True)
+        print(f'Submitting script {script}')
+        process = run(command, capture_output=True)
+
+        if process.returncode != 0:
+            raise ValueError(f'Running "sbatch {dependency}{script}" returned non-zero exitcode '
+                             f'with error {process.stderr}')
+
+        jobid = int(process.stdout)
+    else:
+        print(f'No submit active. Command prepared: {command}')
+
+    return jobid
 
 
 def convert_job_time(num_hours: float) -> str:
@@ -145,4 +183,44 @@ def make_file_executable(f: Path) -> None:
     f : str
         file
     """
-    call(['chmod', 'ug+x', f])
+    run(['chmod', 'ug+x', f])
+
+
+def find_path(path, enforce=True):
+    """ Find paths on the system.
+    Parameters
+    ----------
+    path : string
+        Input path. Can be absolute or relative to lyatools
+    enforce : bool
+        Flag for enforcing that the path exists
+    """
+    input_path = Path(os.path.expandvars(path))
+
+    # First check if it's an absolute path
+    if input_path.exists():
+        return input_path.resolve()
+
+    # Get the lyatools path and check inside lyatools (this returns lyatools/lyatools)
+    lyatools_path = Path(os.path.dirname(lyatools.__file__))
+
+    # Check the lyatools folder
+    in_lyatools = lyatools_path / input_path
+    if in_lyatools.exists():
+        return in_lyatools.resolve()
+
+    # Check if it's something used for tests
+    in_tests = lyatools_path.parents[0] / 'tests' / input_path
+    if in_tests.exists():
+        return in_tests.resolve()
+
+    # Check from the main lyatools folder
+    in_main = lyatools_path.parents[0] / input_path
+    if in_main.exists():
+        return in_main.resolve()
+
+    if not enforce:
+        print(f'Warning, the path/file was not found: {input_path}')
+        return input_path
+    else:
+        raise RuntimeError(f'The path/file does not exist: {input_path}')

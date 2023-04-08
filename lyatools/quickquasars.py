@@ -1,7 +1,3 @@
-import numpy as np
-from pathlib import Path
-from subprocess import call
-
 from . import dir_handlers, submit_utils
 
 QQ_RUN_ARGS = {
@@ -82,9 +78,9 @@ def run_qq(qq_run_type, test_run, no_submit, *args):
 
     qq_script = create_qq_script(qq_run_type, qq_args, test_run, *args)
 
-    if not no_submit:
-        print(f'Submitting script {qq_script}')
-        call(f'sbatch {qq_script}', shell=True)
+    job_id = submit_utils.run_job(qq_script, no_submit=no_submit)
+
+    return job_id
 
 
 def create_qq_script(qq_dirname, qq_args, test_run, input_dir, output_dir, nersc_machine='perl',
@@ -167,9 +163,7 @@ def create_qq_script(qq_dirname, qq_args, test_run, input_dir, output_dir, nersc
 
     # Write the script to file and run it.
     script_path = qq_dir.scripts_dir / 'run_quickquasars.sh'
-    with open(script_path, 'w') as f:
-        f.write(full_text)
 
-    submit_utils.make_file_executable(script_path)
+    submit_utils.write_script(script_path, full_text)
 
     return script_path

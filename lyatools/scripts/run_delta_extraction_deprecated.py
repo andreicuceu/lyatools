@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
-from lyatools.multi_run import multi_run_delta_extraction
+from lyatools.multi_run_deprecated import multi_run_delta_extraction
 
 
 def main():
@@ -19,14 +19,14 @@ def main():
     parser.add_argument('--qq-run-type', type=str, required=True,
                         help='Directory names of the qq runs')
 
+    parser.add_argument('--run-type', type=str, default=None, required=False,
+                        help='Directory names of the picca runs')
+
+    parser.add_argument('--analysis-name', type=str, default=None, required=False,
+                        help='Analysis name. One run can have multiple analyses')
+
     parser.add_argument('--delta-lambda', type=float, default=2.4, required=False,
                         help=('Bin size for wavelength grid [Angstrom]'))
-
-    parser.add_argument('--raw-dir', type=str, default=None, required=False,
-                        help='Raw directory with all v9.0 lyacolore runs')
-
-    parser.add_argument('--raw-name', type=str, default='desi-3-raw', required=False,
-                        help='Name for raw directory in the picca_on_mocks folders')
 
     parser.add_argument('--run-true-continuum', action="store_true",
                         help='Whether to run the true continuum analyses.')

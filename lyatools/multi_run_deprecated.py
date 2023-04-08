@@ -10,23 +10,6 @@ from lyatools.correlations import make_correlation_runs
 from lyatools.stack import stack_export_correlations
 
 
-def get_seed_list(qq_seeds):
-    # Get list of seeds
-    run_seeds = []
-    for seed in qq_seeds:
-        seed_range = seed.split('-')
-
-        if len(seed_range) == 1:
-            run_seeds.append(int(seed_range[0]))
-        elif len(seed_range) == 2:
-            run_seeds += list(np.arange(int(seed_range[0]), int(seed_range[1])))
-        else:
-            raise ValueError(f'Unknown seed type {seed}. Must be int or range (e.g. 0-5)')
-
-    run_seeds.sort()
-    return run_seeds
-
-
 def multi_run_qq(input_dir_all, output_dir_all, qq_seeds, qq_run_type, test_run, no_submit, *args):
     """Create and submit QQ runs for multiple mock realizations
 
@@ -55,7 +38,7 @@ def multi_run_qq(input_dir_all, output_dir_all, qq_seeds, qq_run_type, test_run,
         output_dir = Path(output_dir_all) / f'v9.0.{seed}'
         print(f'Submitting QQ run for mock v9.0.{seed}')
 
-        run_qq(qq_run_type, test_run, no_submit, input_dir, output_dir, *args)
+        _ = run_qq(qq_run_type, test_run, no_submit, input_dir, output_dir, *args)
 
 
 def multi_run_delta_extraction(args):
@@ -71,6 +54,9 @@ def multi_run_delta_extraction(args):
     for seed in run_seeds:
         qq_dir = Path(args.input_dir) / f'v9.0.{seed}' / f'{args.qq_run_type}'
         print(f'Making catalogues for quickquasars run in {qq_dir}')
+
+        if args.run_type is None:
+            args.run_type = args.qq_run_type
 
         # Make the zcat if it does not exist already
         zcat_file = qq_dir / 'zcat.fits'

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
-from lyatools.multi_run import multi_export
+from lyatools.multi_run_deprecated import multi_export
 
 
 def main():
