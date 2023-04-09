@@ -98,12 +98,15 @@ def run_correlation(config,  job, analysis_struct, catalogue=None, cross=False, 
     text += f'--out {output_path} '
 
     if cross and lyb:
-        text += f'--in-dir {analysis_struct.deltas_lyb_dir} '
+        in_dir = analysis_struct.deltas_lyb_dir / 'Delta'
     else:
-        text += f'--in-dir {analysis_struct.deltas_lya_dir} '
+        in_dir = analysis_struct.deltas_lya_dir / 'Delta'
+
+    text += f'--in-dir {in_dir} '
 
     if lyb and not cross:
-        text += f'--in-dir2 {analysis_struct.deltas_lyb_dir} '
+        in_dir2 = analysis_struct.deltas_lyb_dir / 'Delta'
+        text += f'--in-dir2 {in_dir2} '
 
     if cross:
         text += f'--drq {catalogue} --mode desi_mocks --z-evol-obj 1.44 --rp-min -200 '

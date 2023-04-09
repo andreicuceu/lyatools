@@ -26,9 +26,9 @@ def run_raw_deltas(input_dir, zcat_file, analysis_struct, job, zcat_job_id=None,
                    region_name='lya', lambda_rest_min=1040., lambda_rest_max=1200.,
                    delta_lambda=0.8, max_num_spec=None, use_old_weights=False):
     if region_name == 'lya':
-        deltas_dir = analysis_struct.deltas_lya_dir / 'Delta'
+        deltas_dir = analysis_struct.deltas_lya_dir
     elif region_name == 'lyb':
-        deltas_dir = analysis_struct.deltas_lyb_dir / 'Delta'
+        deltas_dir = analysis_struct.deltas_lyb_dir
     else:
         raise ValueError('Unkown region name. Choose from ["lya", "lyb"].')
 

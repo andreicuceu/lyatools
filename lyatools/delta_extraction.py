@@ -28,9 +28,9 @@ def run_delta_extraction(config, job, qq_dir, analysis_struct, catalogue, region
     submit_utils.set_umask()
 
     if region_name == 'lya':
-        deltas_dirname = analysis_struct.deltas_lya_dir / 'Delta'
+        deltas_dirname = analysis_struct.deltas_lya_dir
     elif region_name == 'lyb':
-        deltas_dirname = analysis_struct.deltas_lyb_dir / 'Delta'
+        deltas_dirname = analysis_struct.deltas_lyb_dir
     else:
         raise ValueError('Unkown region name. Choose from ["lya", "lyb"].')
 
