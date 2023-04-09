@@ -229,7 +229,7 @@ class RunMocks:
                                         self.job, zcat_job_id=zcat_job_id,
                                         run_lyb_region=self.deltas.getboolean('run_lyb_region'),
                                         delta_lambda=self.deltas.getfloat('delta_lambda'),
-                                        max_num_spec=self.deltas.getfloat('max_num_spec'),
+                                        max_num_spec=self.deltas.getint('max_num_spec', None),
                                         use_old_weights=self.deltas.getboolean('use_old_weights'))
 
         return delta_job_ids

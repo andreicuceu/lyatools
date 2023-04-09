@@ -91,10 +91,13 @@ def create_config(config, config_path, spectra_dir, catalogue, deltas_dir,
                           'lambda min': config.get('lambda_min'),
                           'lambda max': config.get('lambda_max'),
                           'lambda min rest frame': str(lambda_rest_min),
-                          'lambda max rest frame': str(lambda_rest_max),
-                          'minimum number pixels in forest': config.get('num_pix_min')}
+                          'lambda max rest frame': str(lambda_rest_max)}
 
-    if config.getint('max_num_spec') > 0:
+    num_pix_min = config.getint('num_pix_min', None)
+    if num_pix_min is not None and num_pix_min >= 0:
+        out_config['data']['minimum number pixels in forest'] = config.get('num_pix_min')
+
+    if config.getint('max_num_spec', -1) > 0:
         out_config['data']['max num spec'] = config.get('max_num_spec')
 
     out_config['corrections'] = {'num corrections': '0'}
