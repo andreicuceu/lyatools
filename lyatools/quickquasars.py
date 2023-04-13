@@ -79,10 +79,10 @@ def create_qq_script(config, job, qq_dirname, qq_args, seed, input_dir, output_d
 
     # Make the text body of the script.
     text = '\n\n'
-    if job.get('env_command') is None:
+    if job.get('desi_env_command', None) is None:
         text += 'source /global/common/software/desi/desi_environment.sh master'
     else:
-        text += job.get('env_command')
+        text += job.get('desi_env_command')
 
     text += '\n\n'
     text += 'echo "get list of skewers to run ..."\n\n'
