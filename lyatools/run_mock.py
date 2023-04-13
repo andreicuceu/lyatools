@@ -50,6 +50,8 @@ class RunMocks:
         self.run_true_cont_flag = self.config['control'].getboolean('run_true_continuum')
         self.no_run_cont_fit_flag = self.config['control'].getboolean('no_run_continuum_fitted')
 
+        self.dla_flag = None
+
     def run_mocks(self):
         print(f'Running Lyman-alpha forest mocks with seeds {self.qq_seeds}.')
         submit_utils.print_spacer_line()
@@ -73,6 +75,11 @@ class RunMocks:
 
                 zcat_job_id = self.run_zcat(seed, qq_job_id)
                 submit_utils.print_spacer_line()
+
+                if self.dla_flag:
+                    dlacat_job_id = self.run_dla_cat(seed, qq_job_id)
+                    submit_utils.print_spacer_line()
+                    zcat_job_id = [zcat_job_id, dlacat_job_id]
 
             analysis_struct, true_analysis_struct, \
                 raw_analysis_struct = self.get_analysis_dirs(seed)
@@ -186,8 +193,8 @@ class RunMocks:
         output_dir = Path(self.qq_dir) / f'v9.0.{seed}'
         print(f'Submitting QQ run for mock v9.0.{seed}')
 
-        qq_job_id = run_qq(self.qq_run_type, seed, self.job.getboolean('test_run'),
-                           self.job.getboolean('no_submit'), input_dir, output_dir)
+        qq_job_id, self.dla_flag = run_qq(self.qq, self.job, self.qq_run_type, seed,
+                                          input_dir, output_dir)
 
         return qq_job_id
 
@@ -201,7 +208,7 @@ class RunMocks:
         if zcat_file.is_file():
             return
 
-        print('Making DESI zcat')
+        print('Submitting DESI zcat job')
         header = submit_utils.make_header(self.job.get('nersc_machine'), nodes=1, time=0.2,
                                           omp_threads=128, job_name=f'zcat_{seed}',
                                           err_file=qq_struct.log_dir/'run-%j.err',
@@ -219,6 +226,32 @@ class RunMocks:
                                            no_submit=self.job.getboolean('no_submit'))
 
         return zcat_job_id
+
+    def run_dla_cat(self, seed, qq_job_id=None):
+        main_path = Path(self.qq_dir) / f'v9.0.{seed}'
+        qq_struct = dir_handlers.QQDir(main_path, self.qq_run_type)
+
+        print('Submitting DLA catalog job')
+        header = submit_utils.make_header(self.job.get('nersc_machine'), nodes=1, time=0.2,
+                                          omp_threads=128, job_name=f'dlacat_{seed}',
+                                          err_file=qq_struct.log_dir/'run-%j.err',
+                                          out_file=qq_struct.log_dir/'run-%j.out')
+
+        text = header
+        env_command = self.job.get('env_command')
+        text += f'{env_command}\n\n'
+        text += f'lyatools-make-dla-cat -i {qq_struct.spectra_dir} -o {qq_struct.qq_dir} '
+
+        mask_nhi_cut = self.qq.getfloat('dla_mask_nhi_cut')
+        text += f'--mask-nhi-cut {mask_nhi_cut} --nproc {128}'
+
+        script_path = qq_struct.scripts_dir / 'make_dlacat.sh'
+        submit_utils.write_script(script_path, text)
+
+        dlacat_job_id = submit_utils.run_job(script_path, dependency_ids=qq_job_id,
+                                             no_submit=self.job.getboolean('no_submit'))
+
+        return dlacat_job_id
 
     def run_raw_deltas(self, seed, analysis_struct, zcat_job_id=None):
         main_path = Path(self.qq_dir) / f'v9.0.{seed}'
@@ -239,8 +272,17 @@ class RunMocks:
         qq_dir = Path(self.qq_dir) / f'v9.0.{seed}' / f'{self.qq_run_type}'
         zcat_file = qq_dir / 'zcat.fits'
 
+        mask_dla_flag = self.deltas.getboolean('mask_DLAs')
+        mask_dla_cat = None
+        if mask_dla_flag:
+            if self.dla_flag is not None and not self.dla_flag:
+                raise ValueError('Asked for DLA masking but there are no DLAs in the qq run')
+
+            mask_nhi_cut = self.qq.getfloat('dla_mask_nhi_cut')
+            mask_dla_cat = qq_dir / f'dla_cat_mask_{mask_nhi_cut:.2f}.fits'
+
         delta_job_ids = make_delta_runs(self.deltas, self.job, qq_dir, zcat_file, analysis_struct,
-                                        zcat_job_id, true_continuum=true_continuum)
+                                        mask_dla_cat, zcat_job_id, true_continuum=true_continuum)
 
         return delta_job_ids
 

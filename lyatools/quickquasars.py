@@ -2,7 +2,7 @@ from . import dir_handlers, submit_utils
 from lyatools.qq_run_args import QQ_RUN_ARGS
 
 
-def run_qq(qq_run_type, seed, test_run, no_submit, *args):
+def run_qq(config, job, qq_run_type, seed, input_dir, output_dir):
     """Create a QQ run and submit it
 
     Parameters
@@ -18,7 +18,7 @@ def run_qq(qq_run_type, seed, test_run, no_submit, *args):
     """
 
     # Check if it is a test run and update args accordingly
-    if test_run:
+    if job.getboolean('test_run'):
         print('Test run enabled, overriding arguments to setup it up.')
         qq_run_type = 'desi-test'
 
@@ -29,42 +29,45 @@ def run_qq(qq_run_type, seed, test_run, no_submit, *args):
 
     print('Found the following arguments to pass to quickquasars:')
     qq_args = ''
+    dla_flag = False
     for key, val in run_args.items():
         qq_args += f' --{key} {val}'
+
+        if 'dla' in key:
+            dla_flag = True
+
     qq_args += f' --seed {seed}'
     print(qq_args)
 
-    qq_script = create_qq_script(qq_run_type, qq_args, seed, test_run, *args)
+    qq_script = create_qq_script(config, job, qq_run_type, qq_args, seed, input_dir, output_dir)
 
-    job_id = submit_utils.run_job(qq_script, no_submit=no_submit)
+    job_id = submit_utils.run_job(qq_script, no_submit=job.getboolean('no_submit'))
 
-    return job_id
+    return job_id, dla_flag
 
 
-def create_qq_script(qq_dirname, qq_args, seed, test_run, input_dir, output_dir,
-                     nersc_machine='perl', slurm_hours=0.5, slurm_queue='regular',
-                     nodes=8, nproc=32, env_command=None):
+def create_qq_script(config, job, qq_dirname, qq_args, seed, input_dir, output_dir):
 
     submit_utils.set_umask()
 
-    if test_run:
+    if job.getboolean('test_run'):
         print('Test run enabled, only using first 10 transmission files.')
         slurm_queue = 'debug'
         nodes = 1
         nproc = 2
         slurm_hours = 0.25
-
-    # # qq_string = ''
-    # for arg in qq_args:
-    #     qq_string += (' ' + arg)
-    # print(qq_string)
+    else:
+        slurm_queue = job.get('slurm_queue', 'regular')
+        nodes = config.getint('nodes', 8)
+        nproc = config.getint('nproc', 32)
+        slurm_hours = config.getfloat('slurm_hours', 0.5)
 
     # Set up the directory structure to put everything into.
     qq_dir = dir_handlers.QQDir(output_dir, qq_dirname)
 
     # Make the header
     time = submit_utils.convert_job_time(slurm_hours)
-    header = submit_utils.make_header(nersc_machine, slurm_queue, nodes, time=time,
+    header = submit_utils.make_header(job.get('nersc_machine'), slurm_queue, nodes, time=time,
                                       omp_threads=nproc, job_name=f'qq_{seed}',
                                       err_file=qq_dir.run_dir/'run-%j.err',
                                       out_file=qq_dir.run_dir/'run-%j.out')
@@ -76,15 +79,15 @@ def create_qq_script(qq_dirname, qq_args, seed, test_run, input_dir, output_dir,
 
     # Make the text body of the script.
     text = '\n\n'
-    if env_command is None:
+    if job.get('env_command') is None:
         text += 'source /global/common/software/desi/desi_environment.sh master'
     else:
-        text += env_command
+        text += job.get('env_command')
 
     text += '\n\n'
     text += 'echo "get list of skewers to run ..."\n\n'
 
-    if test_run:
+    if job.getboolean('test_run'):
         text += 'echo "test run enabled, selecting only first 10 files"\n'
         text += f'files=`ls -1 {input_dir}/*/*/transmission*.fits* | head -10`\n'
     else:
