@@ -60,10 +60,9 @@ def run_correlation(config,  job, analysis_struct, catalogue=None, cross=False, 
     if slurm_hours is None:
         slurm_hours = JOB_CONFIGS[name]
 
-    nproc = job.getint('nproc')
     # Make the header
     header = submit_utils.make_header(job.get('nersc_machine'), job.get('slurm_queue'),
-                                      time=slurm_hours, omp_threads=nproc, job_name=name,
+                                      time=slurm_hours, omp_threads=128, job_name=name,
                                       err_file=analysis_struct.logs_dir/f'{name}-%j.err',
                                       out_file=analysis_struct.logs_dir/f'{name}-%j.out')
 
@@ -94,7 +93,7 @@ def run_correlation(config,  job, analysis_struct, catalogue=None, cross=False, 
     # Create the script
     text = header
     text += f'{env_command}\n\n'
-    text += f'srun -n 1 -c {nproc} picca_{script_type}.py '
+    text += f'srun -n 1 -c {128} picca_{script_type}.py '
     text += f'--out {output_path} '
 
     if cross and lyb:
@@ -119,7 +118,7 @@ def run_correlation(config,  job, analysis_struct, catalogue=None, cross=False, 
     else:
         text += f'--np {num_bins_rp} '
 
-    text += f'--z-cut-min {zmin} --z-cut-max {zmax} --fid-Om {fid_Om} --nproc {nproc} '
+    text += f'--z-cut-min {zmin} --z-cut-max {zmax} --fid-Om {fid_Om} --nproc {128} '
     text += '--fid-Or 7.97505418919554e-05 '
 
     if config.getboolean('no_project'):
