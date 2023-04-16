@@ -1,18 +1,20 @@
 from . import submit_utils
 
-JOB_CONFIGS = {'cf_lya_lya': 2.0, 'dmat_lya_lya': 2.0,
-               'cf_lya_lyb': 1.2, 'dmat_lya_lyb': 1.2,
-               'xcf_lya_qso': 0.5, 'xdmat_lya_qso': 0.5,
-               'xcf_lyb_qso': 0.25, 'xdmat_lyb_qso': 0.25}
+JOB_CONFIGS = {'cf_lya_lya': 2.0, 'dmat_lya_lya': 2.0, 'metal_dmat_lya_lya': 2.0,
+               'cf_lya_lyb': 1.2, 'dmat_lya_lyb': 1.2, 'metal_dmat_lya_lyb': 1.2,
+               'xcf_lya_qso': 0.5, 'xdmat_lya_qso': 0.5, 'metal_xdmat_lya_qso': 0.5,
+               'xcf_lyb_qso': 0.25, 'xdmat_lyb_qso': 0.25, 'metal_xdmat_lyb_qso': 0.25}
 
 
 def make_correlation_runs(config, job, analysis_struct, corr_types, catalogue, delta_job_ids=None):
     submit_utils.set_umask()
     cf_out = []
     dmat_out = []
+    metal_out = []
 
     no_comput_corr = config.getboolean('no_compute_corr')
     compute_dmat = config.getboolean('compute_dmat')
+    compute_metals = config.getboolean('compute_metals')
 
     if 'lya_lya' in corr_types:
         if not no_comput_corr:
@@ -21,6 +23,10 @@ def make_correlation_runs(config, job, analysis_struct, corr_types, catalogue, d
         if compute_dmat:
             dmat_out.append(run_correlation(config, job, analysis_struct, dmat=True,
                                             name='dmat_lya_lya', delta_job_ids=delta_job_ids))
+        if compute_metals:
+            metal_out.append(run_correlation(config, job, analysis_struct, metal_dmat=True,
+                                             name='metal_dmat_lya_lya',
+                                             delta_job_ids=delta_job_ids))
 
     if 'lya_lyb' in corr_types:
         if not no_comput_corr:
@@ -29,6 +35,10 @@ def make_correlation_runs(config, job, analysis_struct, corr_types, catalogue, d
         if compute_dmat:
             dmat_out.append(run_correlation(config, job, analysis_struct, lyb=True, dmat=True,
                                             name='dmat_lya_lyb', delta_job_ids=delta_job_ids))
+        if compute_metals:
+            metal_out.append(run_correlation(config, job, analysis_struct, lyb=True,
+                                             metal_dmat=True, name='metal_dmat_lya_lyb',
+                                             delta_job_ids=delta_job_ids))
 
     if 'lya_qso' in corr_types:
         if not no_comput_corr:
@@ -38,6 +48,10 @@ def make_correlation_runs(config, job, analysis_struct, corr_types, catalogue, d
             dmat_out.append(run_correlation(config, job, analysis_struct, catalogue, cross=True,
                                             dmat=True, name='xdmat_lya_qso',
                                             delta_job_ids=delta_job_ids))
+        if compute_metals:
+            metal_out.append(run_correlation(config, job, analysis_struct, catalogue, cross=True,
+                                             metal_dmat=True, name='metal_xdmat_lya_qso',
+                                             delta_job_ids=delta_job_ids))
 
     if 'lyb_qso' in corr_types:
         if not no_comput_corr:
@@ -48,14 +62,19 @@ def make_correlation_runs(config, job, analysis_struct, corr_types, catalogue, d
             dmat_out.append(run_correlation(config, job, analysis_struct, catalogue, cross=True,
                                             lyb=True, dmat=True, name='xdmat_lyb_qso',
                                             delta_job_ids=delta_job_ids))
+        if compute_metals:
+            metal_out.append(run_correlation(config, job, analysis_struct, catalogue, cross=True,
+                                             lyb=True, metal_dmat=True, name='metal_xdmat_lyb_qso',
+                                             delta_job_ids=delta_job_ids))
 
     cf_paths = [out[0] for out in cf_out]
-    job_ids = [out[1] for out in cf_out] + [out[1] for out in dmat_out]
+    job_ids = [out[1] for out in cf_out] + [out[1] for out in dmat_out] 
+    job_ids += [out[1] for out in metal_out]
     return cf_paths, job_ids
 
 
 def run_correlation(config,  job, analysis_struct, catalogue=None, cross=False, lyb=False,
-                    dmat=False, name='cf_lya_lya', delta_job_ids=None):
+                    dmat=False, metal_dmat=False, name='cf_lya_lya', delta_job_ids=None):
     slurm_hours = config.getfloat(f'{name}_slurm_hours', None)
     if slurm_hours is None:
         slurm_hours = JOB_CONFIGS[name]
@@ -69,6 +88,8 @@ def run_correlation(config,  job, analysis_struct, catalogue=None, cross=False, 
     # TODO implement other options for redshift bins
     zmin, zmax = 0, 10
     script_type = name.split('_')[0]
+    if metal_dmat:
+        script_type = 'metal_' + name.split('_')[1]
     name_string = config.get('name_string', None)
     if name_string is None:
         output_path = analysis_struct.corr_dir / f'{name}_{zmin}_{zmax}.fits.gz'
@@ -121,10 +142,13 @@ def run_correlation(config,  job, analysis_struct, catalogue=None, cross=False, 
     text += f'--z-cut-min {zmin} --z-cut-max {zmax} --fid-Om {fid_Om} --nproc {128} '
     text += '--fid-Or 7.97505418919554e-05 '
 
+    if metal_dmat:
+        text += '--abs-igm SiII(1260) SiIII(1207) SiII(1193) SiII(1190) '
+
     if config.getboolean('no_project'):
         text += '--no-project '
 
-    if dmat:
+    if dmat or metal_dmat:
         text += f'--rej {dmat_rejection} '
 
     if cross and config.getboolean('no_remove_mean_lambda_obs'):
