@@ -143,7 +143,7 @@ def run_correlation(config,  job, analysis_struct, catalogue=None, cross=False, 
     text += '--fid-Or 7.97505418919554e-05 '
 
     if metal_dmat:
-        text += '--abs-igm SiII(1260) SiIII(1207) SiII(1193) SiII(1190) '
+        text += r'--abs-igm SiII\(1260\) SiIII\(1207\) SiII\(1193\) SiII\(1190\) '
 
     if config.getboolean('no_project'):
         text += '--no-project '
