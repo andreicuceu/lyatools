@@ -72,7 +72,7 @@ def run_raw_deltas(input_dir, zcat_file, analysis_struct, job, zcat_job_id=None,
     sh_text += f'{env_command}\n\n'
     sh_text += f'srun -n 1 -c 128 {pyscript_path}\n'
 
-    submit_utils.write_script(slurm_script_path, text)
+    submit_utils.write_script(slurm_script_path, sh_text)
 
     job_id = submit_utils.run_job(slurm_script_path, dependency_ids=zcat_job_id,
                                   no_submit=job.getboolean('no_submit'))
