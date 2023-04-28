@@ -254,11 +254,12 @@ class RunMocks:
         return dlacat_job_id
 
     def run_raw_deltas(self, seed, analysis_struct, zcat_job_id=None):
+        input_dir = Path(self.input_dir) / f'v9.0.{seed}'
         main_path = Path(self.qq_dir) / f'v9.0.{seed}'
         qq_struct = dir_handlers.QQDir(main_path, self.qq_run_type)
 
         zcat_file = qq_struct.qq_dir / 'zcat.fits'
-        delta_job_ids = make_raw_deltas(self.input_dir, zcat_file, analysis_struct,
+        delta_job_ids = make_raw_deltas(input_dir, zcat_file, analysis_struct,
                                         self.job, zcat_job_id=zcat_job_id,
                                         run_lyb_region=self.deltas.getboolean('run_lyb_region'),
                                         delta_lambda=self.deltas.getfloat('delta_lambda'),
