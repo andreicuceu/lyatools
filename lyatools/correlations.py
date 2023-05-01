@@ -129,7 +129,7 @@ def run_correlation(config,  job, analysis_struct, catalogue=None, cross=False, 
         text += f'--in-dir2 {in_dir2} '
 
     if cross:
-        text += f'--drq {catalogue} --mode desi_mocks --z-evol-obj 1.44 --rp-min -200 '
+        text += f'--drq {catalogue} --mode desi_mocks --z-evol-obj 1.44 --rp-min -{rp_max} '
     else:
         text += f'--rp-min {rp_min} '
 
