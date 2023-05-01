@@ -48,7 +48,7 @@ def run_delta_extraction(config, job, qq_dir, analysis_struct, catalogue, mask_d
 
     slurm_hours = config.getfloat('slurm_hours', None)
     if slurm_hours is None:
-        slurm_hours = 0.5 if true_continuum else 1.5
+        slurm_hours = 0.5 if true_continuum else 1.
 
     # Make the header
     header = submit_utils.make_header(

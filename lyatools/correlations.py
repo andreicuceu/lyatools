@@ -1,7 +1,7 @@
 from . import submit_utils
 
-JOB_CONFIGS = {'cf_lya_lya': 2.0, 'dmat_lya_lya': 2.0, 'metal_dmat_lya_lya': 2.0,
-               'cf_lya_lyb': 1.2, 'dmat_lya_lyb': 1.2, 'metal_dmat_lya_lyb': 1.2,
+JOB_CONFIGS = {'cf_lya_lya': 1.5, 'dmat_lya_lya': 2.0, 'metal_dmat_lya_lya': 2.0,
+               'cf_lya_lyb': 1.0, 'dmat_lya_lyb': 1.0, 'metal_dmat_lya_lyb': 1.0,
                'xcf_lya_qso': 0.5, 'xdmat_lya_qso': 0.5, 'metal_xdmat_lya_qso': 0.5,
                'xcf_lyb_qso': 0.25, 'xdmat_lyb_qso': 0.25, 'metal_xdmat_lyb_qso': 0.25}
 
