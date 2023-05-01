@@ -8,7 +8,7 @@ QQ_RUN_ARGS = {
         'save-continuum': '',
         'desi-footprint': '',
     },
-    'desi-3.0-4': {
+    'desi-4.0-4': {
         'dn_dzdm': 'lyacolore',
         'exptime': 4000,
         'zbest': '',
@@ -18,7 +18,7 @@ QQ_RUN_ARGS = {
         'zmin': '1.7',
         'add-LYB': ''
     },
-    'desi-3.5-4': {
+    'desi-4.5-4': {
         'dn_dzdm': 'lyacolore',
         'exptime': 4000,
         'zbest': '',
@@ -29,7 +29,7 @@ QQ_RUN_ARGS = {
         'add-LYB': '',
         'sigma_kms_fog': '0'
     },
-    'desi-3.12-4': {
+    'desi-4.12-4': {
         'dn_dzdm': 'lyacolore',
         'exptime': 4000,
         'zbest': '',
