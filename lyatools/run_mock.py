@@ -29,6 +29,7 @@ class RunMocks:
         self.qq_dir = self.config['mock_setup'].get('qq_dir')
         self.analysis_dir = self.config['mock_setup'].get('analysis_dir')
 
+        self.mock_version = self.config['mock_setup'].get('mock_version')
         self.qq_seeds = self.config['mock_setup'].get('qq_seeds')
         self.qq_run_type = self.config['mock_setup'].get('qq_run_type')
         self.run_type = self.config['mock_setup'].get('run_type')
@@ -189,9 +190,9 @@ class RunMocks:
         return corr_files, job_id
 
     def run_qq(self, seed):
-        input_dir = Path(self.input_dir) / f'v9.0.{seed}'
-        output_dir = Path(self.qq_dir) / f'v9.0.{seed}'
-        print(f'Submitting QQ run for mock v9.0.{seed}')
+        input_dir = Path(self.input_dir) / f'{self.mock_version}.{seed}'
+        output_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}'
+        print(f'Submitting QQ run for mock {self.mock_version}.{seed}')
 
         qq_job_id, self.dla_flag = run_qq(self.qq, self.job, self.qq_run_type, seed,
                                           input_dir, output_dir)
@@ -199,7 +200,7 @@ class RunMocks:
         return qq_job_id
 
     def run_zcat(self, seed, qq_job_id=None):
-        main_path = Path(self.qq_dir) / f'v9.0.{seed}'
+        main_path = Path(self.qq_dir) / f'{self.mock_version}.{seed}'
         qq_struct = dir_handlers.QQDir(main_path, self.qq_run_type)
         self.save_config(qq_struct)
 
@@ -228,7 +229,7 @@ class RunMocks:
         return zcat_job_id
 
     def run_dla_cat(self, seed, qq_job_id=None):
-        main_path = Path(self.qq_dir) / f'v9.0.{seed}'
+        main_path = Path(self.qq_dir) / f'{self.mock_version}.{seed}'
         qq_struct = dir_handlers.QQDir(main_path, self.qq_run_type)
 
         print('Submitting DLA catalog job')
@@ -254,8 +255,8 @@ class RunMocks:
         return dlacat_job_id
 
     def run_raw_deltas(self, seed, analysis_struct, zcat_job_id=None):
-        input_dir = Path(self.input_dir) / f'v9.0.{seed}'
-        main_path = Path(self.qq_dir) / f'v9.0.{seed}'
+        input_dir = Path(self.input_dir) / f'{self.mock_version}.{seed}'
+        main_path = Path(self.qq_dir) / f'{self.mock_version}.{seed}'
         qq_struct = dir_handlers.QQDir(main_path, self.qq_run_type)
 
         zcat_file = qq_struct.qq_dir / 'zcat.fits'
@@ -270,7 +271,7 @@ class RunMocks:
 
     def run_delta_extraction(self, seed, analysis_struct, true_continuum=False,
                              zcat_job_id=None):
-        qq_dir = Path(self.qq_dir) / f'v9.0.{seed}' / f'{self.qq_run_type}'
+        qq_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}' / f'{self.qq_run_type}'
         zcat_file = qq_dir / 'zcat.fits'
 
         mask_dla_flag = self.deltas.getboolean('mask_DLAs')
@@ -288,7 +289,7 @@ class RunMocks:
         return delta_job_ids
 
     def run_correlations(self, seed, analysis_struct, delta_job_ids=None):
-        qq_dir = Path(self.qq_dir) / f'v9.0.{seed}' / f'{self.qq_run_type}'
+        qq_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}' / f'{self.qq_run_type}'
         zcat_file = qq_dir / 'zcat.fits'
 
         corr_types = []
@@ -326,7 +327,7 @@ class RunMocks:
         return corr_dict, job_id
 
     def get_analysis_dirs(self, seed):
-        main_path = Path(self.analysis_dir) / f'v9.0.{seed}'
+        main_path = Path(self.analysis_dir) / f'{self.mock_version}.{seed}'
 
         raw_analysis_struct = None
         if self.run_raw_flag:
