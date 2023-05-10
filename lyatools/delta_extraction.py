@@ -117,6 +117,7 @@ def create_config(config, config_path, qq_dir, catalogue, mask_dla_cat, deltas_d
     if true_continuum:
         out_config['expected flux'] = {'type': 'TrueContinuum',
                                        'input directory': spectra_dir,
+                                       'var lss mod': config.get('var_lss_mod', '1'),
                                        'force stack delta to zero': str(force_stack_delta_to_zero)}
 
         raw_stats_file = config.get('raw_stats_file', None)
@@ -126,6 +127,7 @@ def create_config(config, config_path, qq_dir, catalogue, mask_dla_cat, deltas_d
         out_config['expected flux'] = {'type': 'Dr16FixedEtaFudgeExpectedFlux',
                                        'iter out prefix': 'delta_attributes',
                                        'limit var lss': '0.0,1.0',
+                                       'var lss mod': config.get('var_lss_mod', '1'),
                                        'force stack delta to zero': str(force_stack_delta_to_zero)}
 
     with open(config_path, 'w') as configfile:
