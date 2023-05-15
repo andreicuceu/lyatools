@@ -2,7 +2,7 @@ from . import dir_handlers, submit_utils
 from lyatools.qq_run_args import QQ_RUN_ARGS
 
 
-def run_qq(config, job, qq_run_type, seed, input_dir, output_dir):
+def run_qq(config, job, qq_run_type, seed, mock_code, input_dir, output_dir):
     """Create a QQ run and submit it
 
     Parameters
@@ -31,7 +31,10 @@ def run_qq(config, job, qq_run_type, seed, input_dir, output_dir):
     qq_args = ''
     dla_flag = False
     for key, val in run_args.items():
-        qq_args += f' --{key} {val}'
+        if key == 'dn_dzdm':
+            qq_args += f' --{key} {mock_code}'
+        else:
+            qq_args += f' --{key} {val}'
 
         if 'dla' in key:
             dla_flag = True

@@ -29,6 +29,7 @@ class RunMocks:
         self.qq_dir = self.config['mock_setup'].get('qq_dir')
         self.analysis_dir = self.config['mock_setup'].get('analysis_dir')
 
+        self.mock_code = self.config['mock_setup'].get('mock_code')
         self.mock_version = self.config['mock_setup'].get('mock_version')
         self.qq_seeds = self.config['mock_setup'].get('qq_seeds')
         self.qq_run_type = self.config['mock_setup'].get('qq_run_type')
@@ -195,7 +196,7 @@ class RunMocks:
         print(f'Submitting QQ run for mock {self.mock_version}.{seed}')
 
         qq_job_id, self.dla_flag = run_qq(self.qq, self.job, self.qq_run_type, seed,
-                                          input_dir, output_dir)
+                                          self.mock_code, input_dir, output_dir)
 
         return qq_job_id
 

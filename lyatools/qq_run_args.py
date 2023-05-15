@@ -9,7 +9,7 @@ QQ_RUN_ARGS = {
         'desi-footprint': '',
     },
     'desi-4.0-4': {
-        'dn_dzdm': 'lyacolore',
+        'dn_dzdm': '',
         'exptime': 4000,
         'zbest': '',
         'bbflux': '',
@@ -19,7 +19,7 @@ QQ_RUN_ARGS = {
         'add-LYB': ''
     },
     'desi-4.5-4': {
-        'dn_dzdm': 'lyacolore',
+        'dn_dzdm': '',
         'exptime': 4000,
         'zbest': '',
         'bbflux': '',
@@ -30,7 +30,7 @@ QQ_RUN_ARGS = {
         'sigma_kms_fog': '0'
     },
     'desi-4.12-4': {
-        'dn_dzdm': 'lyacolore',
+        'dn_dzdm': '',
         'exptime': 4000,
         'zbest': '',
         'bbflux': '',
@@ -42,7 +42,7 @@ QQ_RUN_ARGS = {
         'metals': 'LYB LY3 LY4 LY5 SiII(1260) SiIII(1207) SiII(1193) SiII(1190)'
     },
     'desi-4.127-4': {
-        'dn_dzdm': 'lyacolore',
+        'dn_dzdm': '',
         'exptime': 4000,
         'zbest': '',
         'bbflux': '',
