@@ -31,13 +31,15 @@ def run_qq(config, job, qq_run_type, seed, mock_code, input_dir, output_dir):
     qq_args = ''
     dla_flag = False
     for key, val in run_args.items():
-        if key == 'dn_dzdm':
-            qq_args += f' --{key} {mock_code}'
-        else:
-            qq_args += f' --{key} {val}'
-
         if 'dla' in key:
             dla_flag = True
+
+        if key == 'dn_dzdm':
+            qq_args += f' --{key} {mock_code}'
+        elif key == 'add-LYB' and mock_code == 'saclay':
+            continue
+        else:
+            qq_args += f' --{key} {val}'
 
     qq_args += f' --seed {seed}'
     print(qq_args)
