@@ -88,7 +88,7 @@ class AnalysisDir:
 
     def __post_init__(self):
         self.main_path = Path(self.main_path)
-        check_dir(main_path)
+        check_dir(self.main_path)
 
         main_analysis_dir = self.main_path / self.qq_run_name
         check_dir(main_analysis_dir)
