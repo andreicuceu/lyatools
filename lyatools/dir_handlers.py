@@ -87,10 +87,10 @@ class AnalysisDir:
     scripts_dir: Path = field(init=False)
 
     def __post_init__(self):
-        main_path = Path(self.main_path)
+        self.main_path = Path(self.main_path)
         check_dir(main_path)
 
-        main_analysis_dir = main_path / self.qq_run_name
+        main_analysis_dir = self.main_path / self.qq_run_name
         check_dir(main_analysis_dir)
 
         self.analysis_dir = main_analysis_dir / self.analysis_version
