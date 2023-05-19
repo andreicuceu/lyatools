@@ -156,7 +156,7 @@ def run_correlation(config,  job, analysis_struct, catalogue=None, cross=False, 
 
     if cross and config.getboolean('shuffle_qso', False):
         seed = analysis_struct.main_path.name.split('.')[-1]
-        text += f'--shuffle-distrib-obj-seed  {seed} '
+        text += f'--shuffle-distrib-obj-seed {seed} '
 
     if rebin_factor is not None:
         text += f'--rebin-factor {rebin_factor} '
