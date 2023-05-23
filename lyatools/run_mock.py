@@ -134,6 +134,7 @@ class RunMocks:
                 print('Starting stack and export job for raw deltas.')
                 _ = stack_correlations(raw_corr_dict, raw_global_struct, self.job,
                                        add_dmat=add_dmat, dmat_path=dmat_path,
+                                       shuffled=self.export.getboolean('subtract_shuffled'),
                                        name_string=name_string, exp_job_ids=raw_exp_job_ids)
                 submit_utils.print_spacer_line()
 
@@ -141,13 +142,14 @@ class RunMocks:
                 print('Starting stack and export job for true deltas.')
                 _ = stack_correlations(true_corr_dict, true_global_struct, self.job,
                                        add_dmat=add_dmat, dmat_path=dmat_path,
+                                       shuffled=self.export.getboolean('subtract_shuffled'),
                                        name_string=name_string, exp_job_ids=true_exp_job_ids)
                 submit_utils.print_spacer_line()
 
             if not self.no_run_cont_fit_flag:
                 print('Starting stack and export job for fitted deltas.')
                 _ = stack_correlations(corr_dict, global_struct, self.job,
-                                       add_dmat=add_dmat, dmat_path=dmat_path,
+                                       add_dmat=add_dmat, dmat_path=dmat_path, shuffled=False,
                                        name_string=name_string, exp_job_ids=exp_job_ids)
                 submit_utils.print_spacer_line()
 
@@ -323,6 +325,7 @@ class RunMocks:
         corr_dict, job_id = make_export_runs(seed, analysis_struct, corr_paths, self.job,
                                              add_dmat=self.export.getboolean('add_dmat'),
                                              dmat_path=self.export.get('dmat_path'),
+                                             shuffled=self.export.getboolean('subtract_shuffled'),
                                              corr_job_ids=corr_job_ids)
 
         return corr_dict, job_id

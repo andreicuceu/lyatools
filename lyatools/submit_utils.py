@@ -226,3 +226,9 @@ def find_path(path, enforce=True):
         return input_path
     else:
         raise RuntimeError(f'The path/file does not exist: {input_path}')
+
+
+def append_string_to_correlation_path(path, string):
+    corr_name_split = path.name.split('.')
+    corr_name_split[0] += string
+    return path.parents[0] / '.'.join(corr_name_split)

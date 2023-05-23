@@ -154,7 +154,7 @@ def run_correlation(config,  job, analysis_struct, catalogue=None, cross=False, 
     if cross and config.getboolean('no_remove_mean_lambda_obs'):
         text += '--no-remove-mean-lambda-obs '
 
-    if cross and config.getboolean('shuffle_qso', False):
+    if cross and config.getboolean('shuffle_qso'):
         seed = analysis_struct.main_path.name.split('.')[-1]
         text += f'--shuffle-distrib-obj-seed {seed} '
 

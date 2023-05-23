@@ -19,6 +19,9 @@ def main():
                         help=('Distortion matrix produced via picca_dmat.py, picca_xdmat.py... '
                               '(if not provided will be identity)'))
 
+    parser.add_argument("--shuffled-correlations", type=str, nargs="*", required=True,
+                        help="the xcf.... shuffled correlation files to be subtracted")
+
     args = parser.parse_args()
 
     stack_export_correlations(args.data, args.out, args.dmat)

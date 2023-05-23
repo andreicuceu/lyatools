@@ -26,14 +26,21 @@ def find_dmat(dmat_path, corr_type):
 
 
 def make_export_runs(seed, analysis_struct, corr_paths, job, add_dmat=False, dmat_path=None,
-                     corr_job_ids=None):
+                     shuffled=False, corr_job_ids=None):
     corr_dict = {}
     export_commands = []
     for cf_path in corr_paths:
-        corr_name_split = cf_path.name.split('.')
-        corr_name_split[0] += '-exp'
-        exp_file = cf_path.parents[0] / '.'.join(corr_name_split)
+        exp_file = submit_utils.append_string_to_correlation_path(cf_path, '-exp')
 
+        shuffled_path = None
+        if shuffled:
+            shuffled_path = submit_utils.append_string_to_correlation_path(cf_path, '_shuffled')
+            if not shuffled_path.is_file():
+                raise ValueError('Asked to subtract shuffled correlation, but could not '
+                                 f'find the shuffled correlation at {shuffled_path}. '
+                                 'Make sure it has the correct name as in the link here.')
+
+        corr_name_split = cf_path.name.split('.')
         corr_type = None
         for key in CORR_TYPES:
             if key in corr_name_split[0]:
@@ -50,6 +57,9 @@ def make_export_runs(seed, analysis_struct, corr_paths, job, add_dmat=False, dma
             if add_dmat:
                 dmat_file = find_dmat(dmat_path, corr_type)
                 command += f'--dmat {dmat_file} '
+
+            if shuffled_path is not None:
+                command += f'--remove-shuffled-correlation {shuffled_path} '
 
             export_commands += [command]
 
@@ -80,8 +90,8 @@ def make_export_runs(seed, analysis_struct, corr_paths, job, add_dmat=False, dma
     return corr_dict, job_id
 
 
-def stack_correlations(corr_dict, global_struct, job, add_dmat=False, dmat_path=None,
-                       name_string=None, exp_job_ids=None):
+def stack_correlations(corr_dict, global_struct, job, add_dmat=False, dmat_path=None, 
+                       shuffled=False, name_string=None, exp_job_ids=None):
     # Stack correlations from different seeds
     export_commands = []
     for cf_name, cf_list in corr_dict.items():
@@ -90,6 +100,20 @@ def stack_correlations(corr_dict, global_struct, job, add_dmat=False, dmat_path=
 
         str_list = [str(cf) for cf in cf_list]
         in_files = ' '.join(str_list)
+
+        shuffled_files = None
+        if shuffled:
+            shuffled_list = []
+            for cf in cf_list:
+                shuffled_path = submit_utils.append_string_to_correlation_path(cf, '_shuffled')
+                if not shuffled_path.is_file():
+                    raise ValueError('Asked to subtract shuffled correlation, but could not '
+                                     f'find the shuffled correlation at {shuffled_path}. '
+                                     'Make sure it has the correct name as in the link here.')
+
+                shuffled_list.append(shuffled_path)
+
+            shuffled_files = ' '.join(shuffled_list)
 
         name_ext = '' if name_string is None else '_' + name_string
         exp_out_file = global_struct.corr_dir / f'{cf_name}{name_ext}-exp.fits.gz'
@@ -101,6 +125,9 @@ def stack_correlations(corr_dict, global_struct, job, add_dmat=False, dmat_path=
         if add_dmat:
             dmat_file = find_dmat(dmat_path, cf_name)
             command += f'--dmat {dmat_file} '
+
+        if shuffled_files is not None:
+            command += f'--shuffled-correlations {shuffled_files} '
 
         export_commands += [command]
 

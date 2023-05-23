@@ -4,7 +4,26 @@ import scipy.linalg
 from picca.utils import smooth_cov
 
 
-def stack_export_correlations(input_files, output_file, dmat_path=None):
+def get_shuffled_correlations(files, headers_to_check_match_values):
+    xi_shuffled_list = []
+    for file in files:
+        with fitsio.FITS(file) as hdul:
+            for entry, value in headers_to_check_match_values.items():
+                assert hdul[1].header[entry] == value
+
+            xi_shuffled = hdul[2]['DA'][:]
+            weight_shuffled = hdul[2]['WE'][:]
+            xi_shuffled = (xi_shuffled * weight_shuffled).sum(axis=1)
+            weight_shuffled = weight_shuffled.sum(axis=1)
+            w = weight_shuffled > 0.
+            xi_shuffled[w] /= weight_shuffled[w]
+            xi_shuffled_list.append(xi_shuffled)
+
+    xi_shuffled = np.hstack(xi_shuffled_list)
+    return xi_shuffled[:, None]
+
+
+def stack_export_correlations(input_files, output_file, dmat_path=None, shuffled_correlations=None):
     """Stacks correlation functions measured in different mocks.
     Parameters
     ----------
@@ -29,6 +48,12 @@ def stack_export_correlations(input_files, output_file, dmat_path=None):
         # get values of header entries to check with other files
         header = hdul[1].read_header()
         headers_to_check_match_values = {h: header[h] for h in headers_to_check_match}
+
+    xi_shuffled = None
+    if shuffled_correlations is not None:
+        assert len(shuffled_correlations) == len(input_files)
+        xi_shuffled = get_shuffled_correlations(shuffled_correlations,
+                                                headers_to_check_match_values)
 
     # initialise header quantities
     r_par_min = 1.e6
@@ -77,6 +102,9 @@ def stack_export_correlations(input_files, output_file, dmat_path=None):
     xi = np.vstack(xi)
     weights = np.vstack(weights)
     healpixs = np.hstack(healpixs)
+
+    if xi_shuffled is not None:
+        xi -= xi_shuffled
 
     # normalize all other quantities by total weights
     w = weights_total > 0
