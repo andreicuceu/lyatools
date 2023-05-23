@@ -40,6 +40,8 @@ def make_export_runs(seed, analysis_struct, corr_paths, job, add_dmat=False, dma
                                  f'find the shuffled correlation at {shuffled_path}. '
                                  'Make sure it has the correct name as in the link here.')
 
+            exp_file = submit_utils.append_string_to_correlation_path(exp_file, '-shuff')
+
         corr_name_split = cf_path.name.split('.')
         corr_type = None
         for key in CORR_TYPES:
@@ -90,7 +92,7 @@ def make_export_runs(seed, analysis_struct, corr_paths, job, add_dmat=False, dma
     return corr_dict, job_id
 
 
-def stack_correlations(corr_dict, global_struct, job, add_dmat=False, dmat_path=None, 
+def stack_correlations(corr_dict, global_struct, job, add_dmat=False, dmat_path=None,
                        shuffled=False, name_string=None, exp_job_ids=None):
     # Stack correlations from different seeds
     export_commands = []
@@ -117,6 +119,9 @@ def stack_correlations(corr_dict, global_struct, job, add_dmat=False, dmat_path=
 
         name_ext = '' if name_string is None else '_' + name_string
         exp_out_file = global_struct.corr_dir / f'{cf_name}{name_ext}-exp.fits.gz'
+
+        if shuffled_files is not None:
+            exp_out_file = submit_utils.append_string_to_correlation_path(exp_out_file, '-shuff')
         if exp_out_file.is_file():
             raise ValueError(f'Exported correlation already exists: {exp_out_file}')
 
