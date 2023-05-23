@@ -113,7 +113,7 @@ def stack_correlations(corr_dict, global_struct, job, add_dmat=False, dmat_path=
                                      f'find the shuffled correlation at {shuffled_path}. '
                                      'Make sure it has the correct name as in the link here.')
 
-                shuffled_list.append(shuffled_path)
+                shuffled_list.append(str(shuffled_path))
 
             shuffled_files = ' '.join(shuffled_list)
 
