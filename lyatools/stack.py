@@ -9,7 +9,8 @@ def get_shuffled_correlations(files, headers_to_check_match_values):
     for file in files:
         with fitsio.FITS(file) as hdul:
             for entry, value in headers_to_check_match_values.items():
-                assert hdul[1].header[entry] == value
+                head = hdul[1].read_header()
+                assert head[entry] == value
 
             xi_shuffled = hdul[2]['DA'][:]
             weight_shuffled = hdul[2]['WE'][:]
