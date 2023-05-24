@@ -24,7 +24,7 @@ def main():
 
     args = parser.parse_args()
 
-    stack_export_correlations(args.data, args.out, args.dmat)
+    stack_export_correlations(args.data, args.out, args.dmat, args.shuffled_correlations)
 
 
 if __name__ == '__main__':
