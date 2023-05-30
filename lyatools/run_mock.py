@@ -178,7 +178,8 @@ class RunMocks:
         if self.run_corr_flag:
             print(f'Starting correlation jobs for seed {seed}.')
             corr_paths, corr_job_ids = self.run_correlations(seed, analysis_struct,
-                                                             delta_job_ids=delta_job_ids)
+                                                             delta_job_ids=delta_job_ids,
+                                                             raw_analysis=raw_analysis)
         submit_utils.print_spacer_line()
 
         # Run export
@@ -296,9 +297,11 @@ class RunMocks:
 
         return delta_job_ids
 
-    def run_correlations(self, seed, analysis_struct, delta_job_ids=None):
+    def run_correlations(self, seed, analysis_struct, delta_job_ids=None, raw_analysis=False):
         qq_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}' / f'{self.qq_run_type}'
         zcat_file = qq_dir / 'zcat.fits'
+        if raw_analysis and self.deltas.get('raw_catalog') is not None:
+            zcat_file = submit_utils.find_path(self.deltas.get('raw_catalog'))
 
         corr_types = []
         if self.corr.getboolean('run_auto'):
