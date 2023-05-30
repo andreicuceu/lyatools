@@ -262,7 +262,12 @@ class RunMocks:
         main_path = Path(self.qq_dir) / f'{self.mock_version}.{seed}'
         qq_struct = dir_handlers.QQDir(main_path, self.qq_run_type)
 
-        zcat_file = qq_struct.qq_dir / 'zcat.fits'
+        zcat_file = self.deltas.get('raw_catalog')
+        if zcat_file is None:
+            zcat_file = qq_struct.qq_dir / 'zcat.fits'
+        else:
+            zcat_file = submit_utils.find_path(zcat_file)
+
         delta_job_ids = make_raw_deltas(input_dir, zcat_file, analysis_struct,
                                         self.job, zcat_job_id=zcat_job_id,
                                         run_lyb_region=self.deltas.getboolean('run_lyb_region'),
