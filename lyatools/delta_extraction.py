@@ -114,9 +114,11 @@ def create_config(config, config_path, qq_dir, catalogue, mask_dla_cat, deltas_d
         out_config['masks'] = {'num masks': '0'}
 
     force_stack_delta_to_zero = config.getboolean('force_stack_delta_to_zero', True)
+    recompute_var_lss = config.getboolean('recompute_var_lss', True)
     if true_continuum:
         out_config['expected flux'] = {'type': 'TrueContinuum',
                                        'input directory': spectra_dir,
+                                       'recompute var lss': recompute_var_lss,
                                        'var lss mod': config.get('var_lss_mod', '1'),
                                        'force stack delta to zero': str(force_stack_delta_to_zero)}
 
