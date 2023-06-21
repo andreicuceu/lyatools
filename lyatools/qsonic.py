@@ -58,7 +58,7 @@ def run_qsonic(
     # Create the script
     text = header
     # env_command = job.get('env_command')
-    text += f'source /global/cfs/projectdirs/desi/science/lya/scripts/activate_qsonic.sh \n\n'
+    text += 'source /global/cfs/projectdirs/desi/science/lya/scripts/activate_qsonic.sh \n\n'
     text += f'srun -n {config.get("num_mpi")} -c 2 qsonic-fit '
     text += f'-i {spectra_dir} '
     text += f'-o {deltas_dirname} '
@@ -73,7 +73,7 @@ def run_qsonic(
     text += f'--forest-w1 {lambda_rest_min} '
     text += f'--forest-w2 {lambda_rest_max} '
 
-    if config.getbolean("force_stack_delta_to_zero"):
+    if config.getboolean("force_stack_delta_to_zero"):
         text += '--normalize-stacked-flux '
 
     mask_dla_flag = config.getboolean('mask_DLAs')
