@@ -63,7 +63,7 @@ def run_qsonic(
     text += f'-i {spectra_dir} '
     text += f'-o {deltas_dirname} '
     text += f'--catalog {catalogue} '
-    text += '--mock-analysis True '
+    text += '--mock-analysis '
     text += '--skip-resomat '
     text += '--save-by-hpx '
     text += '--smoothing-scale 0 '
