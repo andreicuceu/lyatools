@@ -5,6 +5,7 @@ from . import submit_utils, dir_handlers
 from lyatools.raw_deltas import make_raw_deltas
 from lyatools.quickquasars import run_qq
 from lyatools.delta_extraction import make_delta_runs
+from lyatools.qsonic import make_qsonic_runs
 from lyatools.correlations import make_correlation_runs
 from lyatools.export import make_export_runs, stack_correlations
 
@@ -21,6 +22,7 @@ class RunMocks:
         # self.control = self.config['control']
         self.qq = self.config['quickquasars']
         self.deltas = self.config['delta_extraction']
+        self.qsonic = self.config['qsonic']
         self.corr = self.config['picca_corr']
         self.export = self.config['picca_export']
 
@@ -45,6 +47,7 @@ class RunMocks:
         # Get control flags
         self.run_qq_flag = self.config['control'].getboolean('run_qq')
         self.run_deltas_flag = self.config['control'].getboolean('run_deltas')
+        self.run_qsonic_flag = self.config['control'].getboolean('run_qsonic')
         self.run_corr_flag = self.config['control'].getboolean('run_corr')
         self.run_export_flag = self.config['control'].getboolean('run_export')
 
@@ -172,6 +175,14 @@ class RunMocks:
                                                           zcat_job_id=zcat_job_id)
         submit_utils.print_spacer_line()
 
+        if self.run_qsonic_flag:
+            print(f'Starting qsonic jobs for seed {seed}.')
+            qsonic_job_ids = self.run_qsonic(seed, analysis_struct, true_continuum=true_continuum,
+                                             zcat_job_id=zcat_job_id)
+
+            if delta_job_ids is not None:
+                delta_job_ids += qsonic_job_ids
+
         # Run correlations
         corr_paths = None
         corr_job_ids = None
@@ -296,6 +307,24 @@ class RunMocks:
                                         mask_dla_cat, zcat_job_id, true_continuum=true_continuum)
 
         return delta_job_ids
+
+    def run_qsonic(self, seed, analysis_struct, true_continuum=False, zcat_job_id=None):
+        qq_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}' / f'{self.qq_run_type}'
+        zcat_file = qq_dir / 'zcat.fits'
+
+        mask_dla_flag = self.deltas.getboolean('mask_DLAs')
+        mask_dla_cat = None
+        if mask_dla_flag:
+            if self.dla_flag is not None and not self.dla_flag:
+                raise ValueError('Asked for DLA masking but there are no DLAs in the qq run')
+
+            mask_nhi_cut = self.qq.getfloat('dla_mask_nhi_cut')
+            mask_dla_cat = qq_dir / f'dla_cat_mask_{mask_nhi_cut:.2f}.fits'
+
+        qsonic_job_ids = make_qsonic_runs(self.qsonic, self.job, qq_dir, zcat_file, analysis_struct,
+                                          mask_dla_cat, zcat_job_id, true_continuum=true_continuum)
+
+        return qsonic_job_ids
 
     def run_correlations(self, seed, analysis_struct, delta_job_ids=None, raw_analysis=False):
         qq_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}' / f'{self.qq_run_type}'

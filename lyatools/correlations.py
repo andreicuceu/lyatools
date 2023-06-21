@@ -68,7 +68,7 @@ def make_correlation_runs(config, job, analysis_struct, corr_types, catalogue, d
                                              delta_job_ids=delta_job_ids))
 
     cf_paths = [out[0] for out in cf_out]
-    job_ids = [out[1] for out in cf_out] + [out[1] for out in dmat_out] 
+    job_ids = [out[1] for out in cf_out] + [out[1] for out in dmat_out]
     job_ids += [out[1] for out in metal_out]
     return cf_paths, job_ids
 
