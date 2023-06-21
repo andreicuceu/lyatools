@@ -35,9 +35,9 @@ def run_qsonic(
 
     spectra_dir = qq_dir / 'spectra-16'
     if region_name == 'lya':
-        deltas_dirname = analysis_struct.deltas_lya_dir
+        deltas_dirname = analysis_struct.qsonic_deltas_lya_dir
     elif region_name == 'lyb':
-        deltas_dirname = analysis_struct.deltas_lyb_dir
+        deltas_dirname = analysis_struct.qsonic_deltas_lyb_dir
     else:
         raise ValueError('Unkown region name. Choose from ["lya", "lyb"].')
 

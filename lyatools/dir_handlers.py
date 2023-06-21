@@ -82,6 +82,8 @@ class AnalysisDir:
     corr_dir: Path = field(init=False)
     deltas_lya_dir: Path = field(init=False)
     deltas_lyb_dir: Path = field(init=False)
+    qsonic_deltas_lya_dir: Path = field(init=False)
+    qsonic_deltas_lyb_dir: Path = field(init=False)
     fits_dir: Path = field(init=False)
     logs_dir: Path = field(init=False)
     scripts_dir: Path = field(init=False)
@@ -103,6 +105,12 @@ class AnalysisDir:
         check_dir(self.deltas_lya_dir)
 
         self.deltas_lyb_dir = self.analysis_dir / self.deltas_lyb_dirname
+        check_dir(self.deltas_lyb_dir)
+
+        self.qsonic_deltas_lya_dir = self.analysis_dir / ('qsonic_' + self.deltas_lya_dirname)
+        check_dir(self.deltas_lya_dir)
+
+        self.qsonic_deltas_lyb_dir = self.analysis_dir / ('qsonic_' + self.deltas_lyb_dirname)
         check_dir(self.deltas_lyb_dir)
 
         self.fits_dir = self.analysis_dir / 'fits'

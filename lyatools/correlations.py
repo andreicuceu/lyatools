@@ -110,6 +110,7 @@ def run_correlation(config,  job, analysis_struct, catalogue=None, cross=False, 
     fid_Om = config.getfloat('fid_Om')
     dmat_rejection = config.getfloat('dmat_rejection')
     rebin_factor = config.getint('rebin_factor', None)
+    from_qsonic = config.getboolean('from_qsonic')
 
     # Create the script
     text = header
@@ -117,15 +118,22 @@ def run_correlation(config,  job, analysis_struct, catalogue=None, cross=False, 
     text += f'srun -n 1 -c {128} picca_{script_type}.py '
     text += f'--out {output_path} '
 
-    if cross and lyb:
-        in_dir = analysis_struct.deltas_lyb_dir / 'Delta'
+    if from_qsonic:
+        deltas_lya_dir = analysis_struct.qsonic_deltas_lya_dir
+        deltas_lyb_dir = analysis_struct.qsonic_deltas_lyb_dir
     else:
-        in_dir = analysis_struct.deltas_lya_dir / 'Delta'
+        deltas_lya_dir = analysis_struct.deltas_lya_dir
+        deltas_lyb_dir = analysis_struct.deltas_lyb_dir
+
+    if cross and lyb:
+        in_dir = deltas_lyb_dir / 'Delta'
+    else:
+        in_dir = deltas_lya_dir / 'Delta'
 
     text += f'--in-dir {in_dir} '
 
     if lyb and not cross:
-        in_dir2 = analysis_struct.deltas_lyb_dir / 'Delta'
+        in_dir2 = deltas_lyb_dir / 'Delta'
         text += f'--in-dir2 {in_dir2} '
 
     if cross:
