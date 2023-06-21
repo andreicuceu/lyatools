@@ -108,10 +108,10 @@ class AnalysisDir:
         check_dir(self.deltas_lyb_dir)
 
         self.qsonic_deltas_lya_dir = self.analysis_dir / ('qsonic_' + self.deltas_lya_dirname)
-        check_dir(self.deltas_lya_dir)
+        check_dir(self.qsonic_deltas_lya_dir)
 
         self.qsonic_deltas_lyb_dir = self.analysis_dir / ('qsonic_' + self.deltas_lyb_dirname)
-        check_dir(self.deltas_lyb_dir)
+        check_dir(self.qsonic_deltas_lyb_dir)
 
         self.fits_dir = self.analysis_dir / 'fits'
         check_dir(self.fits_dir)
