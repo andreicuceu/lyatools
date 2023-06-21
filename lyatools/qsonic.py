@@ -65,7 +65,6 @@ def run_qsonic(
     text += f'--catalog {catalogue} '
     text += '--mock-analysis '
     text += '--skip-resomat '
-    text += '--save-by-hpx '
     text += '--smoothing-scale 0 '
     text += f'--skip {config.get("min_forest_fraction")} '
     text += f'--wave1 {config.get("lambda_min")} '
@@ -73,6 +72,8 @@ def run_qsonic(
     text += f'--forest-w1 {lambda_rest_min} '
     text += f'--forest-w2 {lambda_rest_max} '
 
+    if config.getboolean("save_by_healpix"):
+        text += '--save-by-hpx '
     if config.getboolean("force_stack_delta_to_zero"):
         text += '--normalize-stacked-flux '
 
