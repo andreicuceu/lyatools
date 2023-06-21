@@ -90,6 +90,8 @@ def run_qsonic(
         text += f'--fiducial-meanflux {raw_stats_file} '
         text += f'--fiducial-varlss {raw_stats_file} '
 
+    text += '\n'
+
     submit_utils.write_script(script_path, text)
 
     job_id = submit_utils.run_job(script_path, dependency_ids=zcat_job_id,
