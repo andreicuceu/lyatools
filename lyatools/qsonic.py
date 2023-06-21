@@ -57,8 +57,8 @@ def run_qsonic(
 
     # Create the script
     text = header
-    env_command = job.get('env_command')
-    text += f'{env_command}\n\n'
+    # env_command = job.get('env_command')
+    text += f'source /global/cfs/projectdirs/desi/science/lya/scripts/activate_qsonic.sh \n\n'
     text += f'srun -n {config.get("num_mpi")} -c 2 qsonic-fit '
     text += f'-i {spectra_dir} '
     text += f'-o {deltas_dirname} '
