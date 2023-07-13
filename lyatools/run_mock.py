@@ -225,7 +225,7 @@ class RunMocks:
             return
 
         print('Submitting DESI zcat job')
-        header = submit_utils.make_header(self.job.get('nersc_machine'), nodes=1, time=0.1,
+        header = submit_utils.make_header(self.job.get('nersc_machine'), nodes=1, time=0.5,
                                           omp_threads=128, job_name=f'zcat_{seed}',
                                           err_file=qq_struct.log_dir/'run-%j.err',
                                           out_file=qq_struct.log_dir/'run-%j.out')
@@ -248,7 +248,7 @@ class RunMocks:
         qq_struct = dir_handlers.QQDir(main_path, self.qq_run_type)
 
         print('Submitting DLA catalog job')
-        header = submit_utils.make_header(self.job.get('nersc_machine'), nodes=1, time=0.2,
+        header = submit_utils.make_header(self.job.get('nersc_machine'), nodes=1, time=0.5,
                                           omp_threads=128, job_name=f'dlacat_{seed}',
                                           err_file=qq_struct.log_dir/'run-%j.err',
                                           out_file=qq_struct.log_dir/'run-%j.out')
