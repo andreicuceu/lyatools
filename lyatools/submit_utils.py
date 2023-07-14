@@ -60,7 +60,7 @@ def make_header(machine: str = 'perl', queue: str = 'regular', nodes: int = int(
     omp_threads = int(omp_threads)
     if machine == 'perl':
         machine_string = 'cpu'
-        assert omp_threads <= 128
+        assert omp_threads <= 256
     elif machine == 'cori':
         machine_string = 'haswell'
         assert omp_threads <= 64
