@@ -235,8 +235,8 @@ class RunMocks:
         print('Submitting DESI zcat job')
         header = submit_utils.make_header(self.job.get('nersc_machine'), nodes=1, time=0.5,
                                           omp_threads=128, job_name=f'zcat_{seed}',
-                                          err_file=qq_struct.log_dir/'run-%j.err',
-                                          out_file=qq_struct.log_dir/'run-%j.out')
+                                          err_file=qq_struct.log_dir/'run-zcat-%j.err',
+                                          out_file=qq_struct.log_dir/'run-zcat-%j.out')
 
         text = header
         text += 'source /global/common/software/desi/desi_environment.sh master\n\n'
@@ -258,8 +258,8 @@ class RunMocks:
         print('Submitting DLA catalog job')
         header = submit_utils.make_header(self.job.get('nersc_machine'), nodes=1, time=0.5,
                                           omp_threads=128, job_name=f'dlacat_{seed}',
-                                          err_file=qq_struct.log_dir/'run-%j.err',
-                                          out_file=qq_struct.log_dir/'run-%j.out')
+                                          err_file=qq_struct.log_dir/'run-dlacat-%j.err',
+                                          out_file=qq_struct.log_dir/'run-dlacat-%j.out')
 
         text = header
         env_command = self.job.get('env_command')
@@ -286,11 +286,14 @@ class RunMocks:
         zcat_file = qq_struct.qq_dir / 'zcat.fits'
         zcat_zerr_file = qq_struct.qq_dir / f'zcat_{distribution}_{amplitude}.fits'
 
+        if zcat_zerr_file.is_file():
+            return
+
         print('Submitting inject zerr job')
-        header = submit_utils.make_header(self.job.get('nersc_machine'), nodes=1, time=0.5,
+        header = submit_utils.make_header(self.job.get('nersc_machine'), nodes=1, time=0.2,
                                           omp_threads=128, job_name=f'zerr_{seed}',
-                                          err_file=qq_struct.log_dir/'run-%j.err',
-                                          out_file=qq_struct.log_dir/'run-%j.out')
+                                          err_file=qq_struct.log_dir/'run-zerr-%j.err',
+                                          out_file=qq_struct.log_dir/'run-zerr-%j.out')
 
         text = header
         env_command = self.job.get('env_command')
@@ -329,7 +332,12 @@ class RunMocks:
     def run_delta_extraction(self, seed, analysis_struct, true_continuum=False,
                              zcat_job_id=None):
         qq_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}' / f'{self.qq_run_type}'
+
         zcat_file = qq_dir / 'zcat.fits'
+        if self.run_zerr_flag:
+            distribution = self.inject_zerr.get('distribution')
+            amplitude = self.inject_zerr.get('amplitude')
+            zcat_file = qq_dir / f'zcat_{distribution}_{amplitude}.fits'
 
         mask_dla_flag = self.deltas.getboolean('mask_DLAs')
         mask_dla_cat = None
@@ -347,7 +355,12 @@ class RunMocks:
 
     def run_qsonic(self, seed, analysis_struct, true_continuum=False, zcat_job_id=None):
         qq_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}' / f'{self.qq_run_type}'
+
         zcat_file = qq_dir / 'zcat.fits'
+        if self.run_zerr_flag:
+            distribution = self.inject_zerr.get('distribution')
+            amplitude = self.inject_zerr.get('amplitude')
+            zcat_file = qq_dir / f'zcat_{distribution}_{amplitude}.fits'
 
         mask_dla_flag = self.deltas.getboolean('mask_DLAs')
         mask_dla_cat = None
@@ -365,7 +378,13 @@ class RunMocks:
 
     def run_correlations(self, seed, analysis_struct, delta_job_ids=None, raw_analysis=False):
         qq_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}' / f'{self.qq_run_type}'
+
         zcat_file = qq_dir / 'zcat.fits'
+        if self.run_zerr_flag:
+            distribution = self.inject_zerr.get('distribution')
+            amplitude = self.inject_zerr.get('amplitude')
+            zcat_file = qq_dir / f'zcat_{distribution}_{amplitude}.fits'
+
         if raw_analysis and self.deltas.get('raw_catalog') is not None:
             zcat_file = submit_utils.find_path(self.deltas.get('raw_catalog'))
 
