@@ -41,8 +41,10 @@ def main():
 
     args = parser.parse_args()
 
-    hdul = fitsio.FITS(args.input)
+    print(f'Creating new catalog with redshift errors from {args.input}.')
+    print(f'Distribution: {args.type}, Amplitude: {args.amplitude}')
 
+    hdul = fitsio.FITS(args.input)
     header = hdul[1].read_header()
     data = hdul[1].read()
     size = data['Z'].size
@@ -62,6 +64,8 @@ def main():
     results = fitsio.FITS(args.output, 'rw', clobber=True)
     results.write(data, header=header)
     results.close()
+
+    print('Done')
 
 
 if __name__ == '__main__':

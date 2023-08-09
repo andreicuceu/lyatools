@@ -20,6 +20,7 @@ class RunMocks:
         # Save sections we'll need later
         self.job = self.config['job_info']
         # self.control = self.config['control']
+        self.inject_zerr = self.config['inject_zerr']
         self.qq = self.config['quickquasars']
         self.deltas = self.config['delta_extraction']
         self.qsonic = self.config['qsonic']
@@ -46,6 +47,7 @@ class RunMocks:
 
         # Get control flags
         self.run_qq_flag = self.config['control'].getboolean('run_qq')
+        self.run_zerr_flag = self.config['control'].getboolean('run_zerr')
         self.run_deltas_flag = self.config['control'].getboolean('run_deltas')
         self.run_qsonic_flag = self.config['control'].getboolean('run_qsonic')
         self.run_corr_flag = self.config['control'].getboolean('run_corr')
@@ -85,6 +87,12 @@ class RunMocks:
                     dlacat_job_id = self.run_dla_cat(seed, qq_job_id)
                     submit_utils.print_spacer_line()
                     zcat_job_id = [zcat_job_id, dlacat_job_id]
+
+            # Inject redshift errors into QSO catalog
+            if self.run_zerr_flag:
+                zerr_job_id = self.run_inject_zerr(seed, zcat_job_id)
+                submit_utils.print_spacer_line()
+                zcat_job_id = [zerr_job_id]
 
             analysis_struct, true_analysis_struct, \
                 raw_analysis_struct = self.get_analysis_dirs(seed)
@@ -268,6 +276,35 @@ class RunMocks:
                                              no_submit=self.job.getboolean('no_submit'))
 
         return dlacat_job_id
+
+    def run_inject_zerr(self, seed, zcat_job_id=None):
+        main_path = Path(self.qq_dir) / f'{self.mock_version}.{seed}'
+        qq_struct = dir_handlers.QQDir(main_path, self.qq_run_type)
+
+        distribution = self.inject_zerr.get('distribution')
+        amplitude = self.inject_zerr.get('amplitude')
+        zcat_file = qq_struct.qq_dir / 'zcat.fits'
+        zcat_zerr_file = qq_struct.qq_dir / f'zcat_{distribution}_{amplitude}.fits'
+
+        print('Submitting inject zerr job')
+        header = submit_utils.make_header(self.job.get('nersc_machine'), nodes=1, time=0.5,
+                                          omp_threads=128, job_name=f'zerr_{seed}',
+                                          err_file=qq_struct.log_dir/'run-%j.err',
+                                          out_file=qq_struct.log_dir/'run-%j.out')
+
+        text = header
+        env_command = self.job.get('env_command')
+        text += f'{env_command}\n\n'
+        text += f'lyatools-add-zerr -i {zcat_file} -o {zcat_zerr_file} '
+        text += f'-a {amplitude} -t {distribution} -s {seed} '
+
+        script_path = qq_struct.scripts_dir / 'inject_zerr.sh'
+        submit_utils.write_script(script_path, text)
+
+        zerr_job_id = submit_utils.run_job(script_path, dependency_ids=zcat_job_id,
+                                           no_submit=self.job.getboolean('no_submit'))
+
+        return zerr_job_id
 
     def run_raw_deltas(self, seed, analysis_struct, zcat_job_id=None):
         input_dir = Path(self.input_dir) / f'{self.mock_version}.{seed}'
