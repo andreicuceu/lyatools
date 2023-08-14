@@ -73,7 +73,7 @@ def make_correlation_runs(config, job, analysis_struct, corr_types, catalogue, d
     return cf_paths, job_ids
 
 
-def run_correlation(config,  job, analysis_struct, catalogue=None, cross=False, lyb=False,
+def run_correlation(config, job, analysis_struct, catalogue=None, cross=False, lyb=False,
                     dmat=False, metal_dmat=False, name='cf_lya_lya', delta_job_ids=None):
     slurm_hours = config.getfloat(f'{name}_slurm_hours', None)
     if slurm_hours is None:
@@ -102,6 +102,7 @@ def run_correlation(config,  job, analysis_struct, catalogue=None, cross=False, 
 
     # Get setting we need
     env_command = job.get('env_command')
+    nside = config.getint('nside')
     rp_min = config.getfloat('rp_min')
     rp_max = config.getfloat('rp_max')
     rt_max = config.getfloat('rt_max')
@@ -148,7 +149,7 @@ def run_correlation(config,  job, analysis_struct, catalogue=None, cross=False, 
         text += f'--np {num_bins_rp} '
 
     text += f'--z-cut-min {zmin} --z-cut-max {zmax} --fid-Om {fid_Om} --nproc {256} '
-    text += '--fid-Or 7.97505418919554e-05 '
+    text += f'--fid-Or 7.97505418919554e-05 --nside {nside} '
 
     if metal_dmat:
         text += r'--abs-igm SiII\(1260\) SiIII\(1207\) SiII\(1193\) SiII\(1190\) '
