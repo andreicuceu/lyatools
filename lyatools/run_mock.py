@@ -299,8 +299,14 @@ class RunMocks:
         text += f'lyatools-make-bal-cat -i {qq_struct.spectra_dir} -o {qq_struct.qq_dir} '
 
         ai_cut = self.qq.getfloat('bal_ai_cut', None)
+        if ai_cut is not None:
+            text += f'--ai-cut {ai_cut} '
+
         bi_cut = self.qq.getfloat('bal_bi_cut', None)
-        text += f'--ai-cut {ai_cut} --bi-cut {bi_cut} --nproc {128} '
+        if bi_cut is not None:
+            text += f'--bi-cut {bi_cut} '
+
+        text += f'--nproc {128} '
 
         script_path = qq_struct.scripts_dir / 'make_balcat.sh'
         submit_utils.write_script(script_path, text)
