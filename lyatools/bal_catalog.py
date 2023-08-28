@@ -67,4 +67,4 @@ def make_bal_catalog(input_dir, output_dir, ai_cut=int(500), bi_cut=None, nproc=
     if not output_file.is_file():
         print('Writing catalog with cuts in AI/BI')
         with fitsio.FITS(output_file, 'rw') as file:
-            file.write(output_catalog[mask], extname='BALCAT')
+            file.write(output_catalog[mask], extname='ZCATALOG')
