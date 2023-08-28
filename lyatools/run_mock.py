@@ -297,7 +297,10 @@ class RunMocks:
         env_command = self.job.get('env_command')
         text += f'{env_command}\n\n'
         text += f'lyatools-make-bal-cat -i {qq_struct.spectra_dir} -o {qq_struct.qq_dir} '
-        text += f'--nproc {128} '
+
+        ai_cut = self.qq.getfloat('bal_ai_cut', None)
+        bi_cut = self.qq.getfloat('bal_bi_cut', None)
+        text += f'--ai-cut {ai_cut} --bi-cut {bi_cut} --nproc {128} '
 
         script_path = qq_struct.scripts_dir / 'make_balcat.sh'
         submit_utils.write_script(script_path, text)
