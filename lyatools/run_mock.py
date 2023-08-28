@@ -549,7 +549,7 @@ class RunMocks:
         if self.run_zerr_flag and (not no_zerr):
             distribution = self.inject_zerr.get('distribution')
             amplitude = self.inject_zerr.get('amplitude')
-            zcat_name += f'_{distribution}_{amplitude}.fits'
+            zcat_name += f'_{distribution}_{amplitude}'
 
-        zcat_file = qq_dir / zcat_name
+        zcat_file = qq_dir / zcat_name + '.fits'
         return zcat_file
