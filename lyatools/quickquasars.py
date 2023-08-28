@@ -30,9 +30,12 @@ def run_qq(config, job, qq_run_type, seed, mock_code, input_dir, output_dir):
     print('Found the following arguments to pass to quickquasars:')
     qq_args = ''
     dla_flag = False
+    bal_flag = False
     for key, val in run_args.items():
         if 'dla' in key:
             dla_flag = True
+        elif 'bal' in key:
+            bal_flag = True
 
         if key == 'dn_dzdm':
             qq_args += f' --{key} {mock_code}'
@@ -48,7 +51,7 @@ def run_qq(config, job, qq_run_type, seed, mock_code, input_dir, output_dir):
 
     job_id = submit_utils.run_job(qq_script, no_submit=job.getboolean('no_submit'))
 
-    return job_id, dla_flag
+    return job_id, dla_flag, bal_flag
 
 
 def create_qq_script(config, job, qq_dirname, qq_args, seed, input_dir, output_dir):

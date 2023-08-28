@@ -58,6 +58,7 @@ class RunMocks:
         self.no_run_cont_fit_flag = self.config['control'].getboolean('no_run_continuum_fitted')
 
         self.dla_flag = None
+        self.bal_flag = None
 
     def run_mocks(self):
         print(f'Running Lyman-alpha forest mocks with seeds {self.qq_seeds}.')
@@ -80,13 +81,18 @@ class RunMocks:
                 qq_job_id = self.run_qq(seed)
                 submit_utils.print_spacer_line()
 
-                zcat_job_id = self.run_zcat(seed, qq_job_id)
+                zcat_job_id = [self.run_zcat(seed, qq_job_id)]
                 submit_utils.print_spacer_line()
 
                 if self.dla_flag:
                     dlacat_job_id = self.run_dla_cat(seed, qq_job_id)
                     submit_utils.print_spacer_line()
-                    zcat_job_id = [zcat_job_id, dlacat_job_id]
+                    zcat_job_id.append(dlacat_job_id)
+
+                if self.bal_flag:
+                    balcat_job_id = self.run_bal_cat(seed, qq_job_id)
+                    submit_utils.print_spacer_line()
+                    zcat_job_id.append(balcat_job_id)
 
             # Inject redshift errors into QSO catalog
             if self.run_zerr_flag:
@@ -217,8 +223,8 @@ class RunMocks:
         output_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}'
         print(f'Submitting QQ run for mock {self.mock_version}.{seed}')
 
-        qq_job_id, self.dla_flag = run_qq(self.qq, self.job, self.qq_run_type, seed,
-                                          self.mock_code, input_dir, output_dir)
+        qq_job_id, self.dla_flag, self.bal_flag = run_qq(
+            self.qq, self.job, self.qq_run_type, seed, self.mock_code, input_dir, output_dir)
 
         return qq_job_id
 
@@ -276,6 +282,30 @@ class RunMocks:
                                              no_submit=self.job.getboolean('no_submit'))
 
         return dlacat_job_id
+
+    def run_bal_cat(self, seed, qq_job_id=None):
+        main_path = Path(self.qq_dir) / f'{self.mock_version}.{seed}'
+        qq_struct = dir_handlers.QQDir(main_path, self.qq_run_type)
+
+        print('Submitting BAL catalog job')
+        header = submit_utils.make_header(self.job.get('nersc_machine'), nodes=1, time=0.5,
+                                          omp_threads=128, job_name=f'balcat_{seed}',
+                                          err_file=qq_struct.log_dir/'run-balcat-%j.err',
+                                          out_file=qq_struct.log_dir/'run-balcat-%j.out')
+
+        text = header
+        env_command = self.job.get('env_command')
+        text += f'{env_command}\n\n'
+        text += f'lyatools-make-bal-cat -i {qq_struct.spectra_dir} -o {qq_struct.qq_dir} '
+        text += f'--nproc {128} '
+
+        script_path = qq_struct.scripts_dir / 'make_balcat.sh'
+        submit_utils.write_script(script_path, text)
+
+        balcat_job_id = submit_utils.run_job(script_path, dependency_ids=qq_job_id,
+                                             no_submit=self.job.getboolean('no_submit'))
+
+        return balcat_job_id
 
     def run_inject_zerr(self, seed, zcat_job_id=None):
         main_path = Path(self.qq_dir) / f'{self.mock_version}.{seed}'
