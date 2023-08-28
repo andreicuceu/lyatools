@@ -16,10 +16,10 @@ def main():
     parser.add_argument("-o", "--output-dir", type=str, required=True,
                         help="Name of output directory")
 
-    parser.add_argument("--ai-cut", type=float, default=500, required=False,
+    parser.add_argument("--ai-cut", type=int, default=500, required=False,
                         help='Cut threshold in AI')
 
-    parser.add_argument("--bi-cut", type=float, default=None, required=False,
+    parser.add_argument("--bi-cut", type=int, default=None, required=False,
                         help='Cut threshold in BI')
 
     parser.add_argument("--nproc", type=int, default=None, required=False,

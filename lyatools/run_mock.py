@@ -298,11 +298,11 @@ class RunMocks:
         text += f'{env_command}\n\n'
         text += f'lyatools-make-bal-cat -i {qq_struct.spectra_dir} -o {qq_struct.qq_dir} '
 
-        ai_cut = self.qq.getfloat('bal_ai_cut', None)
+        ai_cut = self.qq.getint('bal_ai_cut', None)
         if ai_cut is not None:
             text += f'--ai-cut {ai_cut} '
 
-        bi_cut = self.qq.getfloat('bal_bi_cut', None)
+        bi_cut = self.qq.getint('bal_bi_cut', None)
         if bi_cut is not None:
             text += f'--bi-cut {bi_cut} '
 
@@ -387,8 +387,20 @@ class RunMocks:
             mask_nhi_cut = self.qq.getfloat('dla_mask_nhi_cut')
             mask_dla_cat = qq_dir / f'dla_cat_mask_{mask_nhi_cut:.2f}.fits'
 
-        delta_job_ids = make_delta_runs(self.deltas, self.job, qq_dir, zcat_file, analysis_struct,
-                                        mask_dla_cat, zcat_job_id, true_continuum=true_continuum)
+        mask_bal_flag = self.deltas.getboolean('mask_BALs')
+        mask_bal_cat = None
+        if mask_bal_flag:
+            if self.bal_flag is not None and not self.bal_flag:
+                raise ValueError('Asked for BAL masking but there are no BALs in the qq run')
+
+            ai_cut = self.qq.getint('bal_ai_cut', None)
+            bi_cut = self.qq.getint('bal_bi_cut', None)
+            mask_bal_cat = qq_dir / f'bal_cat_AI_{ai_cut}_BI_{bi_cut}.fits'
+
+        delta_job_ids = make_delta_runs(
+            self.deltas, self.job, qq_dir, zcat_file, analysis_struct,
+            mask_dla_cat, mask_bal_cat, zcat_job_id, true_continuum=true_continuum
+        )
 
         return delta_job_ids
 

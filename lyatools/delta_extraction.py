@@ -3,27 +3,35 @@ from configparser import ConfigParser
 from . import submit_utils
 
 
-def make_delta_runs(config, job, qq_dir, zcat_file, analysis_struct, mask_dla_cat=None,
-                    zcat_job_id=None, true_continuum=False):
+def make_delta_runs(
+    config, job, qq_dir, zcat_file, analysis_struct, mask_dla_cat=None, mask_bal_cat=None,
+    zcat_job_id=None, true_continuum=False
+):
     job_ids = []
     if config.getboolean('run_lya_region'):
-        id = run_delta_extraction(config, job, qq_dir, analysis_struct, zcat_file, mask_dla_cat,
-                                  region_name='lya', lambda_rest_min=1040., lambda_rest_max=1200.,
-                                  zcat_job_id=zcat_job_id, true_continuum=true_continuum)
+        id = run_delta_extraction(
+            config, job, qq_dir, analysis_struct, zcat_file, mask_dla_cat, mask_bal_cat,
+            region_name='lya', lambda_rest_min=1040., lambda_rest_max=1200.,
+            zcat_job_id=zcat_job_id, true_continuum=true_continuum
+        )
         job_ids += [id]
 
     if config.getboolean('run_lyb_region'):
-        id = run_delta_extraction(config, job, qq_dir, analysis_struct, zcat_file, mask_dla_cat,
-                                  region_name='lyb', lambda_rest_min=920., lambda_rest_max=1020.,
-                                  zcat_job_id=zcat_job_id, true_continuum=true_continuum)
+        id = run_delta_extraction(
+            config, job, qq_dir, analysis_struct, zcat_file, mask_dla_cat, mask_bal_cat,
+            region_name='lyb', lambda_rest_min=920., lambda_rest_max=1020.,
+            zcat_job_id=zcat_job_id, true_continuum=true_continuum
+        )
         job_ids += [id]
 
     return job_ids
 
 
-def run_delta_extraction(config, job, qq_dir, analysis_struct, catalogue, mask_dla_cat=None,
-                         region_name='lya', lambda_rest_min=1040., lambda_rest_max=1200.,
-                         zcat_job_id=None, true_continuum=False):
+def run_delta_extraction(
+    config, job, qq_dir, analysis_struct, catalogue, mask_dla_cat=None, mask_bal_cat=None,
+    region_name='lya', lambda_rest_min=1040., lambda_rest_max=1200.,
+    zcat_job_id=None, true_continuum=False
+):
     print(f'Submitting job to run delta extraction on {region_name} region')
     submit_utils.set_umask()
 
@@ -40,8 +48,9 @@ def run_delta_extraction(config, job, qq_dir, analysis_struct, catalogue, mask_d
 
     # Create the config file for running picca_delta_extraction
     nproc = config.getint('nproc', 64)
-    create_config(config, config_path, qq_dir, catalogue, mask_dla_cat, deltas_dirname,
-                  lambda_rest_min, lambda_rest_max, true_continuum, nproc)
+    create_config(
+        config, config_path, qq_dir, catalogue, mask_dla_cat, mask_bal_cat, deltas_dirname,
+        lambda_rest_min, lambda_rest_max, true_continuum, nproc)
 
     run_name = f'picca_delta_extraction_{region_name}_{type}'
     script_path = analysis_struct.scripts_dir / f'run_{run_name}.sh'
@@ -71,7 +80,7 @@ def run_delta_extraction(config, job, qq_dir, analysis_struct, catalogue, mask_d
     return job_id
 
 
-def create_config(config, config_path, qq_dir, catalogue, mask_dla_cat, deltas_dir,
+def create_config(config, config_path, qq_dir, catalogue, mask_dla_cat, mask_bal_cat, deltas_dir,
                   lambda_rest_min, lambda_rest_max, true_continuum, nproc):
     """Create picca_delta_extraction config file.
     See https://github.com/igmhub/picca/blob/master/tutorials/
@@ -103,13 +112,33 @@ def create_config(config, config_path, qq_dir, catalogue, mask_dla_cat, deltas_d
     out_config['corrections'] = {'num corrections': '0'}
 
     mask_dla_flag = config.getboolean('mask_DLAs')
-    if mask_dla_flag:
-        assert mask_dla_cat is not None
-        print(f'Asked for DLA masking. Assuming dla mask catalog exists: {mask_dla_cat}')
-        out_config['masks'] = {'num masks': '1',
-                               'type 0': 'DlaMask'}
-        out_config['mask arguments 0'] = {'filename': str(mask_dla_cat),
-                                          'los_id name': 'TARGETID'}
+    mask_bal_flag = config.getboolean('mask_BALs')
+    if mask_dla_flag or mask_bal_flag:
+        if mask_dla_flag:
+            assert mask_dla_cat is not None
+            print(f'Asked for DLA masking. Assuming dla mask catalog exists: {mask_dla_cat}')
+
+        if mask_bal_flag:
+            assert mask_bal_cat is not None
+            print(f'Asked for DLA masking. Assuming dla mask catalog exists: {mask_bal_cat}')
+
+        if mask_dla_flag:
+            out_config['masks'] = {'num masks': '1',
+                                   'type 0': 'DlaMask'}
+            out_config['mask arguments 0'] = {'filename': str(mask_dla_cat),
+                                              'los_id name': 'TARGETID'}
+
+        if mask_bal_flag and (not mask_dla_flag):
+            out_config['masks'] = {'num masks': '1',
+                                   'type 0': 'BalMask'}
+            out_config['mask arguments 0'] = {'filename': str(mask_bal_cat),
+                                              'los_id name': 'TARGETID'}
+
+        if mask_bal_flag and mask_dla_flag:
+            out_config['masks']['num masks'] = '2'
+            out_config['masks']['type 1'] = 'BalMask'
+            out_config['mask arguments 1'] = {'filename': str(mask_bal_cat),
+                                              'los_id name': 'TARGETID'}
     else:
         out_config['masks'] = {'num masks': '0'}
 
