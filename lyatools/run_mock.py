@@ -551,5 +551,5 @@ class RunMocks:
             amplitude = self.inject_zerr.get('amplitude')
             zcat_name += f'_{distribution}_{amplitude}'
 
-        zcat_file = qq_dir / zcat_name + '.fits'
+        zcat_file = qq_dir / (zcat_name + '.fits')
         return zcat_file
