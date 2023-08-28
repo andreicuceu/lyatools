@@ -20,7 +20,7 @@ def read_bals_from_truth(truth_file):
     return data
 
 
-def make_bal_catalog(input_dir, output_dir, nproc=1):
+def make_bal_catalog(input_dir, output_dir, ai_cut=500, bi_cut=None, nproc=1):
     spec_dir = find_path(input_dir)
     truth_files = spec_dir.glob("*/*/truth-*.fits*")
 
@@ -51,6 +51,19 @@ def make_bal_catalog(input_dir, output_dir, nproc=1):
         i += nrows
 
     output_file = find_path(output_dir) / 'bal_cat.fits'
+    if not output_file.is_file():
+        print('Writing catalog with all BALs')
+        with fitsio.FITS(output_file, 'rw') as file:
+            file.write(output_catalog, extname='BALCAT')
+
+    mask = np.ones(output_catalog.size, dtype=bool)
+    if ai_cut is not None:
+        mask &= output_catalog['AI_CIV'] < ai_cut
+
+    if bi_cut is not None:
+        mask &= output_catalog['AI_CIV'] < bi_cut
+
+    output_file = find_path(output_dir) / f'bal_cat_AI_{ai_cut}_BI_{bi_cut}.fits'
     if not output_file.is_file():
         print('Writing catalog with all BALs')
         with fitsio.FITS(output_file, 'rw') as file:
