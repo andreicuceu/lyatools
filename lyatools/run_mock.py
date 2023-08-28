@@ -322,8 +322,11 @@ class RunMocks:
 
         distribution = self.inject_zerr.get('distribution')
         amplitude = self.inject_zerr.get('amplitude')
-        zcat_file = qq_struct.qq_dir / 'zcat.fits'
-        zcat_zerr_file = qq_struct.qq_dir / f'zcat_{distribution}_{amplitude}.fits'
+
+        zcat_file = self.get_zcat_path(seed, no_zerr=True)
+        zcat_zerr_file = self.get_zcat_path(seed)
+        # zcat_file = qq_struct.qq_dir / 'zcat.fits'
+        # zcat_zerr_file = qq_struct.qq_dir / f'zcat_{distribution}_{amplitude}.fits'
 
         if zcat_zerr_file.is_file():
             return
@@ -350,12 +353,12 @@ class RunMocks:
 
     def run_raw_deltas(self, seed, analysis_struct, zcat_job_id=None):
         input_dir = Path(self.input_dir) / f'{self.mock_version}.{seed}'
-        main_path = Path(self.qq_dir) / f'{self.mock_version}.{seed}'
-        qq_struct = dir_handlers.QQDir(main_path, self.qq_run_type)
+        # main_path = Path(self.qq_dir) / f'{self.mock_version}.{seed}'
+        # qq_struct = dir_handlers.QQDir(main_path, self.qq_run_type)
 
         zcat_file = self.deltas.get('raw_catalog')
         if zcat_file is None:
-            zcat_file = qq_struct.qq_dir / 'zcat.fits'
+            zcat_file = self.get_zcat_path(seed)
         else:
             zcat_file = submit_utils.find_path(zcat_file)
 
@@ -372,11 +375,12 @@ class RunMocks:
                              zcat_job_id=None):
         qq_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}' / f'{self.qq_run_type}'
 
-        zcat_file = qq_dir / 'zcat.fits'
-        if self.run_zerr_flag:
-            distribution = self.inject_zerr.get('distribution')
-            amplitude = self.inject_zerr.get('amplitude')
-            zcat_file = qq_dir / f'zcat_{distribution}_{amplitude}.fits'
+        zcat_file = self.get_zcat_path(seed)
+        # zcat_file = qq_dir / 'zcat.fits'
+        # if self.run_zerr_flag:
+        #     distribution = self.inject_zerr.get('distribution')
+        #     amplitude = self.inject_zerr.get('amplitude')
+        #     zcat_file = qq_dir / f'zcat_{distribution}_{amplitude}.fits'
 
         mask_dla_flag = self.deltas.getboolean('mask_DLAs')
         mask_dla_cat = None
@@ -407,11 +411,12 @@ class RunMocks:
     def run_qsonic(self, seed, analysis_struct, true_continuum=False, zcat_job_id=None):
         qq_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}' / f'{self.qq_run_type}'
 
-        zcat_file = qq_dir / 'zcat.fits'
-        if self.run_zerr_flag:
-            distribution = self.inject_zerr.get('distribution')
-            amplitude = self.inject_zerr.get('amplitude')
-            zcat_file = qq_dir / f'zcat_{distribution}_{amplitude}.fits'
+        zcat_file = self.get_zcat_path(seed)
+        # zcat_file = qq_dir / 'zcat.fits'
+        # if self.run_zerr_flag:
+        #     distribution = self.inject_zerr.get('distribution')
+        #     amplitude = self.inject_zerr.get('amplitude')
+        #     zcat_file = qq_dir / f'zcat_{distribution}_{amplitude}.fits'
 
         mask_dla_flag = self.deltas.getboolean('mask_DLAs')
         mask_dla_cat = None
@@ -428,13 +433,14 @@ class RunMocks:
         return qsonic_job_ids
 
     def run_correlations(self, seed, analysis_struct, delta_job_ids=None, raw_analysis=False):
-        qq_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}' / f'{self.qq_run_type}'
+        # qq_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}' / f'{self.qq_run_type}'
 
-        zcat_file = qq_dir / 'zcat.fits'
-        if self.run_zerr_flag:
-            distribution = self.inject_zerr.get('distribution')
-            amplitude = self.inject_zerr.get('amplitude')
-            zcat_file = qq_dir / f'zcat_{distribution}_{amplitude}.fits'
+        zcat_file = self.get_zcat_path(seed)
+        # zcat_file = qq_dir / 'zcat.fits'
+        # if self.run_zerr_flag:
+        #     distribution = self.inject_zerr.get('distribution')
+        #     amplitude = self.inject_zerr.get('amplitude')
+        #     zcat_file = qq_dir / f'zcat_{distribution}_{amplitude}.fits'
 
         if raw_analysis and self.deltas.get('raw_catalog') is not None:
             zcat_file = submit_utils.find_path(self.deltas.get('raw_catalog'))
@@ -530,3 +536,20 @@ class RunMocks:
         # Write config file for future reference
         with open(analysis_struct.scripts_dir / 'lyatools_config.ini', 'w') as configfile:
             self.config.write(configfile)
+
+    def get_zcat_path(self, seed, no_bal_mask=False, no_zerr=False):
+        qq_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}' / f'{self.qq_run_type}'
+
+        zcat_name = 'zcat'
+        if self.bal_flag and (not no_bal_mask):
+            ai_cut = self.qq.getint('bal_ai_cut', None)
+            bi_cut = self.qq.getint('bal_bi_cut', None)
+            zcat_name += f'_masked_AI_{ai_cut}_BI_{bi_cut}'
+
+        if self.run_zerr_flag and (not no_zerr):
+            distribution = self.inject_zerr.get('distribution')
+            amplitude = self.inject_zerr.get('amplitude')
+            zcat_name += f'_{distribution}_{amplitude}.fits'
+
+        zcat_file = qq_dir / zcat_name
+        return zcat_file

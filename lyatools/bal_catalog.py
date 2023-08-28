@@ -24,6 +24,7 @@ def make_bal_catalog(input_dir, output_dir, ai_cut=int(500), bi_cut=None, nproc=
     spec_dir = find_path(input_dir)
     truth_files = spec_dir.glob("*/*/truth-*.fits*")
 
+    # Read BALs from truth files
     print("Iterating over files")
     bal_chunks = []
     with Pool(processes=nproc) as pool:
@@ -50,12 +51,15 @@ def make_bal_catalog(input_dir, output_dir, ai_cut=int(500), bi_cut=None, nproc=
         output_catalog[i:i+nrows] = chunk
         i += nrows
 
-    output_file = find_path(output_dir) / 'bal_cat.fits'
+    # Write full BAL catalog
+    output_path = find_path(output_dir)
+    output_file = output_path / 'bal_cat.fits'
     if not output_file.is_file():
         print('Writing catalog with all BALs')
         with fitsio.FITS(output_file, 'rw') as file:
             file.write(output_catalog, extname='BALCAT')
 
+    # Find BALs that are below the AI/BI cuts and make a second BAL catalog with them
     mask = np.ones(output_catalog.size, dtype=bool)
     if ai_cut is not None:
         mask &= output_catalog['AI_CIV'] < ai_cut
@@ -63,8 +67,24 @@ def make_bal_catalog(input_dir, output_dir, ai_cut=int(500), bi_cut=None, nproc=
     if bi_cut is not None:
         mask &= output_catalog['AI_CIV'] < bi_cut
 
-    output_file = find_path(output_dir) / f'bal_cat_AI_{ai_cut}_BI_{bi_cut}.fits'
+    output_file = output_path / f'bal_cat_AI_{ai_cut}_BI_{bi_cut}.fits'
     if not output_file.is_file():
         print('Writing catalog with cuts in AI/BI')
         with fitsio.FITS(output_file, 'rw') as file:
             file.write(output_catalog[mask], extname='ZCATALOG')
+
+    # Read QSO catalog and remove BAL QSOs with AI/BI larger than cuts
+    with fitsio.FITS(output_path / 'zcat.fits') as hdul_qso:
+        header = hdul_qso[1].read_header()
+        qso_cat = hdul_qso[1].read()
+
+    _, common_idx, __ = np.intersect1d(
+        qso_cat['TARGETID'], output_catalog[~mask]['TARGETID'], return_indices=True)
+
+    qso_mask = np.ones(qso_cat.size, dtype=bool)
+    qso_mask[common_idx] = False
+
+    output_file = output_path / f'zcat_masked_AI_{ai_cut}_BI_{bi_cut}.fits'
+    if not output_file.is_file():
+        with fitsio.FITS(output_file, 'rw') as file:
+            file.write(output_catalog[mask], header=header, extname='ZCATALOG')
