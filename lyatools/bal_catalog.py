@@ -59,6 +59,9 @@ def make_bal_catalog(input_dir, output_dir, ai_cut=int(500), bi_cut=None, nproc=
         with fitsio.FITS(output_file, 'rw') as file:
             file.write(output_catalog, extname='BALCAT')
 
+    if ai_cut is None and bi_cut is None:
+        return
+
     # Find BALs that are below the AI/BI cuts and make a second BAL catalog with them
     mask = np.ones(output_catalog.size, dtype=bool)
     if ai_cut is not None:

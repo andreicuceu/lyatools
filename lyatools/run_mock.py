@@ -544,7 +544,9 @@ class RunMocks:
         if self.bal_flag and (not no_bal_mask):
             ai_cut = self.qq.getint('bal_ai_cut', None)
             bi_cut = self.qq.getint('bal_bi_cut', None)
-            zcat_name += f'_masked_AI_{ai_cut}_BI_{bi_cut}'
+
+            if not (ai_cut is None and bi_cut is None):
+                zcat_name += f'_masked_AI_{ai_cut}_BI_{bi_cut}'
 
         if self.run_zerr_flag and (not no_zerr):
             distribution = self.inject_zerr.get('distribution')
