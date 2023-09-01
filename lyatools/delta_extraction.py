@@ -116,11 +116,11 @@ def create_config(config, config_path, qq_dir, catalogue, mask_dla_cat, mask_bal
     if mask_dla_flag or mask_bal_flag:
         if mask_dla_flag:
             assert mask_dla_cat is not None
-            print(f'Asked for DLA masking. Assuming dla mask catalog exists: {mask_dla_cat}')
+            print(f'Asked for DLA masking. Assuming DLA catalog exists: {mask_dla_cat}')
 
         if mask_bal_flag:
             assert mask_bal_cat is not None
-            print(f'Asked for DLA masking. Assuming dla mask catalog exists: {mask_bal_cat}')
+            print(f'Asked for BAL masking. Assuming BAL catalog exists: {mask_bal_cat}')
 
         if mask_dla_flag:
             out_config['masks'] = {'num masks': '1',
