@@ -20,7 +20,7 @@ def read_bals_from_truth(truth_file):
     return data
 
 
-def make_bal_catalog(input_dir, output_dir, ai_cut=int(500), bi_cut=None, nproc=1):
+def make_bal_catalog(input_dir, output_dir, ai_cut=None, bi_cut=None, nproc=1):
     spec_dir = find_path(input_dir)
     truth_files = spec_dir.glob("*/*/truth-*.fits*")
 
