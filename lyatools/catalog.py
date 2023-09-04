@@ -6,7 +6,7 @@ from pathlib import Path
 def make_catalog(spec_dir, name):
     # Make the text of the script
     text = '#!/bin/bash -l\n\n'
-    text += 'source /global/common/software/desi/desi_environment.sh master\n'
+    text += 'source /global/common/software/desi/desi_environment.sh\n'
 
     qq_dir = Path(spec_dir).parents[0]
     zcat = qq_dir / name
