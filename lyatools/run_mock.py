@@ -392,6 +392,7 @@ class RunMocks:
             mask_dla_cat = qq_dir / f'dla_cat_mask_{mask_nhi_cut:.2f}.fits'
 
         mask_bal_flag = self.deltas.getboolean('mask_BALs')
+
         mask_bal_cat = qq_dir / 'bal_cat.fits'
         if mask_bal_flag:
             if self.bal_flag is not None and not self.bal_flag:
