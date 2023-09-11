@@ -245,7 +245,7 @@ class RunMocks:
                                           out_file=qq_struct.log_dir/'run-zcat-%j.out')
 
         text = header
-        text += 'source /global/common/software/desi/desi_environment.sh master\n\n'
+        text += 'source /global/common/software/desi/desi_environment.sh\n\n'
         text += f'desi_zcatalog -i {qq_struct.spectra_dir} -o {zcat_file} '
         text += '--minimal --prefix zbest\n'
 
