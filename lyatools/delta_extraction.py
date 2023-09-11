@@ -159,7 +159,8 @@ def create_config(config, config_path, qq_dir, catalogue, mask_dla_cat, mask_bal
         if raw_stats_file is not None:
             out_config['expected flux']['raw statistics file'] = raw_stats_file
     else:
-        out_config['expected flux'] = {'type': 'Dr16FixedEtaFudgeExpectedFlux',
+        fit_type = config.get('type')
+        out_config['expected flux'] = {'type': fit_type,
                                        'iter out prefix': 'delta_attributes',
                                        'limit var lss': '0.0,1.0',
                                        'var lss mod': config.get('var_lss_mod', '1'),
