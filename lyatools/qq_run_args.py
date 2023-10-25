@@ -66,7 +66,7 @@ QQ_RUN_ARGS = {
         'balprob': 0.16,
         'metals': 'LYB LY3 LY4 LY5 SiII(1260) SiIII(1207) SiII(1193) SiII(1190)'
     },
-    'desi-4.124-4-metal_tuning_v1': {
+    'desi-4.124-4-metal_tuning_v2': {
         'dn_dzdm': '',
         'exptime': 4000,
         'zbest': '',
