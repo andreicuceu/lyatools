@@ -80,6 +80,7 @@ def create_qq_catalog(config, job, qq_dir, seed):
     seed_cat_path = qq_dir.qq_dir / "seed_zcat.fits"
     text = '/global/cfs/cdirs/desicollab/users/acuceu/notebooks_perl/mocks/run_mocks/make_y1_cat.py'
     text += f' -o {seed_cat_path} --seed {seed}'
+    text += '\n\n'
 
     full_text = header + text
 
