@@ -53,7 +53,7 @@ QQ_RUN_ARGS = {
         'dla': 'file',
         'metals-from-file': 'all'
     },
-    'desi-4.124-4': {
+    'desi-4.124-4-prod': {
         'dn_dzdm': '',
         'exptime': 4000,
         'zbest': '',
