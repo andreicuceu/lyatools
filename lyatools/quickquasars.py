@@ -25,6 +25,15 @@ def run_qq(config, job, qq_run_type, seed, mock_code, input_dir, output_dir):
     # Print run config
     print(f'Submitting quickquasars runs with configuration {qq_run_type}')
 
+    # Set up the directory structure to put everything into.
+    qq_dir = dir_handlers.QQDir(output_dir, qq_run_type)
+
+    job_id = None
+    seed_cat_path = None
+    y1_flag = config.getboolean('y1_flag', False)
+    if y1_flag:
+        job_id, seed_cat_path = create_qq_catalog(config, job, qq_dir, seed)
+
     run_args = QQ_RUN_ARGS[qq_run_type]
 
     print('Found the following arguments to pass to quickquasars:')
@@ -44,17 +53,46 @@ def run_qq(config, job, qq_run_type, seed, mock_code, input_dir, output_dir):
         else:
             qq_args += f' --{key} {val}'
 
+    if y1_flag:
+        qq_args += f' --from_catalog {seed_cat_path} --raw-mock lyacolore'
+
     qq_args += f' --seed {seed}'
     print(qq_args)
 
-    qq_script = create_qq_script(config, job, qq_run_type, qq_args, seed, input_dir, output_dir)
+    qq_script = create_qq_script(config, job, qq_dir, qq_args, seed, input_dir)
 
-    job_id = submit_utils.run_job(qq_script, no_submit=job.getboolean('no_submit'))
+    job_id = submit_utils.run_job(qq_script, dependency_ids=job_id,
+                                  no_submit=job.getboolean('no_submit'))
 
     return job_id, dla_flag, bal_flag
 
 
-def create_qq_script(config, job, qq_dirname, qq_args, seed, input_dir, output_dir):
+def create_qq_catalog(config, job, qq_dir, seed):
+    submit_utils.set_umask()
+
+    # Make the header
+    time = submit_utils.convert_job_time(0.2)
+    header = submit_utils.make_header(job.get('nersc_machine'), 'regular', 1, time=time,
+                                      omp_threads=128, job_name=f'qq_cat_{seed}',
+                                      err_file=qq_dir.run_dir/'run-%j.err',
+                                      out_file=qq_dir.run_dir/'run-%j.out')
+
+    seed_cat_path = qq_dir.qq_dir / "seed_zcat.fits"
+    text = '/global/cfs/cdirs/desicollab/users/acuceu/notebooks_perl/mocks/run_mocks/make_y1_cat.py'
+    text += f' -o {seed_cat_path} --seed {seed}'
+
+    full_text = header + text
+
+    # Write the script to file and run it.
+    script_path = qq_dir.scripts_dir / 'run_qq_seed_cat.sh'
+
+    submit_utils.write_script(script_path, full_text)
+    job_id = submit_utils.run_job(script_path, no_submit=job.getboolean('no_submit'))
+
+    return job_id, seed_cat_path
+
+
+def create_qq_script(config, job, qq_dir, qq_args, seed, input_dir):
 
     submit_utils.set_umask()
 
@@ -69,9 +107,6 @@ def create_qq_script(config, job, qq_dirname, qq_args, seed, input_dir, output_d
         nodes = config.getint('nodes', 8)
         nproc = config.getint('nproc', 32)
         slurm_hours = config.getfloat('slurm_hours', 0.5)
-
-    # Set up the directory structure to put everything into.
-    qq_dir = dir_handlers.QQDir(output_dir, qq_dirname)
 
     # Make the header
     time = submit_utils.convert_job_time(slurm_hours)
