@@ -46,8 +46,10 @@ def run_qq(config, job, qq_run_type, seed, mock_code, input_dir, output_dir):
         elif 'bal' in key:
             bal_flag = True
 
-        if key == 'dn_dzdm':
+        if key == 'dn_dzdm' and not y1_flag:
             qq_args += f' --{key} {mock_code}'
+        elif key == 'dn_dzdm':
+            qq_args += ' --dn_dzdm'
         elif key == 'add-LYB' and mock_code == 'saclay':
             continue
         else:
