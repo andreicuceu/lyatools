@@ -54,7 +54,7 @@ def run_qq(config, job, qq_run_type, seed, mock_code, input_dir, output_dir):
             qq_args += f' --{key} {val}'
 
     if y1_flag:
-        qq_args += f' --from-catalog {seed_cat_path} --raw-mock lyacolore'
+        qq_args += f' --raw-mock lyacolore --from-catalog {seed_cat_path}'
 
     qq_args += f' --seed {seed}'
     print(qq_args)
