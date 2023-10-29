@@ -77,8 +77,15 @@ def create_qq_catalog(config, job, qq_dir, seed):
                                       err_file=qq_dir.run_dir/'run-%j.err',
                                       out_file=qq_dir.run_dir/'run-%j.out')
 
+    text = '\n\n'
+    if job.get('desi_env_command', None) is None:
+        text += 'source /global/common/software/desi/desi_environment.sh master'
+    else:
+        text += job.get('desi_env_command')
+
+    text += '\n\n'
     seed_cat_path = qq_dir.qq_dir / "seed_zcat.fits"
-    text = '/global/cfs/cdirs/desicollab/users/acuceu/notebooks_perl/mocks/run_mocks/make_y1_cat.py'
+    text += '/global/cfs/cdirs/desicollab/users/acuceu/notebooks_perl/mocks/run_mocks/make_y1_cat.py'
     text += f' -o {seed_cat_path} --seed {seed}'
     text += '\n\n'
 
