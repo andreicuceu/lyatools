@@ -54,7 +54,7 @@ def run_qq(config, job, qq_run_type, seed, mock_code, input_dir, output_dir):
             qq_args += f' --{key} {val}'
 
     if y1_flag:
-        qq_args += f' --from_catalog {seed_cat_path} --raw-mock lyacolore'
+        qq_args += f' --from-catalog {seed_cat_path} --raw-mock lyacolore'
 
     qq_args += f' --seed {seed}'
     print(qq_args)
@@ -94,8 +94,10 @@ def create_qq_catalog(config, job, qq_dir, seed):
     # Write the script to file and run it.
     script_path = qq_dir.scripts_dir / 'run_qq_seed_cat.sh'
 
-    submit_utils.write_script(script_path, full_text)
-    job_id = submit_utils.run_job(script_path, no_submit=job.getboolean('no_submit'))
+    job_id = None
+    if not seed_cat_path.is_file():
+        submit_utils.write_script(script_path, full_text)
+        job_id = submit_utils.run_job(script_path, no_submit=job.getboolean('no_submit'))
 
     return job_id, seed_cat_path
 
