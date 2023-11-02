@@ -80,7 +80,7 @@ def make_header(machine: str = 'perl', queue: str = 'regular', nodes: int = int(
     header += f'#SBATCH -C {machine_string}\n'
     header += '#SBATCH -A desi\n\n'
 
-    header += 'umask 0027\n'
+    header += 'umask 0007\n'
     header += f'export OMP_NUM_THREADS={omp_threads}\n\n'
 
     return header
@@ -166,13 +166,13 @@ def print_spacer_line() -> None:
     print('')
 
 
-def set_umask(mask: str = '0027') -> None:
+def set_umask(mask: str = '0007') -> None:
     """Sets the value of umask.
 
     Parameters
     ----------
     mask : str, optional
-        mask value, by default '0027'
+        mask value, by default '0007'
     """
     _ = os.umask(int(mask, 8))
 
