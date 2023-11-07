@@ -38,6 +38,7 @@ class RunMocks:
         self.qq_run_type = self.config['mock_setup'].get('qq_run_type')
         self.run_type = self.config['mock_setup'].get('run_type')
         self.analysis_name = self.config['mock_setup'].get('analysis_name')
+        self.custom_qso_cat = self.config['mock_setup'].get('custom_qso_cat', None)
 
         if self.job.getboolean('test_run'):
             self.qq_run_type = 'desi-test'
@@ -128,7 +129,7 @@ class RunMocks:
                         true_corr_dict[key] = []
                     true_corr_dict[key] += [file]
 
-            # Run true continuum analysis
+            # Run continuum fitted analysis
             if not self.no_run_cont_fit_flag:
                 self.save_config(analysis_struct)
                 corr_files, job_id = self.run_analysis(seed, analysis_struct, true_continuum=False,
@@ -392,8 +393,11 @@ class RunMocks:
                              zcat_job_id=None):
         qq_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}' / f'{self.qq_run_type}'
 
-        no_zerr = not self.inject_zerr.getboolean('zerr_in_deltas', False)
-        zcat_file = self.get_zcat_path(seed, no_zerr=no_zerr)
+        if self.custom_qso_cat is not None:
+            no_zerr = not self.inject_zerr.getboolean('zerr_in_deltas', False)
+            zcat_file = self.get_zcat_path(seed, no_zerr=no_zerr)
+        else:
+            zcat_file = submit_utils.find_path(self.custom_qso_cat)
         # zcat_file = qq_dir / 'zcat.fits'
         # if self.run_zerr_flag:
         #     distribution = self.inject_zerr.get('distribution')
@@ -431,8 +435,11 @@ class RunMocks:
     def run_qsonic(self, seed, analysis_struct, true_continuum=False, zcat_job_id=None):
         qq_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}' / f'{self.qq_run_type}'
 
-        no_zerr = not self.inject_zerr.getboolean('zerr_in_deltas', False)
-        zcat_file = self.get_zcat_path(seed, no_zerr=no_zerr)
+        if self.custom_qso_cat is not None:
+            no_zerr = not self.inject_zerr.getboolean('zerr_in_deltas', False)
+            zcat_file = self.get_zcat_path(seed, no_zerr=no_zerr)
+        else:
+            zcat_file = submit_utils.find_path(self.custom_qso_cat)
         # zcat_file = qq_dir / 'zcat.fits'
         # if self.run_zerr_flag:
         #     distribution = self.inject_zerr.get('distribution')
@@ -456,7 +463,10 @@ class RunMocks:
     def run_correlations(self, seed, analysis_struct, delta_job_ids=None, raw_analysis=False):
         # qq_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}' / f'{self.qq_run_type}'
 
-        zcat_file = self.get_zcat_path(seed)
+        if self.custom_qso_cat is not None:
+            zcat_file = self.get_zcat_path(seed)
+        else:
+            zcat_file = submit_utils.find_path(self.custom_qso_cat)
         # zcat_file = qq_dir / 'zcat.fits'
         # if self.run_zerr_flag:
         #     distribution = self.inject_zerr.get('distribution')
