@@ -393,7 +393,7 @@ class RunMocks:
                              zcat_job_id=None):
         qq_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}' / f'{self.qq_run_type}'
 
-        if self.custom_qso_cat is not None:
+        if self.custom_qso_cat is None:
             no_zerr = not self.inject_zerr.getboolean('zerr_in_deltas', False)
             zcat_file = self.get_zcat_path(seed, no_zerr=no_zerr)
         else:
@@ -435,7 +435,7 @@ class RunMocks:
     def run_qsonic(self, seed, analysis_struct, true_continuum=False, zcat_job_id=None):
         qq_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}' / f'{self.qq_run_type}'
 
-        if self.custom_qso_cat is not None:
+        if self.custom_qso_cat is None:
             no_zerr = not self.inject_zerr.getboolean('zerr_in_deltas', False)
             zcat_file = self.get_zcat_path(seed, no_zerr=no_zerr)
         else:
@@ -463,7 +463,7 @@ class RunMocks:
     def run_correlations(self, seed, analysis_struct, delta_job_ids=None, raw_analysis=False):
         # qq_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}' / f'{self.qq_run_type}'
 
-        if self.custom_qso_cat is not None:
+        if self.custom_qso_cat is None:
             zcat_file = self.get_zcat_path(seed)
         else:
             zcat_file = submit_utils.find_path(self.custom_qso_cat)
