@@ -88,9 +88,9 @@ def create_qq_catalog(config, input_dir, job, qq_dir, seed, mock_code):
     text += '\n\n'
     seed_cat_path = qq_dir.qq_dir / "seed_zcat.fits"
     if mock_code == 'lyacolore':
-        master_cat_path = f"{input_dir}/'v9.0.{seed}'/master.fits"
+        master_cat_path = f"{input_dir}/master.fits"
     elif mock_code == 'saclay':
-        master_cat_path = f"{input_dir}/'v4.7.{seed}'/master.fits"
+        master_cat_path = f"{input_dir}/master.fits"
     else:
         raise ValueError(f'Unknown mock code {mock_code}')
 
