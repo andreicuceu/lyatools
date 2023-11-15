@@ -67,12 +67,12 @@ QQ_RUN_ARGS = {
         'metal-strengths': '0.1901 0.0697 0.0335 0.0187 1.3e-03 3.5e-03 0.7e-03 1.4e-03'
     },
     'desi-4.124-4-prod-saclay': {
-        'dn_dzdm': '',
+        # 'dn_dzdm': '',
         'exptime': 4000,
         'zbest': '',
         'bbflux': '',
         'save-continuum': '',
-        'desi-footprint': '',
+        # 'desi-footprint': '',
         'zmin': '1.7',
         'dla': 'file',
         'balprob': 0.16,

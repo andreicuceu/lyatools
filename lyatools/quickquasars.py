@@ -48,15 +48,13 @@ def run_qq(config, job, qq_run_type, seed, mock_code, input_dir, output_dir):
 
         if key == 'dn_dzdm' and not y1_flag:
             qq_args += f' --{key} {mock_code}'
-        elif key == 'dn_dzdm':
-            qq_args += ' --dn_dzdm'
         elif key == 'add-LYB' and mock_code == 'saclay':
             continue
         else:
             qq_args += f' --{key} {val}'
 
     if y1_flag:
-        qq_args += f' --raw-mock {mock_code} --from-catalog {seed_cat_path}'
+        qq_args += f' --from-catalog {seed_cat_path}'
 
     qq_args += f' --seed {seed}'
     print(qq_args)
