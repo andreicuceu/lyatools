@@ -66,7 +66,7 @@ QQ_RUN_ARGS = {
         'metals': 'LYB LY3 LY4 LY5 SiII(1260) SiIII(1207) SiII(1193) SiII(1190)',
         'metal-strengths': '0.1901 0.0697 0.0335 0.0187 1.3e-03 3.5e-03 0.7e-03 1.4e-03'
     },
-    'desi-4.124-4-metal_tuning_v1': {
+    'desi-4.124-4-metal_tuning_v2': {
         'dn_dzdm': '',
         'exptime': 4000,
         'zbest': '',
@@ -79,7 +79,8 @@ QQ_RUN_ARGS = {
         'metals': 'LYB LY3 LY4 LY5 SiII(1260) SiIII(1207) SiII(1193) SiII(1190)',
         # 'metal-strengths': '0.1901 0.0697 0.0335 0.0187 1.3857e-03 6.6112e-03 8.6849e-04 1.6696e-03'
         # 'metal-strengths': '0.1901 0.0697 0.0335 0.0187 1.3e-03 3.5e-03 0.7e-03 1.4e-03'
-        'metal-strengths': '0.1901 0.0697 0.0335 0.0187 6.5547e-04 2.6013e-03 6.4240e-04 8.5913e-04'
+        # 'metal-strengths': '0.1901 0.0697 0.0335 0.0187 6.5547e-04 2.6013e-03 6.4240e-04 8.5913e-04'
+        'metal-strengths': '0.1901 0.0697 0.0335 0.0187 5.7e-04 1.6e-03 5.3e-04 6.8e-04'
     },
     'desi-4.134-4': {
         'dn_dzdm': '',
