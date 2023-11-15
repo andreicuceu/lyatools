@@ -66,6 +66,19 @@ QQ_RUN_ARGS = {
         'metals': 'LYB LY3 LY4 LY5 SiII(1260) SiIII(1207) SiII(1193) SiII(1190)',
         'metal-strengths': '0.1901 0.0697 0.0335 0.0187 1.3e-03 3.5e-03 0.7e-03 1.4e-03'
     },
+    'desi-4.124-4-prod-saclay': {
+        'dn_dzdm': '',
+        'exptime': 4000,
+        'zbest': '',
+        'bbflux': '',
+        'save-continuum': '',
+        'desi-footprint': '',
+        'zmin': '1.7',
+        'dla': 'file',
+        'balprob': 0.16,
+        'metals': 'LYB LY3 LY4 LY5 SiII(1260) SiIII(1207) SiII(1193) SiII(1190)',
+        'metal-strengths': '0.1901 0.0697 0.0335 0.0187 5.7e-04 1.6e-03 5.3e-04 6.8e-04'
+    },
     'desi-4.124-4-metal_tuning_v2': {
         'dn_dzdm': '',
         'exptime': 4000,
