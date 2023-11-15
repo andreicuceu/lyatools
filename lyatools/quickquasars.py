@@ -32,7 +32,7 @@ def run_qq(config, job, qq_run_type, seed, mock_code, input_dir, output_dir):
     seed_cat_path = None
     y1_flag = config.getboolean('y1_flag', False)
     if y1_flag:
-        job_id, seed_cat_path = create_qq_catalog(config, job, qq_dir, seed)
+        job_id, seed_cat_path = create_qq_catalog(config, input_dir, job, qq_dir, seed, mock_code)
 
     run_args = QQ_RUN_ARGS[qq_run_type]
 
@@ -56,7 +56,7 @@ def run_qq(config, job, qq_run_type, seed, mock_code, input_dir, output_dir):
             qq_args += f' --{key} {val}'
 
     if y1_flag:
-        qq_args += f' --raw-mock lyacolore --from-catalog {seed_cat_path}'
+        qq_args += f' --raw-mock {mock_code} --from-catalog {seed_cat_path}'
 
     qq_args += f' --seed {seed}'
     print(qq_args)
@@ -69,7 +69,7 @@ def run_qq(config, job, qq_run_type, seed, mock_code, input_dir, output_dir):
     return job_id, dla_flag, bal_flag
 
 
-def create_qq_catalog(config, job, qq_dir, seed):
+def create_qq_catalog(config, input_dir, job, qq_dir, seed, mock_code):
     submit_utils.set_umask()
 
     # Make the header
@@ -87,8 +87,17 @@ def create_qq_catalog(config, job, qq_dir, seed):
 
     text += '\n\n'
     seed_cat_path = qq_dir.qq_dir / "seed_zcat.fits"
-    text += '/global/cfs/cdirs/desicollab/users/acuceu/notebooks_perl/mocks/run_mocks/make_y1_cat.py'
-    text += f' -o {seed_cat_path} --seed {seed}'
+    if mock_code == 'lyacolore':
+        master_cat_path = f"{input_dir}/'v9.0.{seed}'/master.fits"
+    elif mock_code == 'saclay':
+        master_cat_path = f"{input_dir}/'v4.7.{seed}'/master.fits"
+    else:
+        raise ValueError(f'Unknown mock code {mock_code}')
+
+    # text += '/global/cfs/cdirs/desicollab/users/acuceu/notebooks_perl/mocks/run_mocks/make_y1_cat.py'
+    text = f'gen_qso_catalog -i {master_cat_path} -o {seed_cat_path} --seed {seed}'
+    if config.getboolean('invert_cat_seed', False):
+        text += ' --invert'
     text += '\n\n'
 
     full_text = header + text
