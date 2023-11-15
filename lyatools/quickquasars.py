@@ -95,7 +95,7 @@ def create_qq_catalog(config, input_dir, job, qq_dir, seed, mock_code):
         raise ValueError(f'Unknown mock code {mock_code}')
 
     # text += '/global/cfs/cdirs/desicollab/users/acuceu/notebooks_perl/mocks/run_mocks/make_y1_cat.py'
-    text = f'gen_qso_catalog -i {master_cat_path} -o {seed_cat_path} --seed {seed}'
+    text += f'gen_qso_catalog -i {master_cat_path} -o {seed_cat_path} --seed {seed}'
     if config.getboolean('invert_cat_seed', False):
         text += ' --invert'
     text += '\n\n'
