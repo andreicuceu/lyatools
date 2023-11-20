@@ -89,4 +89,4 @@ Finally, you will need a picca environment with Lyatools installed. For the firs
     }
 and add `env_command = piccaenv` to your config file.
 
-You are now ready to run DESI Lyman-alpha Y1 mocks.
+You are now ready to run DESI Lyman-alpha Y1 mocks. There are two example Y1 config files you can checkout for running the two types of mocks: [LyaCoLoRe](https://github.com/andreicuceu/lyatools/blob/main/examples/desi_lyacolore_y1.ini) and [Saclay](https://github.com/andreicuceu/lyatools/blob/main/examples/desi_saclay_y1.ini).
