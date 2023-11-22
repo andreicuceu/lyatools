@@ -38,6 +38,7 @@ class RunMocks:
         self.input_seeds = self.config['mock_setup'].get('input_seeds', None)
         self.cat_seeds = self.config['mock_setup'].get('cat_seeds', None)
         self.qq_seeds = self.config['mock_setup'].get('qq_seeds')
+        self.invert_cat_seed = self.qq.getboolean('invert_cat_seed', False)
 
         self.qq_run_type = self.config['mock_setup'].get('qq_run_type')
         self.run_type = self.config['mock_setup'].get('run_type')
@@ -94,11 +95,13 @@ class RunMocks:
 
         for input_seed, cat_seed, qq_seed in zip(input_seeds, cat_seeds, run_seeds):
             seed = f'{input_seed}.{cat_seed}.{qq_seed}'
+            if self.invert_cat_seed:
+                seed = f'{input_seed}.{cat_seed}i.{qq_seed}'
 
             # Run QQ
             zcat_job_id = None
             if self.run_qq_flag:
-                qq_job_id = self.run_qq(input_seed, cat_seed, qq_seed)
+                qq_job_id = self.run_qq(input_seed, cat_seed, qq_seed, seed)
                 submit_utils.print_spacer_line()
 
                 zcat_job_id = [self.run_zcat(seed, qq_job_id)]
@@ -236,10 +239,10 @@ class RunMocks:
 
         return corr_files, job_id
 
-    def run_qq(self, input_seed, cat_seed, qq_seed):
+    def run_qq(self, input_seed, cat_seed, qq_seed, seed):
         input_dir = Path(self.input_dir) / f'{self.mock_version}.{input_seed}'
-        output_dir = Path(self.qq_dir) / f'{self.mock_version}.{input_seed}.{cat_seed}.{qq_seed}'
-        print(f'Submitting QQ run for mock {self.mock_version}.{input_seed}.{cat_seed}.{qq_seed}')
+        output_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}'
+        print(f'Submitting QQ run for mock {self.mock_version}.{seed}')
 
         qq_job_id, self.dla_flag, self.bal_flag = run_qq(
             self.qq, self.job, self.qq_run_type, cat_seed, qq_seed,
