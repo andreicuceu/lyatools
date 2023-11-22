@@ -34,7 +34,14 @@ def run_qq(config, job, qq_run_type, seed, mock_code, input_dir, output_dir):
     if y1_flag:
         job_id, seed_cat_path = create_qq_catalog(config, input_dir, job, qq_dir, seed, mock_code)
 
-    run_args = QQ_RUN_ARGS[qq_run_type]
+    run_type = qq_run_type
+    if config.getboolean('invert_cat_seed', False):
+        run_type_list = qq_run_type.split('-')
+        if run_type_list[-1] != 'inverted':
+            raise ValueError('invert_cat_seed only works with inverted mocks.'
+                             'Append "inverted" to the qq run type to use it.')
+        run_type = '-'.join(run_type_list[:-1])
+    run_args = QQ_RUN_ARGS[run_type]
 
     print('Found the following arguments to pass to quickquasars:')
     qq_args = ''
