@@ -96,9 +96,6 @@ def get_fit_info(fit_info_config=None):
         elif key in fit_info:
             fit_info[key] = fit_info_config[key]
 
-        else:
-            raise ValueError(f'Key {key} not recognized.')
-
     return fit_info
 
 
