@@ -43,6 +43,7 @@ def main():
     input_seeds = config['mock_setup'].get('input_seeds', None)
     cat_seeds = config['mock_setup'].get('cat_seeds', None)
     qq_seeds = config['mock_setup'].get('qq_seeds')
+    inverted_cat_seed = config['mock_setup'].getboolean('inverted_cat_seed', False)
 
     if input_seeds is None:
         input_seeds = qq_seeds
@@ -70,7 +71,11 @@ def main():
     print_func(f'Rank {cpu_rank} running seeds {start} to {stop}.')
 
     for i in range(start, stop):
-        version = f'{mock_version}.{input_seeds[i]}.{cat_seeds[i]}.{seeds[i]}'
+        if inverted_cat_seed:
+            version = f'{mock_version}.{input_seeds[i]}.{cat_seeds[i]}i.{seeds[i]}'
+        else:
+            version = f'{mock_version}.{input_seeds[i]}.{cat_seeds[i]}.{seeds[i]}'
+
         if name_extension is not None:
             config['fit_info']['name_extension'] = f'{name_extension}_{version}'
         else:
