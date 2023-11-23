@@ -24,10 +24,8 @@ def main():
     num_cpus = mpi_comm.Get_size()
 
     def print_func(message):
-        if cpu_rank == 0:
-            print(message)
+        print(f'Rank {cpu_rank}: {message}')
         sys.stdout.flush()
-        mpi_comm.barrier()
 
     config = configparser.ConfigParser()
     config.read(args.config_file)
@@ -68,7 +66,7 @@ def main():
         start = int(cpu_rank * num_tasks_per_proc + remainder)
         stop = int(start + num_tasks_per_proc)
 
-    print_func(f'Rank {cpu_rank} running seeds {start} to {stop}.')
+    print_func(f'Running seeds {start} to {stop}.')
 
     for i in range(start, stop):
         if inverted_cat_seed:
@@ -85,6 +83,7 @@ def main():
         corr_path = corr_path / f'{analysis_name}' / 'correlations'
 
         run_vega_fitter(config, corr_path, output_dir, run_flag=run_flag)
+        print_func(f'Finished seed {seeds[i]}.')
 
 
 if __name__ == '__main__':
