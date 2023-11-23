@@ -1,10 +1,14 @@
+from pathlib import Path
 from vega import BuildConfig, FitResults, run_vega
 
 
 def get_correlations_dict(corr_config, corr_path):
     correlations = {'lyaxlya': {}, 'lyaxqso': {}, 'lyaxlyb': {}, 'lybxqso': {}}
 
-    dist_path = corr_config['dist_path']
+    dist_path = Path(corr_config['dist_path'])
+    if not dist_path.exists():
+        raise ValueError(f'Distortion path does not exist: {dist_path}')
+
     rmin = corr_config.getfloat('rmin', 10.)
     rmax = corr_config.getfloat('rmax', 180.)
     fast_metals = corr_config.getboolean('fast_metals', True)
