@@ -107,7 +107,7 @@ def build_config(config, corr_path, out_path):
     fit_type = config['fit_info']['fit_type']
     name_extension = config['fit_info']['name_extension']
 
-    fit_info['sample_params'] = config['fit_info']['sample_params']
+    fit_info['sample_params'] = config['fit_info']['sample_params'].split(' ')
 
     parameters = {}
     for key in config['parameters']:
