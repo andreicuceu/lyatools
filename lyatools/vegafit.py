@@ -103,7 +103,7 @@ def get_fit_info(fit_info_config=None):
 
 
 def build_config(config, corr_path, out_path):
-    correlations = get_correlations_dict(corr_path, config['correlations'])
+    correlations = get_correlations_dict(config['correlations'], corr_path)
     config_builder = get_builder(config['builder'])
     fit_info = get_fit_info(config['fit_info'])
 
