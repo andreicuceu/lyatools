@@ -54,7 +54,14 @@ def main():
     print_func(f'Rank {cpu_rank} running seeds {start} to {stop}.')
 
     for seed in seeds[start:stop]:
-        corr_path = analysis_dir / f'{mock_version}.{seed}' / f'{qq_run_type}'
+        version = f'{mock_version}.{seed}'
+        name_extension = config['fit_info'].get('name_extension', None)
+        if name_extension is not None:
+            config['fit_info']['name_extension'] = f'{name_extension}_{version}'
+        else:
+            config['fit_info']['name_extension'] = f'{version}'
+
+        corr_path = analysis_dir / f'{version}' / f'{qq_run_type}'
         corr_path = corr_path / f'{analysis_name}' / 'correlations'
 
         run_vega_fitter(config, corr_path, output_dir, run_flag=run_flag)
