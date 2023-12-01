@@ -58,10 +58,13 @@ def get_builder(builder_config=None):
         return BuildConfig(options, overwrite=True)
 
     for key in builder_config:
-        if key == 'metals':
-            options[key] = builder_config[key].split(' ')
-        if key in options:
-            options[key] = builder_config[key]
+        if builder_config[key] == 'None' and key in options:
+            del options[key]
+        else:
+            if key == 'metals':
+                options[key] = builder_config[key].split(' ')
+            if key in options:
+                options[key] = builder_config[key]
 
     return BuildConfig(options, overwrite=True)
 
