@@ -76,11 +76,12 @@ def get_fit_info(fit_info_config=None):
         'Polychord': {'num_live': '192', 'boost_posterior': '0'},
         'priors': {'beta_hcd': 'gaussian 0.5 0.09'}
     }
-
+    print(fit_info_config)
     if fit_info_config is None:
         return fit_info
 
     for key in fit_info_config:
+        print(key)
         if 'bias_beta_config' in key:
             _, key2 = key.split('.')
             fit_info['bias_beta_config'][key2] = fit_info_config[key]
@@ -88,9 +89,10 @@ def get_fit_info(fit_info_config=None):
         elif 'Polychord' in key:
             _, key2 = key.split('.')
             fit_info['Polychord'][key2] = fit_info_config[key]
-
         elif 'priors' in key:
+            print(key)
             if key == 'priors.None':
+                print(key)
                 fit_info['priors'] = {}
             else:
                 _, key2 = key.split('.')
