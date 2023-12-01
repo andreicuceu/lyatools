@@ -28,6 +28,7 @@ def main():
         sys.stdout.flush()
 
     config = configparser.ConfigParser()
+    config.optionxform = lambda option: option
     config.read(args.config_file)
 
     analysis_dir = Path(config['mock_setup'].get('analysis_dir'))
