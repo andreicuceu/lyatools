@@ -25,8 +25,11 @@ def find_dmat(dmat_path, corr_type):
     return dmat_dir / name_list[0]
 
 
-def make_export_runs(seed, analysis_struct, corr_paths, job, add_dmat=False, dmat_path=None,
-                     shuffled=False, corr_job_ids=None):
+def make_export_runs(seed, analysis_struct, corr_paths, job, config, corr_job_ids=None):
+    add_dmat = config.getboolean('add_dmat')
+    dmat_path = config.get('dmat_path')
+    shuffled = config.getboolean('subtract_shuffled')
+
     corr_dict = {}
     export_commands = []
     for cf_path in corr_paths:
@@ -62,6 +65,10 @@ def make_export_runs(seed, analysis_struct, corr_paths, job, add_dmat=False, dma
 
             if shuffled_path is not None:
                 command += f'--remove-shuffled-correlation {shuffled_path} '
+
+            if config.get(f'corr-mat-{corr_type}') is not None:
+                corr_mat = config.get(f'corr-mat-{corr_type}')
+                command += f'--cor {corr_mat} '
 
             export_commands += [command]
 

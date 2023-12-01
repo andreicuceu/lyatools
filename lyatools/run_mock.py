@@ -470,11 +470,8 @@ class RunMocks:
                              'In the [control] section set "run_corr" to True. '
                              'Correlations are *not* recomputed if they already exist.')
 
-        corr_dict, job_id = make_export_runs(seed, analysis_struct, corr_paths, self.job,
-                                             add_dmat=self.export.getboolean('add_dmat'),
-                                             dmat_path=self.export.get('dmat_path'),
-                                             shuffled=self.export.getboolean('subtract_shuffled'),
-                                             corr_job_ids=corr_job_ids)
+        corr_dict, job_id = make_export_runs(
+            seed, analysis_struct, corr_paths, self.job, self.export, corr_job_ids=corr_job_ids)
 
         return corr_dict, job_id
 
