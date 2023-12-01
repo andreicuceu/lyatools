@@ -33,7 +33,12 @@ def make_export_runs(seed, analysis_struct, corr_paths, job, config, corr_job_id
     corr_dict = {}
     export_commands = []
     for cf_path in corr_paths:
-        exp_file = submit_utils.append_string_to_correlation_path(cf_path, '-exp')
+        exp_string = config.get('exp_string')
+
+        if exp_string is not None:
+            exp_file = submit_utils.append_string_to_correlation_path(cf_path, f'_{exp_string}-exp')
+        else:
+            exp_file = submit_utils.append_string_to_correlation_path(cf_path, '-exp')
 
         shuffled_path = None
         if shuffled:
