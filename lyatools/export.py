@@ -258,17 +258,17 @@ def mpi_export(export_dict, job, analysis_struct, corr_job_ids=None):
     individual_cov_commands = []
     for cov_commands in export_cov_commands:
         if len(cov_commands) >= 1:
-            individual_cov_commands += cov_commands[0]
+            individual_cov_commands += [cov_commands[0]]
 
     smooth_cov_commands = []
     for cov_commands in export_cov_commands:
         if len(cov_commands) >= 2:
-            smooth_cov_commands += cov_commands[1]
+            smooth_cov_commands += [cov_commands[1]]
 
     stacked_cov_commands = []
     for cov_commands in export_cov_commands:
         if len(cov_commands) >= 3:
-            stacked_cov_commands += cov_commands[2]
+            stacked_cov_commands += [cov_commands[2]]
 
     if len(individual_cov_commands) > 1:
         mpi_export_covariances(
