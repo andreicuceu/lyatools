@@ -175,19 +175,19 @@ class RunMocks:
 
             submit_utils.print_spacer_line()
 
+        global_struct, true_global_struct, raw_global_struct = self.get_global_struct()
+
         if self.export.getboolean('mpi_export_flag', False):
             print('Starting MPI export job.')
             if self.run_raw_flag:
-                mpi_export(raw_export_dict, self.job, raw_analysis_struct, exp_job_ids)
+                mpi_export(raw_export_dict, self.job, raw_global_struct, exp_job_ids)
             if self.run_true_cont_flag:
-                mpi_export(true_export_dict, self.job, true_analysis_struct, true_exp_job_ids)
+                mpi_export(true_export_dict, self.job, true_global_struct, true_exp_job_ids)
             if not self.no_run_cont_fit_flag:
-                mpi_export(export_dict, self.job, analysis_struct, exp_job_ids)
+                mpi_export(export_dict, self.job, global_struct, exp_job_ids)
             submit_utils.print_spacer_line()
 
         if self.export.getboolean('stack_correlations'):
-            global_struct, true_global_struct, raw_global_struct = self.get_global_struct()
-
             add_dmat = self.export.getboolean('add_dmat')
             dmat_path = self.export.get('dmat_path')
             name_string = self.corr.get('name_string', None)
