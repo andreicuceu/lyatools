@@ -123,7 +123,7 @@ def export_full_cov(seed, analysis_struct, corr_paths, job, corr_job_ids=None):
     command = ''
     if not output_path.is_file():
         command += '/global/homes/a/acuceu/desi_acuceu/notebooks_perl'
-        command += '/mocks/covariance/export_individual_cov.py '
+        command += '/mocks/covariance/export_full_cov.py '
         command += '-i /global/cfs/projectdirs/desi/users/acuceu/notebooks_perl'
         command += '/mocks/covariance/output/cov-mat-colore-160-mocks-smooth-fixed.fits '
         command += f'-c {cf_paths_str} -o {output_path}\n\n'
@@ -137,7 +137,7 @@ def export_full_cov(seed, analysis_struct, corr_paths, job, corr_job_ids=None):
         return None
 
     # Make the header
-    header = submit_utils.make_header(job.get('nersc_machine'), time=0.75,
+    header = submit_utils.make_header(job.get('nersc_machine'), time=0.2,
                                       omp_threads=64, job_name=f'export-cov_{seed}',
                                       err_file=analysis_struct.logs_dir/f'export-cov-{seed}-%j.err',
                                       out_file=analysis_struct.logs_dir/f'export-cov-{seed}-%j.out')
