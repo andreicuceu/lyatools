@@ -98,6 +98,9 @@ def get_fit_info(fit_info_config=None):
         elif key in fit_info:
             fit_info[key] = fit_info_config[key]
 
+        if key == 'global_cov_file':
+            fit_info['global_cov_file'] = fit_info_config[key]
+
     return fit_info
 
 
