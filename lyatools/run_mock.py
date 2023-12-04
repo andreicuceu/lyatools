@@ -7,7 +7,7 @@ from lyatools.quickquasars import run_qq
 from lyatools.delta_extraction import make_delta_runs
 from lyatools.qsonic import make_qsonic_runs
 from lyatools.correlations import make_correlation_runs
-from lyatools.export import make_export_runs, stack_correlations, export_full_cov
+from lyatools.export import make_export_runs, stack_correlations, export_full_cov, mpi_export
 
 
 class RunMocks:
@@ -93,6 +93,10 @@ class RunMocks:
         true_exp_job_ids = []
         exp_job_ids = []
 
+        raw_export_dict = {'export_commands': [], 'export_cov_commands': []}
+        true_export_dict = {'export_commands': [], 'export_cov_commands': []}
+        export_dict = {'export_commands': [], 'export_cov_commands': []}
+
         for input_seed, cat_seed, qq_seed in zip(input_seeds, cat_seeds, run_seeds):
             seed = f'{input_seed}.{cat_seed}.{qq_seed}'
             if self.invert_cat_seed:
@@ -124,7 +128,7 @@ class RunMocks:
             # Run raw analysis
             if self.run_raw_flag:
                 self.save_config(raw_analysis_struct)
-                corr_files, job_id = self.run_analysis(
+                corr_files, job_id, export_commands, export_cov_commands = self.run_analysis(
                     seed, raw_analysis_struct, true_continuum=False, raw_analysis=True,
                     zcat_job_id=zcat_job_id, input_seed=input_seed
                 )
@@ -134,10 +138,13 @@ class RunMocks:
                         raw_corr_dict[key] = []
                     raw_corr_dict[key] += [file]
 
+                raw_export_dict['export_commands'].append(export_commands)
+                raw_export_dict['export_cov_commands'].append(export_cov_commands)
+
             # Run true continuum analysis
             if self.run_true_cont_flag:
                 self.save_config(true_analysis_struct)
-                corr_files, job_id = self.run_analysis(
+                corr_files, job_id, export_commands, export_cov_commands = self.run_analysis(
                     seed, true_analysis_struct, true_continuum=True, raw_analysis=False,
                     zcat_job_id=zcat_job_id
                 )
@@ -147,10 +154,13 @@ class RunMocks:
                         true_corr_dict[key] = []
                     true_corr_dict[key] += [file]
 
+                true_export_dict['export_commands'].append(export_commands)
+                true_export_dict['export_cov_commands'].append(export_cov_commands)
+
             # Run continuum fitted analysis
             if not self.no_run_cont_fit_flag:
                 self.save_config(analysis_struct)
-                corr_files, job_id = self.run_analysis(
+                corr_files, job_id, export_commands, export_cov_commands = self.run_analysis(
                     seed, analysis_struct, true_continuum=False, raw_analysis=False,
                     zcat_job_id=zcat_job_id
                 )
@@ -160,6 +170,19 @@ class RunMocks:
                         corr_dict[key] = []
                     corr_dict[key] += [file]
 
+                export_dict['export_commands'].append(export_commands)
+                export_dict['export_cov_commands'].append(export_cov_commands)
+
+            submit_utils.print_spacer_line()
+
+        if self.export.getboolean('mpi_export_flag', False):
+            print('Starting MPI export job.')
+            if self.run_raw_flag:
+                mpi_export(raw_export_dict, self.job, raw_analysis_struct, exp_job_ids)
+            if self.run_true_cont_flag:
+                mpi_export(true_export_dict, self.job, true_analysis_struct, true_exp_job_ids)
+            if not self.no_run_cont_fit_flag:
+                mpi_export(export_dict, self.job, analysis_struct, exp_job_ids)
             submit_utils.print_spacer_line()
 
         if self.export.getboolean('stack_correlations'):
@@ -233,11 +256,11 @@ class RunMocks:
         job_id = None
         if self.run_export_flag:
             print(f'Starting export jobs for seed {seed}.')
-            corr_files, job_id = self.run_export(seed, analysis_struct, corr_paths,
-                                                 corr_job_ids=corr_job_ids)
+            corr_files, job_id, export_commands, export_cov_commands = self.run_export(
+                seed, analysis_struct, corr_paths, corr_job_ids=corr_job_ids)
         submit_utils.print_spacer_line()
 
-        return corr_files, job_id
+        return corr_files, job_id, export_commands, export_cov_commands
 
     def run_qq(self, input_seed, cat_seed, qq_seed, seed):
         input_dir = Path(self.input_dir) / f'{self.mock_version}.{input_seed}'
@@ -470,13 +493,13 @@ class RunMocks:
                              'In the [control] section set "run_corr" to True. '
                              'Correlations are *not* recomputed if they already exist.')
 
-        corr_dict, job_id = make_export_runs(
+        corr_dict, job_id, export_commands = make_export_runs(
             seed, analysis_struct, corr_paths, self.job, self.export, corr_job_ids=corr_job_ids)
 
-        job_id_cov = export_full_cov(
-            seed, analysis_struct, corr_paths, self.job, corr_job_ids=corr_job_ids)
+        job_id_cov, export_cov_commands = export_full_cov(
+            seed, analysis_struct, corr_paths, self.job, self.export, corr_job_ids=corr_job_ids)
 
-        return corr_dict, [job_id, job_id_cov]
+        return corr_dict, [job_id, job_id_cov], export_commands, export_cov_commands
 
     def input_dir_from_seed(self, input_seed):
         return Path(self.input_dir) / f'{self.mock_version}.{input_seed}'
