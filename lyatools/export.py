@@ -79,7 +79,7 @@ def make_export_runs(seed, analysis_struct, corr_paths, job, config, corr_job_id
 
     if len(export_commands) < 1:
         print(f'No individual mock export needed for seed {seed}.')
-        return corr_dict, None
+        return corr_dict, None, None
 
     # Make the header
     header = submit_utils.make_header(job.get('nersc_machine'), time=0.2,
@@ -245,6 +245,10 @@ def stack_correlations(corr_dict, global_struct, job, add_dmat=False, dmat_path=
 def mpi_export(export_dict, job, analysis_struct, corr_job_ids=None):
     export_commands = export_dict['export_commands']
     export_cov_commands = export_dict['export_cov_commands']
+
+    # Filter Nones
+    export_commands = [command for command in export_commands if command is not None]
+    export_cov_commands = [command for command in export_cov_commands if command is not None]
 
     if len(export_commands) > 1:
         mpi_export_correlations(export_commands, job, analysis_struct, corr_job_ids=corr_job_ids)
