@@ -119,17 +119,25 @@ def export_full_cov(seed, analysis_struct, corr_paths, job, corr_job_ids=None):
     output_path = corr_paths[0].parent / 'full_cov.fits'
     output_path_smoothed = corr_paths[0].parent / 'full_cov_smooth.fits'
     cf_paths_str = ' '.join([str(cf_path) for cf_path in ordered_cf_paths])
-    command = '/global/homes/a/acuceu/desi_acuceu/notebooks_perl'
-    command += f'/mocks/covariance/export_individual_cov.py -i {cf_paths_str} -o {output_path}\n\n'
 
-    command += '/global/homes/a/acuceu/desi_acuceu/notebooks_perl/mocks/covariance/smoothit.py '
-    command += f'-i {output_path} -o {output_path_smoothed} '
+    command = ''
+    if not output_path.is_file():
+        command += '/global/homes/a/acuceu/desi_acuceu/notebooks_perl'
+        command += f'/mocks/covariance/export_individual_cov.py -i {cf_paths_str} -o {output_path}\n\n'
+
+    if not output_path_smoothed.is_file():
+        command += '/global/homes/a/acuceu/desi_acuceu/notebooks_perl/mocks/covariance/smoothit.py '
+        command += f'-i {output_path} -o {output_path_smoothed} '
+
+    if command == '':
+        print(f'Full covariance already exists for seed {seed}.')
+        return None
 
     # Make the header
     header = submit_utils.make_header(job.get('nersc_machine'), time=0.2,
-                                      omp_threads=64, job_name=f'export_{seed}',
-                                      err_file=analysis_struct.logs_dir/f'export-{seed}-%j.err',
-                                      out_file=analysis_struct.logs_dir/f'export-{seed}-%j.out')
+                                      omp_threads=64, job_name=f'export-cov_{seed}',
+                                      err_file=analysis_struct.logs_dir/f'export-cov-{seed}-%j.err',
+                                      out_file=analysis_struct.logs_dir/f'export-cov-{seed}-%j.out')
 
     # Create the script
     text = header
@@ -138,7 +146,7 @@ def export_full_cov(seed, analysis_struct, corr_paths, job, corr_job_ids=None):
     text += command + '\n'
 
     # Write the script.
-    script_path = analysis_struct.scripts_dir / f'export-{seed}.sh'
+    script_path = analysis_struct.scripts_dir / f'export-cov-{seed}.sh'
     submit_utils.write_script(script_path, text)
 
     job_id = submit_utils.run_job(script_path, dependency_ids=corr_job_ids,
