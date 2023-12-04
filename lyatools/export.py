@@ -272,22 +272,25 @@ def mpi_export(export_dict, job, analysis_struct, corr_job_ids=None):
 
     cov_job_id = None
     if len(individual_cov_commands) > 1:
+        ntasks_per_node = min(len(individual_cov_commands), 32)
         cov_job_id = mpi_export_covariances(
             individual_cov_commands, job, analysis_struct, script_name='individual_cov',
-            num_nodes=1, ntasks_per_node=32, corr_job_ids=corr_job_ids)
+            num_nodes=1, ntasks_per_node=ntasks_per_node, corr_job_ids=corr_job_ids)
 
     if cov_job_id is None:
         cov_job_id = corr_job_ids
     if len(smooth_cov_commands) > 1:
         num_nodes = max(len(smooth_cov_commands) // 32, 1)
+        ntasks_per_node = min(len(smooth_cov_commands), 32)
         _ = mpi_export_covariances(
             smooth_cov_commands, job, analysis_struct, script_name='smooth_cov',
-            num_nodes=num_nodes, ntasks_per_node=32, corr_job_ids=cov_job_id)
+            num_nodes=num_nodes, ntasks_per_node=ntasks_per_node, corr_job_ids=cov_job_id)
 
     if len(stacked_cov_commands) > 1:
+        ntasks_per_node = min(len(stacked_cov_commands), 32)
         _ = mpi_export_covariances(
             stacked_cov_commands, job, analysis_struct, script_name='stacked_cov',
-            num_nodes=1, ntasks_per_node=32, corr_job_ids=corr_job_ids)
+            num_nodes=1, ntasks_per_node=ntasks_per_node, corr_job_ids=corr_job_ids)
 
 
 def mpi_export_correlations(export_commands, job, analysis_struct, corr_job_ids=None):
