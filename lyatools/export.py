@@ -244,6 +244,7 @@ def stack_correlations(corr_dict, global_struct, job, add_dmat=False, dmat_path=
 
 
 def mpi_export(export_dict, job, analysis_struct, corr_job_ids=None):
+    print(corr_job_ids)
     export_commands = export_dict['export_commands']
     export_cov_commands = export_dict['export_cov_commands']
 
