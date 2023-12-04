@@ -180,7 +180,7 @@ class RunMocks:
         if self.export.getboolean('mpi_export_flag', False):
             print('Starting MPI export job.')
             if self.run_raw_flag:
-                mpi_export(raw_export_dict, self.job, raw_global_struct, exp_job_ids)
+                mpi_export(raw_export_dict, self.job, raw_global_struct, raw_exp_job_ids)
             if self.run_true_cont_flag:
                 mpi_export(true_export_dict, self.job, true_global_struct, true_exp_job_ids)
             if not self.no_run_cont_fit_flag:
@@ -254,6 +254,7 @@ class RunMocks:
         # Run export
         corr_files = {}
         job_id = None
+        export_commands, export_cov_commands = None, None
         if self.run_export_flag:
             print(f'Starting export jobs for seed {seed}.')
             corr_files, job_id, export_commands, export_cov_commands = self.run_export(
@@ -499,7 +500,18 @@ class RunMocks:
         job_id_cov, export_cov_commands = export_full_cov(
             seed, analysis_struct, corr_paths, self.job, self.export, corr_job_ids=corr_job_ids)
 
-        return corr_dict, [job_id, job_id_cov], export_commands, export_cov_commands
+        out_job_ids = []
+        if isinstance(job_id, list):
+            out_job_ids += job_id
+        else:
+            out_job_ids += [job_id]
+
+        if isinstance(job_id_cov, list):
+            out_job_ids += job_id_cov
+        else:
+            out_job_ids += [job_id_cov]
+
+        return corr_dict, out_job_ids, export_commands, export_cov_commands
 
     def input_dir_from_seed(self, input_seed):
         return Path(self.input_dir) / f'{self.mock_version}.{input_seed}'

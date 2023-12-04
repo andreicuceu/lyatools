@@ -290,7 +290,7 @@ def mpi_export(export_dict, job, analysis_struct, corr_job_ids=None):
 def mpi_export_correlations(export_commands, job, analysis_struct, corr_job_ids=None):
     # Make the header
     header = submit_utils.make_header(job.get('nersc_machine'), time=1.0,
-                                      omp_threads=64, job_name='stack_export',
+                                      omp_threads=2, job_name='stack_export',
                                       err_file=analysis_struct.logs_dir/'mpi_export-%j.err',
                                       out_file=analysis_struct.logs_dir/'mpi_export-%j.out')
 
@@ -317,7 +317,7 @@ def mpi_export_covariances(
     # Make the header
     header = submit_utils.make_header(
         job.get('nersc_machine'), time=job.get('mpi-export-time', 4.0), nodes=int(num_nodes),
-        omp_threads=64, job_name=script_name,
+        omp_threads=2, job_name=script_name,
         err_file=analysis_struct.logs_dir/'mpi_export-cov-%j.err',
         out_file=analysis_struct.logs_dir/'mpi_export-cov-%j.out')
 
