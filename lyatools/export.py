@@ -256,33 +256,35 @@ def mpi_export(export_dict, job, analysis_struct, corr_job_ids=None):
 
     # Restructure the export_cov_commands
     individual_cov_commands = []
-    for cov_commands in export_cov_commands:
-        if len(cov_commands) >= 1:
-            individual_cov_commands += [cov_commands[0]]
-
     smooth_cov_commands = []
-    for cov_commands in export_cov_commands:
-        if len(cov_commands) >= 2:
-            smooth_cov_commands += [cov_commands[1]]
-
     stacked_cov_commands = []
     for cov_commands in export_cov_commands:
-        if len(cov_commands) >= 3:
-            stacked_cov_commands += [cov_commands[2]]
+        for command in cov_commands:
+            if 'export_individual_cov.py' in command:
+                individual_cov_commands += [command]
+            elif 'smoothit.py' in command:
+                smooth_cov_commands += [command]
+            elif 'export_full_cov.py' in command:
+                stacked_cov_commands += [command]
+            else:
+                raise ValueError(f'Unknown covariance command: {command}')
 
+    cov_job_id = None
     if len(individual_cov_commands) > 1:
-        mpi_export_covariances(
+        cov_job_id = mpi_export_covariances(
             individual_cov_commands, job, analysis_struct, script_name='individual_cov',
             num_nodes=1, ntasks_per_node=32, corr_job_ids=corr_job_ids)
 
+    if cov_job_id is None:
+        cov_job_id = corr_job_ids
     if len(smooth_cov_commands) > 1:
         num_nodes = max(len(smooth_cov_commands) // 32, 1)
-        mpi_export_covariances(
+        _ = mpi_export_covariances(
             smooth_cov_commands, job, analysis_struct, script_name='smooth_cov',
-            num_nodes=num_nodes, ntasks_per_node=32, corr_job_ids=corr_job_ids)
+            num_nodes=num_nodes, ntasks_per_node=32, corr_job_ids=cov_job_id)
 
     if len(stacked_cov_commands) > 1:
-        mpi_export_covariances(
+        _ = mpi_export_covariances(
             stacked_cov_commands, job, analysis_struct, script_name='stacked_cov',
             num_nodes=1, ntasks_per_node=32, corr_job_ids=corr_job_ids)
 
@@ -335,5 +337,7 @@ def mpi_export_covariances(
     script_path = analysis_struct.scripts_dir / f'mpi_export_{script_name}.sh'
     submit_utils.write_script(script_path, text)
 
-    _ = submit_utils.run_job(script_path, dependency_ids=corr_job_ids,
-                             no_submit=job.getboolean('no_submit'))
+    job_id = submit_utils.run_job(script_path, dependency_ids=corr_job_ids,
+                                  no_submit=job.getboolean('no_submit'))
+
+    return job_id
