@@ -132,7 +132,10 @@ class RunMocks:
                     seed, raw_analysis_struct, true_continuum=False, raw_analysis=True,
                     zcat_job_id=zcat_job_id, input_seed=input_seed
                 )
-                raw_exp_job_ids += [job_id]
+                if isinstance(job_id, list):
+                    raw_exp_job_ids += job_id
+                else:
+                    raw_exp_job_ids += [job_id]
                 for key, file in corr_files.items():
                     if key not in raw_corr_dict:
                         raw_corr_dict[key] = []
@@ -148,7 +151,10 @@ class RunMocks:
                     seed, true_analysis_struct, true_continuum=True, raw_analysis=False,
                     zcat_job_id=zcat_job_id
                 )
-                true_exp_job_ids += [job_id]
+                if isinstance(job_id, list):
+                    true_exp_job_ids += job_id
+                else:
+                    true_exp_job_ids += [job_id]
                 for key, file in corr_files.items():
                     if key not in true_corr_dict:
                         true_corr_dict[key] = []
@@ -164,7 +170,10 @@ class RunMocks:
                     seed, analysis_struct, true_continuum=False, raw_analysis=False,
                     zcat_job_id=zcat_job_id
                 )
-                exp_job_ids += [job_id]
+                if isinstance(job_id, list):
+                    exp_job_ids += job_id
+                else:
+                    exp_job_ids += [job_id]
                 for key, file in corr_files.items():
                     if key not in corr_dict:
                         corr_dict[key] = []
