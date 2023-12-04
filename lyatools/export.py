@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from . import submit_utils
+from . import dir_handlers
 
 CORR_TYPES = {'cf_lya_lya': 'dmat_lya_lya', 'cf_lya_lyb': 'dmat_lya_lyb',
               'xcf_lya_qso': 'xdmat_lya_qso', 'xcf_lyb_qso': 'xdmat_lyb_qso'}
@@ -301,8 +302,11 @@ def mpi_export_correlations(export_commands, job, analysis_struct, corr_job_ids=
     env_command = job.get('env_command')
     text += f'{env_command}\n\n'
 
+    logs = analysis_struct.logs_dir / 'export'
+    dir_handlers.check_dir(logs)
+
     text += f'srun --ntasks-per-node=64 lyatools-mpi-export -i {export_commands} '
-    text += f'-l {analysis_struct.logs_dir}\n'
+    text += f'-l {logs}\n'
 
     # Write the script.
     script_path = analysis_struct.scripts_dir / 'mpi_export.sh'
@@ -320,8 +324,8 @@ def mpi_export_covariances(
     header = submit_utils.make_header(
         job.get('nersc_machine'), time=job.get('mpi-export-time', 4.0), nodes=int(num_nodes),
         omp_threads=2, job_name=script_name,
-        err_file=analysis_struct.logs_dir/'mpi_export-cov-%j.err',
-        out_file=analysis_struct.logs_dir/'mpi_export-cov-%j.out')
+        err_file=analysis_struct.logs_dir/f'mpi_export-cov-{script_name}-%j.err',
+        out_file=analysis_struct.logs_dir/f'mpi_export-cov-{script_name}-%j.out')
 
     # Create the script
     text = header
@@ -330,8 +334,11 @@ def mpi_export_covariances(
 
     text_commands = '"' + '" "'.join(commands) + '"'
 
+    logs = analysis_struct.logs_dir / f'export-cov-{script_name}'
+    dir_handlers.check_dir(logs)
+
     text += f'srun --ntasks-per-node={ntasks_per_node} lyatools-mpi-export -i {text_commands} '
-    text += f'-l {analysis_struct.logs_dir}\n'
+    text += f'-l {logs}\n'
 
     # Write the script.
     script_path = analysis_struct.scripts_dir / f'mpi_export_{script_name}.sh'
