@@ -175,6 +175,8 @@ class RunMocks:
 
             submit_utils.print_spacer_line()
 
+        print(export_dict['export_cov_commands'])
+
         global_struct, true_global_struct, raw_global_struct = self.get_global_struct()
 
         if self.export.getboolean('mpi_export_flag', False):
