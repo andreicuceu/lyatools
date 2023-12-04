@@ -272,19 +272,19 @@ def mpi_export(export_dict, job, analysis_struct, corr_job_ids=None):
 
     if len(individual_cov_commands) > 1:
         mpi_export_covariances(
-            individual_cov_commands, job, analysis_struct, num_nodes=1,
-            ntasks_per_node=32, corr_job_ids=corr_job_ids)
+            individual_cov_commands, job, analysis_struct, script_name='individual_cov',
+            num_nodes=1, ntasks_per_node=32, corr_job_ids=corr_job_ids)
 
     if len(smooth_cov_commands) > 1:
         num_nodes = max(len(smooth_cov_commands) // 32, 1)
         mpi_export_covariances(
-            smooth_cov_commands, job, analysis_struct, num_nodes=num_nodes,
-            ntasks_per_node=32, corr_job_ids=corr_job_ids)
+            smooth_cov_commands, job, analysis_struct, script_name='smooth_cov',
+            num_nodes=num_nodes, ntasks_per_node=32, corr_job_ids=corr_job_ids)
 
     if len(stacked_cov_commands) > 1:
         mpi_export_covariances(
-            stacked_cov_commands, job, analysis_struct, num_nodes=1,
-            ntasks_per_node=32, corr_job_ids=corr_job_ids)
+            stacked_cov_commands, job, analysis_struct, script_name='stacked_cov',
+            num_nodes=1, ntasks_per_node=32, corr_job_ids=corr_job_ids)
 
 
 def mpi_export_correlations(export_commands, job, analysis_struct, corr_job_ids=None):
@@ -311,11 +311,13 @@ def mpi_export_correlations(export_commands, job, analysis_struct, corr_job_ids=
 
 
 def mpi_export_covariances(
-        commands, job, analysis_struct, num_nodes=1, ntasks_per_node=64, corr_job_ids=None):
+        commands, job, analysis_struct, script_name,
+        num_nodes=1, ntasks_per_node=64, corr_job_ids=None
+):
     # Make the header
     header = submit_utils.make_header(
         job.get('nersc_machine'), time=job.get('mpi-export-time', 4.0), nodes=int(num_nodes),
-        omp_threads=64, job_name='stack_export',
+        omp_threads=64, job_name=script_name,
         err_file=analysis_struct.logs_dir/'mpi_export-cov-%j.err',
         out_file=analysis_struct.logs_dir/'mpi_export-cov-%j.out')
 
@@ -330,7 +332,7 @@ def mpi_export_covariances(
     text += f'-l {analysis_struct.logs_dir}\n'
 
     # Write the script.
-    script_path = analysis_struct.scripts_dir / 'mpi_export.sh'
+    script_path = analysis_struct.scripts_dir / f'mpi_export_{script_name}.sh'
     submit_utils.write_script(script_path, text)
 
     _ = submit_utils.run_job(script_path, dependency_ids=corr_job_ids,
