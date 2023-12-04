@@ -2,7 +2,7 @@ from pathlib import Path
 from vega import BuildConfig, FitResults, run_vega
 
 
-def get_correlations_dict(corr_config, corr_path):
+def get_correlations_dict(corr_config, corr_path, cat_path=None):
     correlations = {'lyaxlya': {}, 'lyaxqso': {}, 'lyaxlyb': {}, 'lybxqso': {}}
 
     dist_path = Path(corr_config['dist_path'])
@@ -15,28 +15,42 @@ def get_correlations_dict(corr_config, corr_path):
 
     correlations['lyaxlya']['corr_path'] = f"{corr_path / 'cf_lya_lya_0_10-exp.fits.gz'}"
     correlations['lyaxlya']['distortion-file'] = f"{dist_path / 'dmat_lya_lya_0_10.fits.gz'}"
-    correlations['lyaxlya']['metal_path'] = f"{dist_path / 'metal_dmat_lya_lya_0_10.fits.gz'}"
+    # correlations['lyaxlya']['metal_path'] = f"{dist_path / 'metal_dmat_lya_lya_0_10.fits.gz'}"
+    correlations['lyaxlya']['weights-tracer1'] = \
+        f"{corr_path.parent / 'deltas_lya/Log/delta_attributes.fits.gz'}"
+    correlations['lyaxlya']['weights-tracer2'] = \
+        f"{corr_path.parent / 'deltas_lya/Log/delta_attributes.fits.gz'}"
     correlations['lyaxlya']['r-min'] = rmin
     correlations['lyaxlya']['r-max'] = rmax
     correlations['lyaxlya']['fast_metals'] = f'{fast_metals}'
 
     correlations['lyaxlyb']['corr_path'] = f"{corr_path / 'cf_lya_lyb_0_10-exp.fits.gz'}"
     correlations['lyaxlyb']['distortion-file'] = f"{dist_path / 'dmat_lya_lyb_0_10.fits.gz'}"
-    correlations['lyaxlyb']['metal_path'] = f"{dist_path / 'metal_dmat_lya_lyb_0_10.fits.gz'}"
+    # correlations['lyaxlyb']['metal_path'] = f"{dist_path / 'metal_dmat_lya_lyb_0_10.fits.gz'}"
+    correlations['lyaxlyb']['weights-tracer1'] = \
+        f"{corr_path.parent / 'deltas_lya/Log/delta_attributes.fits.gz'}"
+    correlations['lyaxlyb']['weights-tracer2'] = \
+        f"{corr_path.parent / 'deltas_lyb/Log/delta_attributes.fits.gz'}"
     correlations['lyaxlyb']['r-min'] = rmin
     correlations['lyaxlyb']['r-max'] = rmax
     correlations['lyaxlyb']['fast_metals'] = f'{fast_metals}'
 
     correlations['lyaxqso']['corr_path'] = f"{corr_path / 'xcf_lya_qso_0_10-exp.fits.gz'}"
     correlations['lyaxqso']['distortion-file'] = f"{dist_path / 'xdmat_lya_qso_0_10.fits.gz'}"
-    correlations['lyaxqso']['metal_path'] = f"{dist_path / 'metal_xdmat_lya_qso_0_10.fits.gz'}"
+    # correlations['lyaxqso']['metal_path'] = f"{dist_path / 'metal_xdmat_lya_qso_0_10.fits.gz'}"
+    correlations['lyaxqso']['weights-tracer1'] = \
+        f"{corr_path.parent / 'deltas_lya/Log/delta_attributes.fits.gz'}"
+    correlations['lyaxqso']['weights-tracer2'] = f"{cat_path}"
     correlations['lyaxqso']['r-min'] = rmin
     correlations['lyaxqso']['r-max'] = rmax
     correlations['lyaxqso']['fast_metals'] = f'{fast_metals}'
 
     correlations['lybxqso']['corr_path'] = f"{corr_path / 'xcf_lyb_qso_0_10-exp.fits.gz'}"
     correlations['lybxqso']['distortion-file'] = f"{dist_path / 'xdmat_lyb_qso_0_10.fits.gz'}"
-    correlations['lybxqso']['metal_path'] = f"{dist_path / 'metal_xdmat_lyb_qso_0_10.fits.gz'}"
+    # correlations['lybxqso']['metal_path'] = f"{dist_path / 'metal_xdmat_lyb_qso_0_10.fits.gz'}"
+    correlations['lybxqso']['weights-tracer1'] = \
+        f"{corr_path.parent / 'deltas_lyb/Log/delta_attributes.fits.gz'}"
+    correlations['lybxqso']['weights-tracer2'] = f"{cat_path}"
     correlations['lybxqso']['r-min'] = rmin
     correlations['lybxqso']['r-max'] = rmax
     correlations['lybxqso']['fast_metals'] = f'{fast_metals}'
@@ -51,7 +65,8 @@ def get_builder(builder_config=None):
         'small_scale_nl': False, 'bao_broadening': False, 'use_metal_autos': True,
         'fullshape_smoothing': 'gauss', 'fullshape_smoothing_metals': True,
         'velocity_dispersion': 'gauss', 'hcd_model': 'Rogers2018',
-        'metals': ['SiII(1260)', 'SiIII(1207)', 'SiII(1193)', 'SiII(1190)']
+        'metals': ['SiII(1260)', 'SiIII(1207)', 'SiII(1193)', 'SiII(1190)'],
+        'new_metals': True,
     }
 
     if builder_config is None:
@@ -104,13 +119,17 @@ def get_fit_info(fit_info_config=None):
     return fit_info
 
 
-def build_config(config, corr_path, out_path):
-    correlations = get_correlations_dict(config['correlations'], corr_path)
+def build_config(config, corr_path, out_path, cat_path=None):
+    correlations = get_correlations_dict(config['correlations'], corr_path, cat_path)
     config_builder = get_builder(config['builder'])
     fit_info = get_fit_info(config['fit_info'])
 
     fit_type = config['fit_info']['fit_type']
     name_extension = config['fit_info']['name_extension']
+
+    use_full_cov = config['fit_info'].getboolean('use_full_cov', True)
+    if use_full_cov and 'global_cov_file' not in fit_info:
+        fit_info['global_cov_file'] = corr_path / 'full_cov_smooth.fits'
 
     fit_info['sample_params'] = config['fit_info']['sample_params'].split(' ')
 
@@ -131,8 +150,8 @@ def build_config(config, corr_path, out_path):
     return main_path
 
 
-def run_vega_fitter(config, corr_path, out_path, run_flag=True):
-    main_path = build_config(config, corr_path, out_path)
+def run_vega_fitter(config, corr_path, out_path, cat_path=None, run_flag=True):
+    main_path = build_config(config, corr_path, out_path, cat_path)
 
     if run_flag:
         run_vega(main_path)

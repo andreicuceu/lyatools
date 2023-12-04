@@ -38,6 +38,7 @@ def main():
     output_dir = config['mock_setup'].get('output_dir')
     run_flag = config['mock_setup'].getboolean('run_flag', True)
     name_extension = config['fit_info'].get('name_extension', None)
+    cat_path = config['mock_setup'].get('cat_path', None)
 
     input_seeds = config['mock_setup'].get('input_seeds', None)
     cat_seeds = config['mock_setup'].get('cat_seeds', None)
@@ -80,10 +81,13 @@ def main():
         else:
             config['fit_info']['name_extension'] = f'{version}'
 
-        corr_path = analysis_dir / f'{version}' / f'{qq_run_type}'
-        corr_path = corr_path / f'{analysis_name}' / 'correlations'
+        corr_path = analysis_dir / version / qq_run_type
+        corr_path = corr_path / analysis_name / 'correlations'
 
-        run_vega_fitter(config, corr_path, output_dir, run_flag=run_flag)
+        if cat_path is not None:
+            cat_path = Path(cat_path) / version / qq_run_type / 'zcat_gauss_400.fits'
+
+        run_vega_fitter(config, corr_path, output_dir, cat_path, run_flag=run_flag)
         print_func(f'Finished seed {seeds[i]}.')
 
 
