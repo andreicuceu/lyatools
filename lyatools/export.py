@@ -324,7 +324,9 @@ def mpi_export_covariances(
     env_command = job.get('env_command')
     text += f'{env_command}\n\n'
 
-    text += f'srun --ntasks-per-node={ntasks_per_node} lyatools-mpi-export -i {commands} '
+    text_commands = '"' + '" "'.join(commands) + '"'
+
+    text += f'srun --ntasks-per-node={ntasks_per_node} lyatools-mpi-export -i {text_commands} '
     text += f'-l {analysis_struct.logs_dir}\n'
 
     # Write the script.
