@@ -7,7 +7,7 @@ from lyatools.quickquasars import run_qq
 from lyatools.delta_extraction import make_delta_runs
 from lyatools.qsonic import make_qsonic_runs
 from lyatools.correlations import make_correlation_runs
-from lyatools.export import make_export_runs, stack_correlations
+from lyatools.export import make_export_runs, stack_correlations, export_full_cov
 
 
 class RunMocks:
@@ -473,7 +473,10 @@ class RunMocks:
         corr_dict, job_id = make_export_runs(
             seed, analysis_struct, corr_paths, self.job, self.export, corr_job_ids=corr_job_ids)
 
-        return corr_dict, job_id
+        job_id_cov = export_full_cov(
+            seed, analysis_struct, corr_paths, self.job, corr_job_ids=corr_job_ids)
+
+        return corr_dict, [job_id, job_id_cov]
 
     def input_dir_from_seed(self, input_seed):
         return Path(self.input_dir) / f'{self.mock_version}.{input_seed}'

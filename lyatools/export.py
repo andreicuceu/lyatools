@@ -104,6 +104,49 @@ def make_export_runs(seed, analysis_struct, corr_paths, job, config, corr_job_id
     return corr_dict, job_id
 
 
+def export_full_cov(seed, analysis_struct, corr_paths, job, corr_job_ids=None):
+    if len(corr_paths) != 4:
+        raise ValueError(f'Expected 4 correlation files, but got {len(corr_paths)}')
+
+    # Put the correlations in the right order
+    order = ['cf_lya_lya', 'cf_lya_lyb', 'xcf_lya_qso', 'xcf_lyb_qso']
+    ordered_cf_paths = [None] * 4
+    for i, corr_type in enumerate(order):
+        for cf_path in corr_paths:
+            if corr_type in cf_path.name:
+                ordered_cf_paths[i] = cf_path
+
+    output_path = corr_paths[0].parent / 'full_cov.fits.gz'
+    output_path_smoothed = corr_paths[0].parent / 'full_cov_smooth.fits.gz'
+    cf_paths_str = ' '.join([str(cf_path) for cf_path in ordered_cf_paths])
+    command = '/global/homes/a/acuceu/desi_acuceu/notebooks_perl'
+    command += f'/mocks/covariance/export_individual_cov.py -i {cf_paths_str} -o {output_path}\n\n'
+
+    command += '/global/homes/a/acuceu/desi_acuceu/notebooks_perl/mocks/covariance/smoothit.py '
+    command += f'-i {output_path} -o {output_path_smoothed} '
+
+    # Make the header
+    header = submit_utils.make_header(job.get('nersc_machine'), time=0.2,
+                                      omp_threads=64, job_name=f'export_{seed}',
+                                      err_file=analysis_struct.logs_dir/f'export-{seed}-%j.err',
+                                      out_file=analysis_struct.logs_dir/f'export-{seed}-%j.out')
+
+    # Create the script
+    text = header
+    env_command = job.get('env_command')
+    text += f'{env_command}\n\n'
+    text += command + '\n'
+
+    # Write the script.
+    script_path = analysis_struct.scripts_dir / f'export-{seed}.sh'
+    submit_utils.write_script(script_path, text)
+
+    job_id = submit_utils.run_job(script_path, dependency_ids=corr_job_ids,
+                                  no_submit=job.getboolean('no_submit'))
+
+    return job_id
+
+
 def stack_correlations(corr_dict, global_struct, job, add_dmat=False, dmat_path=None,
                        shuffled=False, name_string=None, exp_job_ids=None):
     # Stack correlations from different seeds
