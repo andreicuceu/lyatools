@@ -116,8 +116,8 @@ def export_full_cov(seed, analysis_struct, corr_paths, job, corr_job_ids=None):
             if corr_type in cf_path.name:
                 ordered_cf_paths[i] = cf_path
 
-    output_path = corr_paths[0].parent / 'full_cov.fits.gz'
-    output_path_smoothed = corr_paths[0].parent / 'full_cov_smooth.fits.gz'
+    output_path = corr_paths[0].parent / 'full_cov.fits'
+    output_path_smoothed = corr_paths[0].parent / 'full_cov_smooth.fits'
     cf_paths_str = ' '.join([str(cf_path) for cf_path in ordered_cf_paths])
     command = '/global/homes/a/acuceu/desi_acuceu/notebooks_perl'
     command += f'/mocks/covariance/export_individual_cov.py -i {cf_paths_str} -o {output_path}\n\n'
