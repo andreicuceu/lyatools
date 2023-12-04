@@ -123,15 +123,6 @@ def export_full_cov(seed, analysis_struct, corr_paths, job, config, corr_job_ids
     cf_paths_str = ' '.join([str(cf_path) for cf_path in ordered_cf_paths])
 
     commands = []
-    stacked_cov_flag = config.getboolean('stacked_cov_flag', False)
-    if stacked_cov_flag:
-        stacked_cov_path = config.get('stacked_cov_path')
-        output_stacked_cov_path = corr_paths[0].parent / 'full_cov_stacked.fits'
-        if not output_stacked_cov_path.is_file():
-            command = '/global/homes/a/acuceu/desi_acuceu/notebooks_perl'
-            command += '/mocks/covariance/export_full_cov.py '
-            command += f'-i {stacked_cov_path} -c {cf_paths_str} -o {output_stacked_cov_path}\n'
-            commands += [command]
 
     if not output_path.is_file():
         command = '/global/homes/a/acuceu/desi_acuceu/notebooks_perl'
@@ -144,6 +135,16 @@ def export_full_cov(seed, analysis_struct, corr_paths, job, config, corr_job_ids
         command += '/mocks/covariance/smoothit.py '
         command += f'-i {output_path} -o {output_path_smoothed}\n'
         commands += [command]
+
+    stacked_cov_flag = config.getboolean('stacked_cov_flag', False)
+    if stacked_cov_flag:
+        stacked_cov_path = config.get('stacked_cov_path')
+        output_stacked_cov_path = corr_paths[0].parent / 'full_cov_stacked.fits'
+        if not output_stacked_cov_path.is_file():
+            command = '/global/homes/a/acuceu/desi_acuceu/notebooks_perl'
+            command += '/mocks/covariance/export_full_cov.py '
+            command += f'-i {stacked_cov_path} -c {cf_paths_str} -o {output_stacked_cov_path}\n'
+            commands += [command]
 
     if len(commands) < 1:
         print(f'Full covariance already exists for seed {seed}.')
@@ -253,9 +254,37 @@ def mpi_export(export_dict, job, analysis_struct, corr_job_ids=None):
     if len(export_commands) > 1:
         mpi_export_correlations(export_commands, job, analysis_struct, corr_job_ids=corr_job_ids)
 
-    if len(export_cov_commands) > 1:
+    # Restructure the export_cov_commands
+    individual_cov_commands = []
+    for cov_commands in export_cov_commands:
+        if len(cov_commands) >= 1:
+            individual_cov_commands += cov_commands[0]
+
+    smooth_cov_commands = []
+    for cov_commands in export_cov_commands:
+        if len(cov_commands) >= 2:
+            smooth_cov_commands += cov_commands[1]
+
+    stacked_cov_commands = []
+    for cov_commands in export_cov_commands:
+        if len(cov_commands) >= 3:
+            stacked_cov_commands += cov_commands[2]
+
+    if len(individual_cov_commands) > 1:
         mpi_export_covariances(
-            export_cov_commands, job, analysis_struct, corr_job_ids=corr_job_ids)
+            individual_cov_commands, job, analysis_struct, num_nodes=1,
+            ntasks_per_node=32, corr_job_ids=corr_job_ids)
+
+    if len(smooth_cov_commands) > 1:
+        num_nodes = max(len(smooth_cov_commands) // 32, 1)
+        mpi_export_covariances(
+            smooth_cov_commands, job, analysis_struct, num_nodes=num_nodes,
+            ntasks_per_node=32, corr_job_ids=corr_job_ids)
+
+    if len(stacked_cov_commands) > 1:
+        mpi_export_covariances(
+            stacked_cov_commands, job, analysis_struct, num_nodes=1,
+            ntasks_per_node=32, corr_job_ids=corr_job_ids)
 
 
 def mpi_export_correlations(export_commands, job, analysis_struct, corr_job_ids=None):
@@ -270,18 +299,37 @@ def mpi_export_correlations(export_commands, job, analysis_struct, corr_job_ids=
     env_command = job.get('env_command')
     text += f'{env_command}\n\n'
 
-    text += f'srun -n 1 -c 64 lyatools-mpi-export -i {export_commands} '
+    text += f'srun --ntasks-per-node=64 lyatools-mpi-export -i {export_commands} '
     text += f'-l {analysis_struct.logs_dir}\n'
 
     # Write the script.
     script_path = analysis_struct.scripts_dir / 'mpi_export.sh'
     submit_utils.write_script(script_path, text)
 
-    job_id = submit_utils.run_job(script_path, dependency_ids=corr_job_ids,
-                                  no_submit=job.getboolean('no_submit'))
-
-    return job_id
+    _ = submit_utils.run_job(script_path, dependency_ids=corr_job_ids,
+                             no_submit=job.getboolean('no_submit'))
 
 
-def mpi_export_covariances(export_cov_commands, job, analysis_struct, corr_job_ids=None):
-    pass
+def mpi_export_covariances(
+        commands, job, analysis_struct, num_nodes=1, ntasks_per_node=64, corr_job_ids=None):
+    # Make the header
+    header = submit_utils.make_header(
+        job.get('nersc_machine'), time=job.get('mpi-export-time', 4.0), nodes=int(num_nodes),
+        omp_threads=64, job_name='stack_export',
+        err_file=analysis_struct.logs_dir/'mpi_export-cov-%j.err',
+        out_file=analysis_struct.logs_dir/'mpi_export-cov-%j.out')
+
+    # Create the script
+    text = header
+    env_command = job.get('env_command')
+    text += f'{env_command}\n\n'
+
+    text += f'srun --ntasks-per-node={ntasks_per_node} lyatools-mpi-export -i {commands} '
+    text += f'-l {analysis_struct.logs_dir}\n'
+
+    # Write the script.
+    script_path = analysis_struct.scripts_dir / 'mpi_export.sh'
+    submit_utils.write_script(script_path, text)
+
+    _ = submit_utils.run_job(script_path, dependency_ids=corr_job_ids,
+                             no_submit=job.getboolean('no_submit'))
