@@ -1,7 +1,7 @@
 import fitsio
 import numpy as np
 import scipy.linalg
-from picca.utils import smooth_cov
+from picca.utils import smooth_cov, compute_cov
 
 
 def get_shuffled_correlations(files, headers_to_check_match_values):
@@ -24,7 +24,8 @@ def get_shuffled_correlations(files, headers_to_check_match_values):
     return xi_shuffled[:, None]
 
 
-def stack_export_correlations(input_files, output_file, dmat_path=None, shuffled_correlations=None):
+def stack_export_correlations(
+        input_files, output_file, smooth_cov_flag=True, dmat_path=None, shuffled_correlations=None):
     """Stacks correlation functions measured in different mocks.
     Parameters
     ----------
@@ -116,9 +117,12 @@ def stack_export_correlations(input_files, output_file, dmat_path=None, shuffled
     delta_r_par = (r_par_max - r_par_min) / headers_to_check_match_values['NP']
     delta_r_trans = (r_trans_max - 0.) / headers_to_check_match_values['NT']
 
-    print("INFO: The covariance will be smoothed")
-    covariance = smooth_cov(xi, weights, r_par, r_trans, delta_r_trans=delta_r_trans,
-                            delta_r_par=delta_r_par)
+    if smooth_cov_flag:
+        print("INFO: The covariance will be smoothed")
+        covariance = smooth_cov(
+            xi, weights, r_par, r_trans, delta_r_trans=delta_r_trans, delta_r_par=delta_r_par)
+    else:
+        covariance = compute_cov(xi, weights)
 
     xi = (xi * weights).sum(axis=0)
     weights = weights.sum(axis=0)

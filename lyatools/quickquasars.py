@@ -2,7 +2,8 @@ from . import dir_handlers, submit_utils
 from lyatools.qq_run_args import QQ_RUN_ARGS
 
 
-def run_qq(config, job, qq_run_type, seed, mock_code, input_dir, output_dir):
+def run_qq(config, job, qq_run_type, cat_seed, qq_seed,
+           mock_code, input_dir, output_dir):
     """Create a QQ run and submit it
 
     Parameters
@@ -32,16 +33,10 @@ def run_qq(config, job, qq_run_type, seed, mock_code, input_dir, output_dir):
     seed_cat_path = None
     y1_flag = config.getboolean('y1_flag', False)
     if y1_flag:
-        job_id, seed_cat_path = create_qq_catalog(config, input_dir, job, qq_dir, seed, mock_code)
+        job_id, seed_cat_path = create_qq_catalog(
+            config, input_dir, job, qq_dir, cat_seed, mock_code)
 
-    run_type = qq_run_type
-    if config.getboolean('invert_cat_seed', False):
-        run_type_list = qq_run_type.split('-')
-        if run_type_list[-1] != 'inverted':
-            raise ValueError('invert_cat_seed only works with inverted mocks.'
-                             'Append "inverted" to the qq run type to use it.')
-        run_type = '-'.join(run_type_list[:-1])
-    run_args = QQ_RUN_ARGS[run_type]
+    run_args = QQ_RUN_ARGS[qq_run_type]
 
     print('Found the following arguments to pass to quickquasars:')
     qq_args = ''
@@ -63,10 +58,10 @@ def run_qq(config, job, qq_run_type, seed, mock_code, input_dir, output_dir):
     if y1_flag:
         qq_args += f' --from-catalog {seed_cat_path}'
 
-    qq_args += f' --seed {seed}'
+    qq_args += f' --seed {qq_seed}'
     print(qq_args)
 
-    qq_script = create_qq_script(config, job, qq_dir, qq_args, seed, input_dir)
+    qq_script = create_qq_script(config, job, qq_dir, qq_args, qq_seed, input_dir)
 
     job_id = submit_utils.run_job(qq_script, dependency_ids=job_id,
                                   no_submit=job.getboolean('no_submit'))
@@ -74,13 +69,13 @@ def run_qq(config, job, qq_run_type, seed, mock_code, input_dir, output_dir):
     return job_id, dla_flag, bal_flag
 
 
-def create_qq_catalog(config, input_dir, job, qq_dir, seed, mock_code):
+def create_qq_catalog(config, input_dir, job, qq_dir, cat_seed, mock_code):
     submit_utils.set_umask()
 
     # Make the header
     time = submit_utils.convert_job_time(0.2)
     header = submit_utils.make_header(job.get('nersc_machine'), 'regular', 1, time=time,
-                                      omp_threads=128, job_name=f'qq_cat_{seed}',
+                                      omp_threads=128, job_name=f'qq_cat_{cat_seed}',
                                       err_file=qq_dir.run_dir/'run-%j.err',
                                       out_file=qq_dir.run_dir/'run-%j.out')
 
@@ -100,7 +95,7 @@ def create_qq_catalog(config, input_dir, job, qq_dir, seed, mock_code):
         raise ValueError(f'Unknown mock code {mock_code}')
 
     # text += '/global/cfs/cdirs/desicollab/users/acuceu/notebooks_perl/mocks/run_mocks/make_y1_cat.py'
-    text += f'gen_qso_catalog -i {master_cat_path} -o {seed_cat_path} --seed {seed}'
+    text += f'gen_qso_catalog -i {master_cat_path} -o {seed_cat_path} --seed {cat_seed}'
     if config.getboolean('invert_cat_seed', False):
         text += ' --invert'
     text += '\n\n'
@@ -118,7 +113,7 @@ def create_qq_catalog(config, input_dir, job, qq_dir, seed, mock_code):
     return job_id, seed_cat_path
 
 
-def create_qq_script(config, job, qq_dir, qq_args, seed, input_dir):
+def create_qq_script(config, job, qq_dir, qq_args, qq_seed, input_dir):
 
     submit_utils.set_umask()
 
@@ -137,7 +132,7 @@ def create_qq_script(config, job, qq_dir, qq_args, seed, input_dir):
     # Make the header
     time = submit_utils.convert_job_time(slurm_hours)
     header = submit_utils.make_header(job.get('nersc_machine'), slurm_queue, nodes, time=time,
-                                      omp_threads=nproc, job_name=f'qq_{seed}',
+                                      omp_threads=nproc, job_name=f'qq_{qq_seed}',
                                       err_file=qq_dir.run_dir/'run-%j.err',
                                       out_file=qq_dir.run_dir/'run-%j.out')
 

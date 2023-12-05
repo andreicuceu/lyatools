@@ -121,36 +121,3 @@ class AnalysisDir:
 
         self.scripts_dir = self.analysis_dir / 'scripts'
         check_dir(self.scripts_dir)
-
-
-# @dataclass
-# class CorrDir:
-#     """
-#     An object that contains the directory structure for an individual correlation.
-#     """
-#     main_path: str
-#     corr_dirname: str = 'correlations'
-#     results_dirname: str = 'measurements'
-#     run_dirname: str = 'run_files'
-#     scripts_dirname: str = 'scripts'
-
-#     corr_dir: Path = field(init=False)
-#     results_dir: Path = field(init=False)
-#     run_dir: Path = field(init=False)
-#     scripts_dir: Path = field(init=False)
-
-#     def __post_init__(self):
-#         main_path = Path(self.main_path)
-#         check_dir(main_path)
-
-#         self.corr_dir = main_path / self.corr_dirname
-#         check_dir(self.corr_dir)
-
-#         self.results_dir = self.corr_dir / self.results_dirname
-#         check_dir(self.results_dir)
-
-#         self.run_dir = self.corr_dir / self.run_dirname
-#         check_dir(self.run_dir)
-
-#         self.scripts_dir = self.corr_dir / self.scripts_dirname
-#         check_dir(self.scripts_dir)

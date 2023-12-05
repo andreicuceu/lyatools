@@ -7,7 +7,7 @@ from lyatools.quickquasars import run_qq
 from lyatools.delta_extraction import make_delta_runs
 from lyatools.qsonic import make_qsonic_runs
 from lyatools.correlations import make_correlation_runs
-from lyatools.export import make_export_runs, stack_correlations
+from lyatools.export import make_export_runs, stack_correlations, export_full_cov, mpi_export
 
 
 class RunMocks:
@@ -34,7 +34,12 @@ class RunMocks:
 
         self.mock_code = self.config['mock_setup'].get('mock_code')
         self.mock_version = self.config['mock_setup'].get('mock_version')
+
+        self.input_seeds = self.config['mock_setup'].get('input_seeds', None)
+        self.cat_seeds = self.config['mock_setup'].get('cat_seeds', None)
         self.qq_seeds = self.config['mock_setup'].get('qq_seeds')
+        self.invert_cat_seed = self.qq.getboolean('invert_cat_seed', False)
+
         self.qq_run_type = self.config['mock_setup'].get('qq_run_type')
         self.run_type = self.config['mock_setup'].get('run_type')
         self.analysis_name = self.config['mock_setup'].get('analysis_name')
@@ -67,6 +72,19 @@ class RunMocks:
 
         run_seeds = submit_utils.get_seed_list(self.qq_seeds)
 
+        if self.input_seeds is None:
+            self.input_seeds = self.qq_seeds
+        if self.cat_seeds is None:
+            self.cat_seeds = self.qq_seeds
+
+        input_seeds = submit_utils.get_seed_list(self.input_seeds)
+        cat_seeds = submit_utils.get_seed_list(self.cat_seeds)
+
+        if len(input_seeds) != len(run_seeds):
+            raise ValueError('Number of input seeds and qq seeds must match.')
+        if len(cat_seeds) != len(run_seeds):
+            raise ValueError('Number of catalog seeds and qq seeds must match.')
+
         raw_corr_dict = {}
         true_corr_dict = {}
         corr_dict = {}
@@ -75,11 +93,19 @@ class RunMocks:
         true_exp_job_ids = []
         exp_job_ids = []
 
-        for seed in run_seeds:
+        raw_export_dict = {'export_commands': [], 'export_cov_commands': []}
+        true_export_dict = {'export_commands': [], 'export_cov_commands': []}
+        export_dict = {'export_commands': [], 'export_cov_commands': []}
+
+        for input_seed, cat_seed, qq_seed in zip(input_seeds, cat_seeds, run_seeds):
+            seed = f'{input_seed}.{cat_seed}.{qq_seed}'
+            if self.invert_cat_seed:
+                seed = f'{input_seed}.{cat_seed}i.{qq_seed}'
+
             # Run QQ
             zcat_job_id = None
             if self.run_qq_flag:
-                qq_job_id = self.run_qq(seed)
+                qq_job_id = self.run_qq(input_seed, cat_seed, qq_seed, seed)
                 submit_utils.print_spacer_line()
 
                 zcat_job_id = [self.run_zcat(seed, qq_job_id)]
@@ -87,18 +113,12 @@ class RunMocks:
 
                 if self.dla_flag or self.bal_flag:
                     cont_cat_job_id = self.run_contaminant_cat(seed, qq_job_id)
-                    # dlacat_job_id = self.run_dla_cat(seed, qq_job_id)
                     submit_utils.print_spacer_line()
                     zcat_job_id.append(cont_cat_job_id)
 
-                # if self.bal_flag:
-                #     balcat_job_id = self.run_bal_cat(seed, qq_job_id)
-                #     submit_utils.print_spacer_line()
-                #     zcat_job_id.append(balcat_job_id)
-
             # Inject redshift errors into QSO catalog
             if self.run_zerr_flag:
-                zerr_job_id = self.run_inject_zerr(seed, zcat_job_id)
+                zerr_job_id = self.run_inject_zerr(seed, qq_seed, zcat_job_id)
                 submit_utils.print_spacer_line()
                 zcat_job_id = [zerr_job_id]
 
@@ -108,43 +128,75 @@ class RunMocks:
             # Run raw analysis
             if self.run_raw_flag:
                 self.save_config(raw_analysis_struct)
-                corr_files, job_id = self.run_analysis(seed, raw_analysis_struct,
-                                                       true_continuum=False, raw_analysis=True,
-                                                       zcat_job_id=zcat_job_id)
-                raw_exp_job_ids += [job_id]
+                corr_files, job_id, export_commands, export_cov_commands = self.run_analysis(
+                    seed, raw_analysis_struct, true_continuum=False, raw_analysis=True,
+                    zcat_job_id=zcat_job_id, input_seed=input_seed
+                )
+                if isinstance(job_id, list):
+                    raw_exp_job_ids += job_id
+                else:
+                    raw_exp_job_ids += [job_id]
                 for key, file in corr_files.items():
                     if key not in raw_corr_dict:
                         raw_corr_dict[key] = []
                     raw_corr_dict[key] += [file]
 
+                raw_export_dict['export_commands'].append(export_commands)
+                raw_export_dict['export_cov_commands'].append(export_cov_commands)
+
             # Run true continuum analysis
             if self.run_true_cont_flag:
                 self.save_config(true_analysis_struct)
-                corr_files, job_id = self.run_analysis(seed, true_analysis_struct,
-                                                       true_continuum=True, raw_analysis=False,
-                                                       zcat_job_id=zcat_job_id)
-                true_exp_job_ids += [job_id]
+                corr_files, job_id, export_commands, export_cov_commands = self.run_analysis(
+                    seed, true_analysis_struct, true_continuum=True, raw_analysis=False,
+                    zcat_job_id=zcat_job_id
+                )
+                if isinstance(job_id, list):
+                    true_exp_job_ids += job_id
+                else:
+                    true_exp_job_ids += [job_id]
                 for key, file in corr_files.items():
                     if key not in true_corr_dict:
                         true_corr_dict[key] = []
                     true_corr_dict[key] += [file]
 
+                true_export_dict['export_commands'].append(export_commands)
+                true_export_dict['export_cov_commands'].append(export_cov_commands)
+
             # Run continuum fitted analysis
             if not self.no_run_cont_fit_flag:
                 self.save_config(analysis_struct)
-                corr_files, job_id = self.run_analysis(seed, analysis_struct, true_continuum=False,
-                                                       raw_analysis=False, zcat_job_id=zcat_job_id)
-                exp_job_ids += [job_id]
+                corr_files, job_id, export_commands, export_cov_commands = self.run_analysis(
+                    seed, analysis_struct, true_continuum=False, raw_analysis=False,
+                    zcat_job_id=zcat_job_id
+                )
+                if isinstance(job_id, list):
+                    exp_job_ids += job_id
+                else:
+                    exp_job_ids += [job_id]
                 for key, file in corr_files.items():
                     if key not in corr_dict:
                         corr_dict[key] = []
                     corr_dict[key] += [file]
 
+                export_dict['export_commands'].append(export_commands)
+                export_dict['export_cov_commands'].append(export_cov_commands)
+
+            submit_utils.print_spacer_line()
+
+        global_struct, true_global_struct, raw_global_struct = self.get_global_struct()
+
+        if self.export.getboolean('mpi_export_flag', False):
+            print('Starting MPI export job.')
+            if self.run_raw_flag:
+                mpi_export(raw_export_dict, self.job, raw_global_struct, raw_exp_job_ids)
+            if self.run_true_cont_flag:
+                mpi_export(true_export_dict, self.job, true_global_struct, true_exp_job_ids)
+            if not self.no_run_cont_fit_flag:
+                mpi_export(export_dict, self.job, global_struct, exp_job_ids)
             submit_utils.print_spacer_line()
 
         if self.export.getboolean('stack_correlations'):
-            global_struct, true_global_struct, raw_global_struct = self.get_global_struct()
-
             add_dmat = self.export.getboolean('add_dmat')
             dmat_path = self.export.get('dmat_path')
             name_string = self.corr.get('name_string', None)
@@ -177,24 +229,24 @@ class RunMocks:
         submit_utils.print_spacer_line()
 
     def run_analysis(self, seed, analysis_struct, true_continuum=False, raw_analysis=False,
-                     zcat_job_id=None):
+                     zcat_job_id=None, input_seed=None):
         # Run deltas
         delta_job_ids = None
         if self.run_deltas_flag:
             if raw_analysis:
                 print(f'Starting raw deltas jobs for seed {seed}.')
-                delta_job_ids = self.run_raw_deltas(seed, analysis_struct, zcat_job_id=zcat_job_id)
+                delta_job_ids = self.run_raw_deltas(
+                    input_seed, analysis_struct, zcat_job_id=zcat_job_id)
             else:
                 print(f'Starting delta extraction jobs for seed {seed}.')
-                delta_job_ids = self.run_delta_extraction(seed, analysis_struct,
-                                                          true_continuum=true_continuum,
-                                                          zcat_job_id=zcat_job_id)
+                delta_job_ids = self.run_delta_extraction(
+                    seed, analysis_struct, true_continuum=true_continuum, zcat_job_id=zcat_job_id)
         submit_utils.print_spacer_line()
 
         if self.run_qsonic_flag:
             print(f'Starting qsonic jobs for seed {seed}.')
-            qsonic_job_ids = self.run_qsonic(seed, analysis_struct, true_continuum=true_continuum,
-                                             zcat_job_id=zcat_job_id)
+            qsonic_job_ids = self.run_qsonic(
+                seed, analysis_struct, true_continuum=true_continuum, zcat_job_id=zcat_job_id)
 
             if delta_job_ids is not None:
                 delta_job_ids += qsonic_job_ids
@@ -204,34 +256,36 @@ class RunMocks:
         corr_job_ids = None
         if self.run_corr_flag:
             print(f'Starting correlation jobs for seed {seed}.')
-            corr_paths, corr_job_ids = self.run_correlations(seed, analysis_struct,
-                                                             delta_job_ids=delta_job_ids,
-                                                             raw_analysis=raw_analysis)
+            corr_paths, corr_job_ids = self.run_correlations(
+                seed, analysis_struct, delta_job_ids=delta_job_ids, raw_analysis=raw_analysis)
         submit_utils.print_spacer_line()
 
         # Run export
         corr_files = {}
         job_id = None
+        export_commands, export_cov_commands = None, None
         if self.run_export_flag:
             print(f'Starting export jobs for seed {seed}.')
-            corr_files, job_id = self.run_export(seed, analysis_struct, corr_paths,
-                                                 corr_job_ids=corr_job_ids)
+            corr_files, job_id, export_commands, export_cov_commands = self.run_export(
+                seed, analysis_struct, corr_paths, corr_job_ids=corr_job_ids)
         submit_utils.print_spacer_line()
 
-        return corr_files, job_id
+        return corr_files, job_id, export_commands, export_cov_commands
 
-    def run_qq(self, seed):
-        input_dir = Path(self.input_dir) / f'{self.mock_version}.{seed}'
+    def run_qq(self, input_seed, cat_seed, qq_seed, seed):
+        input_dir = Path(self.input_dir) / f'{self.mock_version}.{input_seed}'
         output_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}'
         print(f'Submitting QQ run for mock {self.mock_version}.{seed}')
 
         qq_job_id, self.dla_flag, self.bal_flag = run_qq(
-            self.qq, self.job, self.qq_run_type, seed, self.mock_code, input_dir, output_dir)
+            self.qq, self.job, self.qq_run_type, cat_seed, qq_seed,
+            self.mock_code, input_dir, output_dir
+        )
 
         return qq_job_id
 
     def run_zcat(self, seed, qq_job_id=None):
-        main_path = Path(self.qq_dir) / f'{self.mock_version}.{seed}'
+        main_path = self.qq_dir_from_seed(seed)
         qq_struct = dir_handlers.QQDir(main_path, self.qq_run_type)
         self.save_config(qq_struct)
 
@@ -262,7 +316,7 @@ class RunMocks:
     def run_contaminant_cat(self, seed, qq_job_id=None):
         assert self.dla_flag or self.bal_flag
 
-        main_path = Path(self.qq_dir) / f'{self.mock_version}.{seed}'
+        main_path = self.qq_dir_from_seed(seed)
         qq_struct = dir_handlers.QQDir(main_path, self.qq_run_type)
 
         print('Submitting Contaminant catalog job')
@@ -301,41 +355,8 @@ class RunMocks:
 
         return cont_cat_job_id
 
-    # def run_bal_cat(self, seed, qq_job_id=None):
-    #     main_path = Path(self.qq_dir) / f'{self.mock_version}.{seed}'
-    #     qq_struct = dir_handlers.QQDir(main_path, self.qq_run_type)
-
-    #     print('Submitting BAL catalog job')
-    #     header = submit_utils.make_header(self.job.get('nersc_machine'), nodes=1, time=0.5,
-    #                                       omp_threads=128, job_name=f'balcat_{seed}',
-    #                                       err_file=qq_struct.log_dir/'run-balcat-%j.err',
-    #                                       out_file=qq_struct.log_dir/'run-balcat-%j.out')
-
-    #     text = header
-    #     env_command = self.job.get('env_command')
-    #     text += f'{env_command}\n\n'
-    #     text += f'lyatools-make-bal-cat -i {qq_struct.spectra_dir} -o {qq_struct.qq_dir} '
-
-    #     ai_cut = self.qq.getint('bal_ai_cut', None)
-    #     if ai_cut is not None:
-    #         text += f'--ai-cut {ai_cut} '
-
-    #     bi_cut = self.qq.getint('bal_bi_cut', None)
-    #     if bi_cut is not None:
-    #         text += f'--bi-cut {bi_cut} '
-
-    #     text += f'--nproc {128} '
-
-    #     script_path = qq_struct.scripts_dir / 'make_balcat.sh'
-    #     submit_utils.write_script(script_path, text)
-
-    #     balcat_job_id = submit_utils.run_job(script_path, dependency_ids=qq_job_id,
-    #                                          no_submit=self.job.getboolean('no_submit'))
-
-    #     return balcat_job_id
-
-    def run_inject_zerr(self, seed, zcat_job_id=None):
-        main_path = Path(self.qq_dir) / f'{self.mock_version}.{seed}'
+    def run_inject_zerr(self, seed, qq_seed, zcat_job_id=None):
+        main_path = self.qq_dir_from_seed(seed)
         qq_struct = dir_handlers.QQDir(main_path, self.qq_run_type)
 
         distribution = self.inject_zerr.get('distribution')
@@ -343,8 +364,6 @@ class RunMocks:
 
         zcat_file = self.get_zcat_path(seed, no_zerr=True)
         zcat_zerr_file = self.get_zcat_path(seed)
-        # zcat_file = qq_struct.qq_dir / 'zcat.fits'
-        # zcat_zerr_file = qq_struct.qq_dir / f'zcat_{distribution}_{amplitude}.fits'
 
         if zcat_zerr_file.is_file():
             return
@@ -359,7 +378,7 @@ class RunMocks:
         env_command = self.job.get('env_command')
         text += f'{env_command}\n\n'
         text += f'lyatools-add-zerr -i {zcat_file} -o {zcat_zerr_file} '
-        text += f'-a {amplitude} -t {distribution} -s {seed} '
+        text += f'-a {amplitude} -t {distribution} -s {qq_seed} '
 
         script_path = qq_struct.scripts_dir / 'inject_zerr.sh'
         submit_utils.write_script(script_path, text)
@@ -369,10 +388,8 @@ class RunMocks:
 
         return zerr_job_id
 
-    def run_raw_deltas(self, seed, analysis_struct, zcat_job_id=None):
-        input_dir = Path(self.input_dir) / f'{self.mock_version}.{seed}'
-        # main_path = Path(self.qq_dir) / f'{self.mock_version}.{seed}'
-        # qq_struct = dir_handlers.QQDir(main_path, self.qq_run_type)
+    def run_raw_deltas(self, input_seed, analysis_struct, zcat_job_id=None):
+        input_dir = self.input_dir_from_seed(input_seed)
 
         zcat_file = self.deltas.get('raw_catalog')
         if zcat_file is None:
@@ -391,18 +408,13 @@ class RunMocks:
 
     def run_delta_extraction(self, seed, analysis_struct, true_continuum=False,
                              zcat_job_id=None):
-        qq_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}' / f'{self.qq_run_type}'
+        qq_dir = self.qq_dir_from_seed(seed) / f'{self.qq_run_type}'
 
         if self.custom_qso_cat is None:
             no_zerr = not self.inject_zerr.getboolean('zerr_in_deltas', False)
             zcat_file = self.get_zcat_path(seed, no_zerr=no_zerr)
         else:
             zcat_file = submit_utils.find_path(self.custom_qso_cat)
-        # zcat_file = qq_dir / 'zcat.fits'
-        # if self.run_zerr_flag:
-        #     distribution = self.inject_zerr.get('distribution')
-        #     amplitude = self.inject_zerr.get('amplitude')
-        #     zcat_file = qq_dir / f'zcat_{distribution}_{amplitude}.fits'
 
         mask_dla_flag = self.deltas.getboolean('mask_DLAs')
         mask_dla_cat = None
@@ -433,18 +445,13 @@ class RunMocks:
         return delta_job_ids
 
     def run_qsonic(self, seed, analysis_struct, true_continuum=False, zcat_job_id=None):
-        qq_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}' / f'{self.qq_run_type}'
+        qq_dir = self.qq_dir_from_seed(seed) / f'{self.qq_run_type}'
 
         if self.custom_qso_cat is None:
             no_zerr = not self.inject_zerr.getboolean('zerr_in_deltas', False)
             zcat_file = self.get_zcat_path(seed, no_zerr=no_zerr)
         else:
             zcat_file = submit_utils.find_path(self.custom_qso_cat)
-        # zcat_file = qq_dir / 'zcat.fits'
-        # if self.run_zerr_flag:
-        #     distribution = self.inject_zerr.get('distribution')
-        #     amplitude = self.inject_zerr.get('amplitude')
-        #     zcat_file = qq_dir / f'zcat_{distribution}_{amplitude}.fits'
 
         mask_dla_flag = self.deltas.getboolean('mask_DLAs')
         mask_dla_cat = None
@@ -461,17 +468,10 @@ class RunMocks:
         return qsonic_job_ids
 
     def run_correlations(self, seed, analysis_struct, delta_job_ids=None, raw_analysis=False):
-        # qq_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}' / f'{self.qq_run_type}'
-
         if self.custom_qso_cat is None:
             zcat_file = self.get_zcat_path(seed)
         else:
             zcat_file = submit_utils.find_path(self.custom_qso_cat)
-        # zcat_file = qq_dir / 'zcat.fits'
-        # if self.run_zerr_flag:
-        #     distribution = self.inject_zerr.get('distribution')
-        #     amplitude = self.inject_zerr.get('amplitude')
-        #     zcat_file = qq_dir / f'zcat_{distribution}_{amplitude}.fits'
 
         if raw_analysis and self.deltas.get('raw_catalog') is not None:
             zcat_file = submit_utils.find_path(self.deltas.get('raw_catalog'))
@@ -503,16 +503,36 @@ class RunMocks:
                              'In the [control] section set "run_corr" to True. '
                              'Correlations are *not* recomputed if they already exist.')
 
-        corr_dict, job_id = make_export_runs(seed, analysis_struct, corr_paths, self.job,
-                                             add_dmat=self.export.getboolean('add_dmat'),
-                                             dmat_path=self.export.get('dmat_path'),
-                                             shuffled=self.export.getboolean('subtract_shuffled'),
-                                             corr_job_ids=corr_job_ids)
+        corr_dict, job_id, export_commands = make_export_runs(
+            seed, analysis_struct, corr_paths, self.job, self.export, corr_job_ids=corr_job_ids)
 
-        return corr_dict, job_id
+        job_id_cov, export_cov_commands = export_full_cov(
+            seed, analysis_struct, corr_paths, self.job, self.export, corr_job_ids=corr_job_ids)
+
+        out_job_ids = []
+        if isinstance(job_id, list):
+            out_job_ids += job_id
+        else:
+            out_job_ids += [job_id]
+
+        if isinstance(job_id_cov, list):
+            out_job_ids += job_id_cov
+        else:
+            out_job_ids += [job_id_cov]
+
+        return corr_dict, out_job_ids, export_commands, export_cov_commands
+
+    def input_dir_from_seed(self, input_seed):
+        return Path(self.input_dir) / f'{self.mock_version}.{input_seed}'
+
+    def qq_dir_from_seed(self, seed):
+        return Path(self.qq_dir) / f'{self.mock_version}.{seed}'
+
+    def analysis_dir_from_seed(self, seed):
+        return Path(self.analysis_dir) / f'{self.mock_version}.{seed}'
 
     def get_analysis_dirs(self, seed):
-        main_path = Path(self.analysis_dir) / f'{self.mock_version}.{seed}'
+        main_path = self.analysis_dir_from_seed(seed)
 
         raw_analysis_struct = None
         if self.run_raw_flag:
@@ -569,7 +589,7 @@ class RunMocks:
             self.config.write(configfile)
 
     def get_zcat_path(self, seed, no_bal_mask=False, no_zerr=False):
-        qq_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}' / f'{self.qq_run_type}'
+        qq_dir = self.qq_dir_from_seed(seed) / f'{self.qq_run_type}'
 
         zcat_name = 'zcat'
         if self.bal_flag and (not no_bal_mask):

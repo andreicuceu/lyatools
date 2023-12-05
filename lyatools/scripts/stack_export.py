@@ -15,6 +15,9 @@ def main():
 
     parser.add_argument("--out", type=str, required=True, help="name of output file")
 
+    parser.add_argument("--no-smooth-cov", action="store_true", default=False,
+                        help="Whether to turn off smoothing of the covariance matrix")
+
     parser.add_argument('--dmat', type=str, default=None, required=False,
                         help=('Distortion matrix produced via picca_dmat.py, picca_xdmat.py... '
                               '(if not provided will be identity)'))
@@ -24,7 +27,8 @@ def main():
 
     args = parser.parse_args()
 
-    stack_export_correlations(args.data, args.out, args.dmat, args.shuffled_correlations)
+    stack_export_correlations(
+        args.data, args.out, not args.no_smooth_cov, args.dmat, args.shuffled_correlations)
 
 
 if __name__ == '__main__':
