@@ -84,10 +84,11 @@ def main():
         corr_path = analysis_dir / version / qq_run_type
         corr_path = corr_path / analysis_name / 'correlations'
 
+        qq_cat_path = None
         if cat_path is not None:
-            cat_path = Path(cat_path) / version / qq_run_type / 'zcat_gauss_400.fits'
+            qq_cat_path = Path(cat_path) / version / qq_run_type / 'zcat_gauss_400.fits'
 
-        run_vega_fitter(config, corr_path, output_dir, cat_path, run_flag=run_flag)
+        run_vega_fitter(config, corr_path, output_dir, qq_cat_path, run_flag=run_flag)
         print_func(f'Finished seed {seeds[i]}.')
 
 
