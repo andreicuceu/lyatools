@@ -14,7 +14,7 @@ def get_correlations_dict(corr_config, corr_path, cat_path=None):
     fast_metals = corr_config.getboolean('fast_metals', True)
 
     correlations['lyaxlya']['corr_path'] = f"{corr_path / 'cf_lya_lya_0_10-exp.fits.gz'}"
-    correlations['lyaxlya']['distortion-file'] = f"{dist_path / 'dmat_lya_lya_0_10.fits.gz'}"
+    correlations['lyaxlya']['distortion-file'] = f"{dist_path / 'dmat_highres_lya_lya_0_10.fits.gz'}"
     # correlations['lyaxlya']['metal_path'] = f"{dist_path / 'metal_dmat_lya_lya_0_10.fits.gz'}"
     correlations['lyaxlya']['weights-tracer1'] = \
         f"{corr_path.parent / 'deltas_lya/Log/delta_attributes.fits.gz'}"
@@ -25,7 +25,7 @@ def get_correlations_dict(corr_config, corr_path, cat_path=None):
     correlations['lyaxlya']['fast_metals'] = f'{fast_metals}'
 
     correlations['lyaxlyb']['corr_path'] = f"{corr_path / 'cf_lya_lyb_0_10-exp.fits.gz'}"
-    correlations['lyaxlyb']['distortion-file'] = f"{dist_path / 'dmat_lya_lyb_0_10.fits.gz'}"
+    correlations['lyaxlyb']['distortion-file'] = f"{dist_path / 'dmat_highres_lya_lyb_0_10.fits.gz'}"
     # correlations['lyaxlyb']['metal_path'] = f"{dist_path / 'metal_dmat_lya_lyb_0_10.fits.gz'}"
     correlations['lyaxlyb']['weights-tracer1'] = \
         f"{corr_path.parent / 'deltas_lya/Log/delta_attributes.fits.gz'}"
@@ -36,7 +36,7 @@ def get_correlations_dict(corr_config, corr_path, cat_path=None):
     correlations['lyaxlyb']['fast_metals'] = f'{fast_metals}'
 
     correlations['lyaxqso']['corr_path'] = f"{corr_path / 'xcf_lya_qso_0_10-exp.fits.gz'}"
-    correlations['lyaxqso']['distortion-file'] = f"{dist_path / 'xdmat_lya_qso_0_10.fits.gz'}"
+    correlations['lyaxqso']['distortion-file'] = f"{dist_path / 'xdmat_highres_lya_qso_0_10.fits.gz'}"
     # correlations['lyaxqso']['metal_path'] = f"{dist_path / 'metal_xdmat_lya_qso_0_10.fits.gz'}"
     correlations['lyaxqso']['weights-tracer1'] = \
         f"{corr_path.parent / 'deltas_lya/Log/delta_attributes.fits.gz'}"
@@ -46,7 +46,7 @@ def get_correlations_dict(corr_config, corr_path, cat_path=None):
     correlations['lyaxqso']['fast_metals'] = f'{fast_metals}'
 
     correlations['lybxqso']['corr_path'] = f"{corr_path / 'xcf_lyb_qso_0_10-exp.fits.gz'}"
-    correlations['lybxqso']['distortion-file'] = f"{dist_path / 'xdmat_lyb_qso_0_10.fits.gz'}"
+    correlations['lybxqso']['distortion-file'] = f"{dist_path / 'xdmat_highres_lyb_qso_0_10.fits'}"
     # correlations['lybxqso']['metal_path'] = f"{dist_path / 'metal_xdmat_lyb_qso_0_10.fits.gz'}"
     correlations['lybxqso']['weights-tracer1'] = \
         f"{corr_path.parent / 'deltas_lyb/Log/delta_attributes.fits.gz'}"
