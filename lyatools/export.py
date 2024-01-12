@@ -250,6 +250,7 @@ def mpi_export(export_dict, job, analysis_struct, corr_job_ids=None):
 
     # Filter Nones
     export_commands = [command for command in export_commands if command is not None]
+    export_commands = [command for mock_commands in export_commands for command in mock_commands]
     export_cov_commands = [command for command in export_cov_commands if command is not None]
 
     if len(export_commands) > 1:
@@ -308,7 +309,8 @@ def mpi_export_correlations(export_commands, job, analysis_struct, corr_job_ids=
     logs = analysis_struct.logs_dir / 'export'
     dir_handlers.check_dir(logs)
 
-    text += f'srun --ntasks-per-node=64 lyatools-mpi-export -i {export_commands} '
+    text_commands = '"' + '" "'.join(export_commands) + '"'
+    text += f'srun --ntasks-per-node=64 lyatools-mpi-export -i {text_commands} '
     text += f'-l {logs}\n'
 
     # Write the script.
