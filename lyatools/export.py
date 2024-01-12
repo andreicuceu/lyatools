@@ -310,7 +310,8 @@ def mpi_export_correlations(export_commands, job, analysis_struct, corr_job_ids=
     dir_handlers.check_dir(logs)
 
     text_commands = '"' + '" "'.join(export_commands) + '"'
-    text += f'srun --ntasks-per-node=64 lyatools-mpi-export -i {text_commands} '
+    num_cores = min(len(export_commands), 64)
+    text += f'srun --ntasks-per-node={num_cores} lyatools-mpi-export -i {text_commands} '
     text += f'-l {logs}\n'
 
     # Write the script.
