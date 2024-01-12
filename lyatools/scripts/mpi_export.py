@@ -25,6 +25,8 @@ def main():
     mpi_comm = MPI.COMM_WORLD
     cpu_rank = mpi_comm.Get_rank()
     num_cpus = mpi_comm.Get_size()
+    if num_cpus > len(args.commands):
+        raise ValueError(f'There are more cores ({num_cpus}) than commands ({len(args.commands)}).')
 
     num_tasks_per_proc = len(args.commands) // num_cpus
     remainder = len(args.commands) % num_cpus
