@@ -109,6 +109,7 @@ def run_correlation(config, job, analysis_struct, catalogue=None, cross=False, l
     num_bins_rp = config.getint('num_bins_rp')
     num_bins_rt = config.getint('num_bins_rt')
     fid_Om = config.getfloat('fid_Om')
+    fid_Or = config.getfloat('fid_Or', 7.97505418919554e-05)
     dmat_rejection = config.getfloat('dmat_rejection')
     rebin_factor = config.getint('rebin_factor', None)
     from_qsonic = config.getboolean('from_qsonic')
@@ -149,7 +150,7 @@ def run_correlation(config, job, analysis_struct, catalogue=None, cross=False, l
         text += f'--np {num_bins_rp} '
 
     text += f'--z-cut-min {zmin} --z-cut-max {zmax} --fid-Om {fid_Om} --nproc {256} '
-    text += f'--fid-Or 7.97505418919554e-05 --nside {nside} '
+    text += f'--fid-Or {fid_Or} --nside {nside} '
 
     if metal_dmat:
         text += r'--abs-igm SiII\(1260\) SiIII\(1207\) SiII\(1193\) SiII\(1190\) '
