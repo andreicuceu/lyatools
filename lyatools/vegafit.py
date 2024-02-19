@@ -129,7 +129,8 @@ def build_config(config, corr_path, out_path, cat_path=None):
 
     use_full_cov = config['fit_info'].getboolean('use_full_cov', True)
     if use_full_cov and 'global_cov_file' not in fit_info:
-        fit_info['global_cov_file'] = str(corr_path / 'full_cov_smooth.fits')
+        cov_name = config['fit_info'].get('cov_name', 'full_cov_smooth.fits')
+        fit_info['global_cov_file'] = str(corr_path / cov_name)
 
     fit_info['sample_params'] = config['fit_info']['sample_params'].split(' ')
 
