@@ -11,7 +11,7 @@ def make_delta_runs(
     if config.getboolean('run_lya_region'):
         id = run_delta_extraction(
             config, job, qq_dir, analysis_struct, zcat_file, mask_dla_cat, mask_bal_cat,
-            region_name='lya', lambda_rest_min=1040., lambda_rest_max=1200.,
+            region_name='lya', lambda_rest_min=1040., lambda_rest_max=1205.,
             zcat_job_id=zcat_job_id, true_continuum=true_continuum
         )
         job_ids += [id]
@@ -29,7 +29,7 @@ def make_delta_runs(
 
 def run_delta_extraction(
     config, job, qq_dir, analysis_struct, catalogue, mask_dla_cat=None, mask_bal_cat=None,
-    region_name='lya', lambda_rest_min=1040., lambda_rest_max=1200.,
+    region_name='lya', lambda_rest_min=1040., lambda_rest_max=1205.,
     zcat_job_id=None, true_continuum=False
 ):
     print(f'Submitting job to run delta extraction on {region_name} region')
