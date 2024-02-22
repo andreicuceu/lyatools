@@ -55,9 +55,11 @@ def run_delta_extraction(
     run_name = f'picca_delta_extraction_{region_name}_{type}'
     script_path = analysis_struct.scripts_dir / f'run_{run_name}.sh'
 
-    slurm_hours = config.getfloat('slurm_hours', None)
+    slurm_hours = config.getfloat(f'slurm_hours_{region_name}', None)
     if slurm_hours is None:
-        slurm_hours = 0.5 if true_continuum else 1.
+        slurm_hours = config.getfloat('slurm_hours', None)
+        if slurm_hours is None:
+            slurm_hours = 0.5 if true_continuum else 1.
 
     # Make the header
     header = submit_utils.make_header(
