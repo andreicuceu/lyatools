@@ -111,6 +111,7 @@ def run_correlation(config, job, analysis_struct, catalogue=None, cross=False, l
     fid_Om = config.getfloat('fid_Om')
     fid_Or = config.getfloat('fid_Or', 7.97505418919554e-05)
     dmat_rejection = config.getfloat('dmat_rejection')
+    coeff_binning = config.getint('coeff_binning', None)
     rebin_factor = config.getint('rebin_factor', None)
     from_qsonic = config.getboolean('from_qsonic')
 
@@ -160,6 +161,8 @@ def run_correlation(config, job, analysis_struct, catalogue=None, cross=False, l
 
     if dmat or metal_dmat:
         text += f'--rej {dmat_rejection} '
+        if coeff_binning is not None:
+            text += f'--coef-binning-model {coeff_binning} '
 
     if cross and config.getboolean('no_remove_mean_lambda_obs'):
         text += '--no-remove-mean-lambda-obs '
