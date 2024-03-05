@@ -48,9 +48,7 @@ def run_qq(config, job, qq_run_type, cat_seed, qq_seed,
         elif 'bal' in key:
             bal_flag = True
 
-        if key == 'dn_dzdm' and not y1_flag:
-            qq_args += f' --{key} {mock_code}'
-        elif key == 'add-LYB' and mock_code == 'saclay':
+        if key == 'add-LYB' and mock_code == 'saclay':
             continue
         else:
             qq_args += f' --{key} {val}'
@@ -58,7 +56,7 @@ def run_qq(config, job, qq_run_type, cat_seed, qq_seed,
     if y1_flag:
         qq_args += f' --from-catalog {seed_cat_path}'
 
-    qq_args += f' --seed {qq_seed}'
+    qq_args += f' --seed {qq_seed} --raw-mock {mock_code} '
     print(qq_args)
 
     qq_script = create_qq_script(config, job, qq_dir, qq_args, qq_seed, input_dir)
