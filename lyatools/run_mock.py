@@ -393,7 +393,7 @@ class RunMocks:
 
         zcat_file = self.deltas.get('raw_catalog')
         if zcat_file is None:
-            zcat_file = self.get_zcat_path(seed)
+            zcat_file = self.get_zcat_path(input_seed)
         else:
             zcat_file = submit_utils.find_path(zcat_file)
 
