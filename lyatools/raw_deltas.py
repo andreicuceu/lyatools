@@ -6,7 +6,7 @@ def make_raw_deltas(input_dir, zcat_file, analysis_struct, job, zcat_job_id=None
                     use_old_weights=False):
     job_ids = []
     id = run_raw_deltas(input_dir, zcat_file, analysis_struct, job, zcat_job_id=zcat_job_id,
-                        region_name='lya', lambda_rest_min=1040., lambda_rest_max=1200.,
+                        region_name='lya', lambda_rest_min=1040., lambda_rest_max=1205.,
                         delta_lambda=delta_lambda, max_num_spec=max_num_spec,
                         use_old_weights=use_old_weights)
     job_ids += [id]
