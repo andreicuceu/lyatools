@@ -45,7 +45,7 @@ def run_raw_deltas(input_dir, zcat_file, analysis_struct, job, zcat_job_id=None,
     # text += f'lambda_min={args.lambda_min}, lambda_max={args.lambda_max}, '
     text += f'lambda_min_rest_frame={lambda_rest_min}, '
     text += f'lambda_max_rest_frame={lambda_rest_max}, '
-    text += f'delta_lambda={delta_lambda}, lin_spaced=True, nproc=128, '
+    text += f'delta_lambda={delta_lambda}, lin_spaced=True, nproc=128, use_splines=True, '
 
     if (max_num_spec is not None) and (max_num_spec > 0):
         text += f'max_num_spec={max_num_spec},  '
