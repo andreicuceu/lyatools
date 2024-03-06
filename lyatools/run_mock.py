@@ -506,8 +506,11 @@ class RunMocks:
         corr_dict, job_id, export_commands = make_export_runs(
             seed, analysis_struct, corr_paths, self.job, self.export, corr_job_ids=corr_job_ids)
 
-        job_id_cov, export_cov_commands = export_full_cov(
-            seed, analysis_struct, corr_paths, self.job, self.export, corr_job_ids=corr_job_ids)
+        job_id_cov = None
+        export_cov_commands = None
+        if not self.export.getboolean('no_export_full_cov'):
+            job_id_cov, export_cov_commands = export_full_cov(
+                seed, analysis_struct, corr_paths, self.job, self.export, corr_job_ids=corr_job_ids)
 
         out_job_ids = []
         if isinstance(job_id, list):
