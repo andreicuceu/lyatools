@@ -159,9 +159,15 @@ def create_config(config, config_path, qq_dir, catalogue, mask_dla_cat, mask_bal
             'force stack delta to zero': str(force_stack_delta_to_zero),
         }
 
-        raw_stats_file = config.get('raw_stats_file', None)
-        if raw_stats_file is not None:
-            out_config['expected flux']['raw statistics file'] = raw_stats_file
+        raw_stats_file_lya = config.get('raw_stats_file_lya', None)
+        raw_stats_file_lyb = config.get('raw_stats_file_lyb', None)
+        if lambda_rest_min < 1025:
+            if raw_stats_file_lyb is not None:
+                out_config['expected flux']['raw statistics file'] = raw_stats_file_lyb
+        else:
+            if raw_stats_file_lya is not None:
+                out_config['expected flux']['raw statistics file'] = raw_stats_file_lya
+
     else:
         fit_type = config.get('type')
         out_config['expected flux'] = {
