@@ -78,7 +78,7 @@ def get_builder(builder_config=None):
         else:
             if key == 'metals':
                 options[key] = builder_config[key].split(' ')
-            if key in options:
+            else:
                 options[key] = builder_config[key]
 
     return BuildConfig(options, overwrite=True)
