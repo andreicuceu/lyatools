@@ -3,20 +3,20 @@ from . import submit_utils
 
 def make_qsonic_runs(
     config, job, qq_dir, zcat_file, analysis_struct,
-    mask_dla_cat=None, zcat_job_id=None, true_continuum=False
+    mask_dla_cat=None, mask_bal_cat=None, zcat_job_id=None, true_continuum=False
 ):
     job_ids = []
     if config.getboolean('run_lya_region'):
         id = run_qsonic(
-            config, job, qq_dir, analysis_struct, zcat_file, mask_dla_cat,
-            region_name='lya', lambda_rest_min=1040., lambda_rest_max=1200.,
+            config, job, qq_dir, analysis_struct, zcat_file, mask_dla_cat, mask_bal_cat,
+            region_name='lya', lambda_rest_min=1040., lambda_rest_max=1205.,
             zcat_job_id=zcat_job_id, true_continuum=true_continuum
             )
         job_ids += [id]
 
     if config.getboolean('run_lyb_region'):
         id = run_qsonic(
-            config, job, qq_dir, analysis_struct, zcat_file, mask_dla_cat,
+            config, job, qq_dir, analysis_struct, zcat_file, mask_dla_cat, mask_bal_cat,
             region_name='lyb', lambda_rest_min=920., lambda_rest_max=1020.,
             zcat_job_id=zcat_job_id, true_continuum=true_continuum
             )
@@ -26,8 +26,8 @@ def make_qsonic_runs(
 
 
 def run_qsonic(
-    config, job, qq_dir, analysis_struct, catalogue, mask_dla_cat=None,
-    region_name='lya', lambda_rest_min=1040., lambda_rest_max=1200.,
+    config, job, qq_dir, analysis_struct, zcat_file, mask_dla_cat=None, mask_bal_cat=None,
+    region_name='lya', lambda_rest_min=1040., lambda_rest_max=1205.,
     zcat_job_id=None, true_continuum=False
 ):
     print(f'Submitting job to run QSOnic on {region_name} region')
@@ -62,7 +62,7 @@ def run_qsonic(
     text += f'srun -n {config.get("num_mpi")} -c 2 qsonic-fit '
     text += f'-i {spectra_dir} '
     text += f'-o {deltas_dirname} '
-    text += f'--catalog {catalogue} '
+    text += f'--catalog {zcat_file} '
     text += '--mock-analysis '
     text += '--skip-resomat '
     text += '--smoothing-scale 0 '
@@ -76,6 +76,10 @@ def run_qsonic(
         text += '--save-by-hpx '
     if config.getboolean("force_stack_delta_to_zero"):
         text += '--normalize-stacked-flux '
+    if config.getboolean("var_fit_eta"):
+        text += '--var-fit-eta '
+    if config.getboolean("var_use_cov"):
+        text += '--var-use-cov '
 
     mask_dla_flag = config.getboolean('mask_DLAs')
     if mask_dla_flag:

@@ -406,8 +406,7 @@ class RunMocks:
 
         return delta_job_ids
 
-    def run_delta_extraction(self, seed, analysis_struct, true_continuum=False,
-                             zcat_job_id=None):
+    def get_deltas_config(self, seed):
         qq_dir = self.qq_dir_from_seed(seed) / f'{self.qq_run_type}'
 
         if self.custom_qso_cat is None:
@@ -437,6 +436,13 @@ class RunMocks:
             if not (ai_cut is None and bi_cut is None):
                 mask_bal_cat = qq_dir / f'bal_cat_AI_{ai_cut}_BI_{bi_cut}.fits'
 
+        return qq_dir, zcat_file, mask_dla_cat, mask_bal_cat
+
+    def run_delta_extraction(self, seed, analysis_struct, true_continuum=False,
+                             zcat_job_id=None):
+
+        qq_dir, zcat_file, mask_dla_cat, mask_bal_cat = self.get_deltas_config(seed)
+
         delta_job_ids = make_delta_runs(
             self.deltas, self.job, qq_dir, zcat_file, analysis_struct,
             mask_dla_cat, mask_bal_cat, zcat_job_id, true_continuum=true_continuum
@@ -445,25 +451,12 @@ class RunMocks:
         return delta_job_ids
 
     def run_qsonic(self, seed, analysis_struct, true_continuum=False, zcat_job_id=None):
-        qq_dir = self.qq_dir_from_seed(seed) / f'{self.qq_run_type}'
+        qq_dir, zcat_file, mask_dla_cat, mask_bal_cat = self.get_deltas_config(seed)
 
-        if self.custom_qso_cat is None:
-            no_zerr = not self.inject_zerr.getboolean('zerr_in_deltas', False)
-            zcat_file = self.get_zcat_path(seed, no_zerr=no_zerr)
-        else:
-            zcat_file = submit_utils.find_path(self.custom_qso_cat)
-
-        mask_dla_flag = self.deltas.getboolean('mask_DLAs')
-        mask_dla_cat = None
-        if mask_dla_flag:
-            if self.dla_flag is not None and not self.dla_flag:
-                raise ValueError('Asked for DLA masking but there are no DLAs in the qq run')
-
-            mask_nhi_cut = self.qq.getfloat('dla_mask_nhi_cut')
-            mask_dla_cat = qq_dir / f'dla_cat_mask_{mask_nhi_cut:.2f}.fits'
-
-        qsonic_job_ids = make_qsonic_runs(self.qsonic, self.job, qq_dir, zcat_file, analysis_struct,
-                                          mask_dla_cat, zcat_job_id, true_continuum=true_continuum)
+        qsonic_job_ids = make_qsonic_runs(
+            self.qsonic, self.job, qq_dir, zcat_file, analysis_struct,
+            mask_dla_cat, mask_bal_cat, zcat_job_id, true_continuum=true_continuum
+        )
 
         return qsonic_job_ids
 
