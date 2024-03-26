@@ -90,9 +90,21 @@ def run_qsonic(
     if true_continuum:
         text += '--true-continuum '
 
-        raw_stats_file = submit_utils.find_path(config.get('raw_stats_file'))
-        text += f'--fiducial-meanflux {raw_stats_file} '
-        text += f'--fiducial-varlss {raw_stats_file} '
+    if config.getboolean('use_fid_meanflux'):
+        if region_name == 'lya':
+            raw_stats_file = submit_utils.find_path(config.get('raw_stats_file_lya'))
+            text += f'--fiducial-meanflux {raw_stats_file} '
+        elif region_name == 'lyb':
+            raw_stats_file = submit_utils.find_path(config.get('raw_stats_file_lyb'))
+            text += f'--fiducial-meanflux {raw_stats_file} '
+
+    if config.getboolean('use_fid_varlss'):
+        if region_name == 'lya':
+            raw_stats_file = submit_utils.find_path(config.get('raw_stats_file_lya'))
+            text += f'--fiducial-varlss {raw_stats_file} '
+        elif region_name == 'lyb':
+            raw_stats_file = submit_utils.find_path(config.get('raw_stats_file_lyb'))
+            text += f'--fiducial-varlss {raw_stats_file} '
 
     text += '\n'
 
