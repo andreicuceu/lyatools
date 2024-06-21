@@ -11,6 +11,8 @@ def get_correlations_dict(corr_config, corr_path, cat_path=None):
 
     rmin = corr_config.getfloat('rmin', 10.)
     rmax = corr_config.getfloat('rmax', 180.)
+    rmin_auto = corr_config.getfloat('rmin-auto', rmin)
+    rmin_cross = corr_config.getfloat('rmin-cross', rmin)
     fast_metals = corr_config.getboolean('fast_metals', True)
 
     correlations['lyaxlya']['corr_path'] = f"{corr_path / 'cf_lya_lya_0_10-exp.fits.gz'}"
@@ -20,7 +22,7 @@ def get_correlations_dict(corr_config, corr_path, cat_path=None):
         f"{corr_path.parent / 'deltas_lya/Log/delta_attributes.fits.gz'}"
     correlations['lyaxlya']['weights-tracer2'] = \
         f"{corr_path.parent / 'deltas_lya/Log/delta_attributes.fits.gz'}"
-    correlations['lyaxlya']['r-min'] = rmin
+    correlations['lyaxlya']['r-min'] = rmin_auto
     correlations['lyaxlya']['r-max'] = rmax
     correlations['lyaxlya']['fast_metals'] = f'{fast_metals}'
 
@@ -31,7 +33,7 @@ def get_correlations_dict(corr_config, corr_path, cat_path=None):
         f"{corr_path.parent / 'deltas_lya/Log/delta_attributes.fits.gz'}"
     correlations['lyaxlyb']['weights-tracer2'] = \
         f"{corr_path.parent / 'deltas_lyb/Log/delta_attributes.fits.gz'}"
-    correlations['lyaxlyb']['r-min'] = rmin
+    correlations['lyaxlyb']['r-min'] = rmin_auto
     correlations['lyaxlyb']['r-max'] = rmax
     correlations['lyaxlyb']['fast_metals'] = f'{fast_metals}'
 
@@ -41,7 +43,7 @@ def get_correlations_dict(corr_config, corr_path, cat_path=None):
     correlations['lyaxqso']['weights-tracer1'] = \
         f"{corr_path.parent / 'deltas_lya/Log/delta_attributes.fits.gz'}"
     correlations['lyaxqso']['weights-tracer2'] = f"{cat_path}"
-    correlations['lyaxqso']['r-min'] = rmin
+    correlations['lyaxqso']['r-min'] = rmin_cross
     correlations['lyaxqso']['r-max'] = rmax
     correlations['lyaxqso']['fast_metals'] = f'{fast_metals}'
 
@@ -51,7 +53,7 @@ def get_correlations_dict(corr_config, corr_path, cat_path=None):
     correlations['lybxqso']['weights-tracer1'] = \
         f"{corr_path.parent / 'deltas_lyb/Log/delta_attributes.fits.gz'}"
     correlations['lybxqso']['weights-tracer2'] = f"{cat_path}"
-    correlations['lybxqso']['r-min'] = rmin
+    correlations['lybxqso']['r-min'] = rmin_cross
     correlations['lybxqso']['r-max'] = rmax
     correlations['lybxqso']['fast_metals'] = f'{fast_metals}'
 
