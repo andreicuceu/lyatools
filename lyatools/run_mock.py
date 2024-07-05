@@ -236,7 +236,7 @@ class RunMocks:
             if raw_analysis:
                 print(f'Starting raw deltas jobs for seed {seed}.')
                 delta_job_ids = self.run_raw_deltas(
-                    input_seed, analysis_struct, zcat_job_id=zcat_job_id)
+                    input_seed, seed, analysis_struct, zcat_job_id=zcat_job_id)
             else:
                 print(f'Starting delta extraction jobs for seed {seed}.')
                 delta_job_ids = self.run_delta_extraction(
@@ -388,12 +388,16 @@ class RunMocks:
 
         return zerr_job_id
 
-    def run_raw_deltas(self, input_seed, analysis_struct, zcat_job_id=None):
+    def run_raw_deltas(self, input_seed, seed, analysis_struct, zcat_job_id=None):
         input_dir = self.input_dir_from_seed(input_seed)
 
         zcat_file = self.deltas.get('raw_catalog')
         if zcat_file is None:
             zcat_file = self.get_zcat_path(input_seed)
+            if not zcat_file.is_file():
+                print('Attempting to find zcat file in full seed directory.')
+                zcat_file = self.get_zcat_path(seed)
+                assert zcat_file.is_file()
         else:
             zcat_file = submit_utils.find_path(zcat_file)
 
