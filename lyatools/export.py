@@ -152,7 +152,8 @@ def export_full_cov(seed, analysis_struct, corr_paths, job, config, corr_job_ids
         return None, None
 
     # Make the header
-    header = submit_utils.make_header(job.get('nersc_machine'), time=0.2,
+    export_cov_time = config.get('export-cov-slurm-hours', 0.5)
+    header = submit_utils.make_header(job.get('nersc_machine'), time=export_cov_time,
                                       omp_threads=64, job_name=f'export-cov_{seed}',
                                       err_file=analysis_struct.logs_dir/f'export-cov-{seed}-%j.err',
                                       out_file=analysis_struct.logs_dir/f'export-cov-{seed}-%j.out')
