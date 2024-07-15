@@ -31,7 +31,7 @@ def make_correlation_runs(config, job, analysis_struct, corr_types, catalogue, d
                 name=f"{'x' if cross else ''}cf_{corr}", delta_job_ids=delta_job_ids
             ))
 
-            if compute_shuffled:
+            if compute_shuffled and cross:
                 cf_shuffled_out.append(run_correlation(
                     config, job, analysis_struct, catalogue, cross=cross, lyb=lyb,
                     name=f"{'x' if cross else ''}cf_{corr}", shuffled=True,
