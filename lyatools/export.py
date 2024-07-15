@@ -269,15 +269,15 @@ def mpi_export(export_dict, job, analysis_struct, corr_job_ids=None):
     # Restructure the export_cov_commands
     individual_cov_commands = []
     smooth_cov_commands = []
-    stacked_cov_commands = []
+    # stacked_cov_commands = []
     for cov_commands in export_cov_commands:
         for command in cov_commands:
-            if 'export_individual_cov.py' in command:
+            if 'write_full_covariance_matrix_flex_size_shuffled' in command:
                 individual_cov_commands += [command]
-            elif 'smoothit.py' in command:
+            elif 'write_smooth_covariance_flex_size' in command:
                 smooth_cov_commands += [command]
-            elif 'export_full_cov.py' in command:
-                stacked_cov_commands += [command]
+            # elif 'export_full_cov.py' in command:
+            #     stacked_cov_commands += [command]
             else:
                 raise ValueError(f'Unknown covariance command: {command}')
 
@@ -297,11 +297,11 @@ def mpi_export(export_dict, job, analysis_struct, corr_job_ids=None):
             smooth_cov_commands, job, analysis_struct, script_name='smooth_cov',
             num_nodes=num_nodes, ntasks_per_node=ntasks_per_node, corr_job_ids=cov_job_id)
 
-    if len(stacked_cov_commands) > 1:
-        ntasks_per_node = min(len(stacked_cov_commands), 32)
-        _ = mpi_export_covariances(
-            stacked_cov_commands, job, analysis_struct, script_name='stacked_cov',
-            num_nodes=1, ntasks_per_node=ntasks_per_node, corr_job_ids=corr_job_ids)
+    # if len(stacked_cov_commands) > 1:
+    #     ntasks_per_node = min(len(stacked_cov_commands), 32)
+    #     _ = mpi_export_covariances(
+    #         stacked_cov_commands, job, analysis_struct, script_name='stacked_cov',
+    #         num_nodes=1, ntasks_per_node=ntasks_per_node, corr_job_ids=corr_job_ids)
 
 
 def mpi_export_correlations(export_commands, job, analysis_struct, corr_job_ids=None):
