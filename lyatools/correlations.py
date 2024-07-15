@@ -37,72 +37,18 @@ def make_correlation_runs(config, job, analysis_struct, corr_types, catalogue, d
                     name=f"{'x' if cross else ''}cf_{corr}", shuffled=True,
                     delta_job_ids=delta_job_ids
                 ))
-        
+
         if compute_dmat:
             dmat_out.append(run_correlation(
                 config, job, analysis_struct, catalogue, cross=cross, lyb=lyb, dmat=True,
                 name=f"{'x' if cross else ''}dmat_{corr}", delta_job_ids=delta_job_ids
             ))
-        
+
         if compute_metals:
             metal_out.append(run_correlation(
                 config, job, analysis_struct, catalogue, cross=cross, lyb=lyb, metal_dmat=True,
                 name=f"{'x' if cross else ''}metal_dmat_{corr}", delta_job_ids=delta_job_ids
             ))
-
-    # if 'lya_lya' in corr_types:
-    #     if not no_comput_corr:
-    #         cf_out.append(run_correlation(config, job, analysis_struct, name='cf_lya_lya',
-    #                                       delta_job_ids=delta_job_ids))
-    #         if subtract_shuffled:
-    #             cf_out.append(run_correlation(config, job, analysis_struct, name='cf_lya_lya',
-    #                                           shuffled=True, delta_job_ids=delta_job_ids))
-    #     if compute_dmat:
-    #         dmat_out.append(run_correlation(config, job, analysis_struct, dmat=True,
-    #                                         name='dmat_lya_lya', delta_job_ids=delta_job_ids))
-    #     if compute_metals:
-    #         metal_out.append(run_correlation(config, job, analysis_struct, metal_dmat=True,
-    #                                          name='metal_dmat_lya_lya',
-    #                                          delta_job_ids=delta_job_ids))
-
-    # if 'lya_lyb' in corr_types:
-    #     if not no_comput_corr:
-    #         cf_out.append(run_correlation(config, job, analysis_struct, lyb=True,
-    #                                       name='cf_lya_lyb', delta_job_ids=delta_job_ids))
-    #     if compute_dmat:
-    #         dmat_out.append(run_correlation(config, job, analysis_struct, lyb=True, dmat=True,
-    #                                         name='dmat_lya_lyb', delta_job_ids=delta_job_ids))
-    #     if compute_metals:
-    #         metal_out.append(run_correlation(config, job, analysis_struct, lyb=True,
-    #                                          metal_dmat=True, name='metal_dmat_lya_lyb',
-    #                                          delta_job_ids=delta_job_ids))
-
-    # if 'lya_qso' in corr_types:
-    #     if not no_comput_corr:
-    #         cf_out.append(run_correlation(config, job, analysis_struct, catalogue, cross=True,
-    #                                       name='xcf_lya_qso', delta_job_ids=delta_job_ids))
-    #     if compute_dmat:
-    #         dmat_out.append(run_correlation(config, job, analysis_struct, catalogue, cross=True,
-    #                                         dmat=True, name='xdmat_lya_qso',
-    #                                         delta_job_ids=delta_job_ids))
-    #     if compute_metals:
-    #         metal_out.append(run_correlation(config, job, analysis_struct, catalogue, cross=True,
-    #                                          metal_dmat=True, name='metal_xdmat_lya_qso',
-    #                                          delta_job_ids=delta_job_ids))
-
-    # if 'lyb_qso' in corr_types:
-    #     if not no_comput_corr:
-    #         cf_out.append(run_correlation(config, job, analysis_struct, catalogue, cross=True,
-    #                                       lyb=True, name='xcf_lyb_qso',
-    #                                       delta_job_ids=delta_job_ids))
-    #     if compute_dmat:
-    #         dmat_out.append(run_correlation(config, job, analysis_struct, catalogue, cross=True,
-    #                                         lyb=True, dmat=True, name='xdmat_lyb_qso',
-    #                                         delta_job_ids=delta_job_ids))
-    #     if compute_metals:
-    #         metal_out.append(run_correlation(config, job, analysis_struct, catalogue, cross=True,
-    #                                          lyb=True, metal_dmat=True, name='metal_xdmat_lyb_qso',
-    #                                          delta_job_ids=delta_job_ids))
 
     cf_paths = [out[0] for out in cf_out]
     job_ids = [out[1] for out in cf_out] + [out[1] for out in cf_shuffled_out]
