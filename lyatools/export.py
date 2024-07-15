@@ -206,6 +206,8 @@ def stack_correlations(
         if shuffled:
             shuffled_list = []
             for cf in cf_list:
+                if 'xcf' not in cf.name:
+                    continue
                 shuffled_path = submit_utils.append_string_to_correlation_path(cf, '_shuffled')
                 if not shuffled_path.is_file():
                     raise ValueError('Asked to subtract shuffled correlation, but could not '
