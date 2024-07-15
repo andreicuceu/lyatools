@@ -27,9 +27,7 @@ def find_dmat(dmat_path, corr_type):
 
 
 def make_export_runs(seed, analysis_struct, corr_paths, job, config, corr_job_ids=None):
-    add_dmat = config.getboolean('add_dmat')
-    dmat_path = config.get('dmat_path')
-    shuffled = config.getboolean('subtract_shuffled')
+    subtract_shuffled = config.getboolean('subtract_shuffled')
 
     corr_dict = {}
     export_commands = []
@@ -42,12 +40,12 @@ def make_export_runs(seed, analysis_struct, corr_paths, job, config, corr_job_id
             exp_file = submit_utils.append_string_to_correlation_path(cf_path, '-exp')
 
         shuffled_path = None
-        if shuffled:
+        if subtract_shuffled:
             shuffled_path = submit_utils.append_string_to_correlation_path(cf_path, '_shuffled')
             if not shuffled_path.is_file():
                 raise ValueError('Asked to subtract shuffled correlation, but could not '
                                  f'find the shuffled correlation at {shuffled_path}. '
-                                 'Make sure it has the correct name as in the link here.')
+                                 'Make sure it was run by activating "compute_shuffled".')
 
             exp_file = submit_utils.append_string_to_correlation_path(exp_file, '-shuff')
 
@@ -64,10 +62,6 @@ def make_export_runs(seed, analysis_struct, corr_paths, job, config, corr_job_id
         if not exp_file.is_file():
             # Do the exporting
             command = f'picca_export.py --data {cf_path} --out {exp_file} '
-
-            if add_dmat:
-                dmat_file = find_dmat(dmat_path, corr_type)
-                command += f'--dmat {dmat_file} '
 
             if shuffled_path is not None:
                 command += f'--remove-shuffled-correlation {shuffled_path} '
@@ -178,8 +172,9 @@ def export_full_cov(seed, analysis_struct, corr_paths, job, config, corr_job_ids
     return job_id, commands
 
 
-def stack_correlations(corr_dict, global_struct, job, add_dmat=False, dmat_path=None,
-                       shuffled=False, name_string=None, exp_job_ids=None):
+def stack_correlations(
+    corr_dict, global_struct, job, shuffled=False, name_string=None, exp_job_ids=None
+):
     # Stack correlations from different seeds
     export_commands = []
     for cf_name, cf_list in corr_dict.items():
@@ -197,7 +192,7 @@ def stack_correlations(corr_dict, global_struct, job, add_dmat=False, dmat_path=
                 if not shuffled_path.is_file():
                     raise ValueError('Asked to subtract shuffled correlation, but could not '
                                      f'find the shuffled correlation at {shuffled_path}. '
-                                     'Make sure it has the correct name as in the link here.')
+                                     'Make sure it was run by activating "compute_shuffled".')
 
                 shuffled_list.append(str(shuffled_path))
 
@@ -212,10 +207,6 @@ def stack_correlations(corr_dict, global_struct, job, add_dmat=False, dmat_path=
             raise ValueError(f'Exported correlation already exists: {exp_out_file}')
 
         command = f'lyatools-stack-export --data {in_files} --out {exp_out_file} '
-
-        if add_dmat:
-            dmat_file = find_dmat(dmat_path, cf_name)
-            command += f'--dmat {dmat_file} '
 
         if shuffled_files is not None:
             command += f'--shuffled-correlations {shuffled_files} '

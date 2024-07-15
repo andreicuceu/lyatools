@@ -197,31 +197,31 @@ class RunMocks:
             submit_utils.print_spacer_line()
 
         if self.export.getboolean('stack_correlations'):
-            add_dmat = self.export.getboolean('add_dmat')
-            dmat_path = self.export.get('dmat_path')
             name_string = self.corr.get('name_string', None)
+            subtract_shuffled = self.export.getboolean('subtract_shuffled')
 
             if self.run_raw_flag:
                 print('Starting stack and export job for raw deltas.')
-                _ = stack_correlations(raw_corr_dict, raw_global_struct, self.job,
-                                       add_dmat=add_dmat, dmat_path=dmat_path,
-                                       shuffled=self.export.getboolean('subtract_shuffled'),
-                                       name_string=name_string, exp_job_ids=raw_exp_job_ids)
+                _ = stack_correlations(
+                    raw_corr_dict, raw_global_struct, self.job, shuffled=subtract_shuffled,
+                    name_string=name_string, exp_job_ids=raw_exp_job_ids
+                )
                 submit_utils.print_spacer_line()
 
             if self.run_true_cont_flag:
                 print('Starting stack and export job for true deltas.')
-                _ = stack_correlations(true_corr_dict, true_global_struct, self.job,
-                                       add_dmat=add_dmat, dmat_path=dmat_path,
-                                       shuffled=self.export.getboolean('subtract_shuffled'),
-                                       name_string=name_string, exp_job_ids=true_exp_job_ids)
+                _ = stack_correlations(
+                    true_corr_dict, true_global_struct, self.job, shuffled=subtract_shuffled,
+                    name_string=name_string, exp_job_ids=true_exp_job_ids
+                )
                 submit_utils.print_spacer_line()
 
             if not self.no_run_cont_fit_flag:
                 print('Starting stack and export job for fitted deltas.')
-                _ = stack_correlations(corr_dict, global_struct, self.job,
-                                       add_dmat=add_dmat, dmat_path=dmat_path, shuffled=False,
-                                       name_string=name_string, exp_job_ids=exp_job_ids)
+                _ = stack_correlations(
+                    corr_dict, global_struct, self.job, shuffled=False,
+                    name_string=name_string, exp_job_ids=exp_job_ids
+                )
                 submit_utils.print_spacer_line()
 
         submit_utils.print_spacer_line()
