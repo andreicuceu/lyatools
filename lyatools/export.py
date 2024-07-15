@@ -133,7 +133,7 @@ def export_full_cov(seed, analysis_struct, corr_paths, job, config, corr_job_ids
         command = '/global/cfs/projectdirs/desi/science/lya/y1-kp6/iron-tests'
         command += '/correlations/scripts/write_full_covariance_matrix_flex_size_shuffled.py '
         for key, path in ordered_cf_paths.items():
-            type = key.split('-')
+            type = key.split('_')
             field = f'{type[1]}-{type[2]}'
             if len(type) > 3:
                 field += f'-{type[3]}'
