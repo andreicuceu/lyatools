@@ -42,7 +42,7 @@ def make_export_runs(seed, analysis_struct, corr_paths, job, config, corr_job_id
         shuffled_path = None
         if subtract_shuffled:
             shuffled_path = submit_utils.append_string_to_correlation_path(cf_path, '_shuffled')
-            if not shuffled_path.is_file():
+            if not shuffled_path.is_file() and corr_job_ids is None:
                 raise ValueError('Asked to subtract shuffled correlation, but could not '
                                  f'find the shuffled correlation at {shuffled_path}. '
                                  'Make sure it was run by activating "compute_shuffled".')

@@ -222,6 +222,8 @@ def run_correlation(
     text += '\n\n'
 
     script_path = analysis_struct.scripts_dir / f'{name}_{zmin}_{zmax}.sh'
+    if shuffled:
+        script_path = analysis_struct.scripts_dir / f'{name}_{zmin}_{zmax}_shuffled.sh'
 
     submit_utils.write_script(script_path, text)
 
