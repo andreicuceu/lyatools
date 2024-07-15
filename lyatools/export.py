@@ -40,7 +40,7 @@ def make_export_runs(seed, analysis_struct, corr_paths, job, config, corr_job_id
             exp_file = submit_utils.append_string_to_correlation_path(cf_path, '-exp')
 
         shuffled_path = None
-        if subtract_shuffled:
+        if subtract_shuffled and 'xcf' in cf_path.name:
             shuffled_path = submit_utils.append_string_to_correlation_path(cf_path, '_shuffled')
             if not shuffled_path.is_file() and corr_job_ids is None:
                 raise ValueError('Asked to subtract shuffled correlation, but could not '
@@ -102,44 +102,62 @@ def make_export_runs(seed, analysis_struct, corr_paths, job, config, corr_job_id
 
 
 def export_full_cov(seed, analysis_struct, corr_paths, job, config, corr_job_ids=None):
-    if len(corr_paths) != 4:
-        raise ValueError(f'Expected 4 correlation files, but got {len(corr_paths)}')
+    subtract_shuffled = config.getboolean('subtract_shuffled')
+    ordered_cf_paths = {}
+    block_types = []
 
-    # Put the correlations in the right order
-    order = ['cf_lya_lya', 'cf_lya_lyb', 'xcf_lya_qso', 'xcf_lyb_qso']
-    ordered_cf_paths = [None] * 4
-    for i, corr_type in enumerate(order):
-        for cf_path in corr_paths:
-            if corr_type in cf_path.name:
-                ordered_cf_paths[i] = cf_path
+    for cf_path in corr_paths:
+        for key in CORR_TYPES:
+            if key in cf_path.name:
+                ordered_cf_paths[key] = cf_path
+                block_types += ['cross'] if 'xcf' in key else ['auto']
+
+                if subtract_shuffled and 'xcf' in cf_path.name:
+                    shuffled_path = submit_utils.append_string_to_correlation_path(
+                        cf_path, '_shuffled')
+                    if not shuffled_path.is_file() and corr_job_ids is None:
+                        raise ValueError(
+                            'Asked to subtract shuffled correlation, but could not '
+                            f'find the shuffled correlation at {shuffled_path}. '
+                            'Make sure it was run by activating "compute_shuffled".'
+                        )
+
+                    ordered_cf_paths[key + '-shuff'] = shuffled_path
 
     output_path = corr_paths[0].parent / 'full_cov.fits'
     output_path_smoothed = corr_paths[0].parent / 'full_cov_smooth.fits'
-    cf_paths_str = ' '.join([str(cf_path) for cf_path in ordered_cf_paths])
+    block_types_str = ' '.join(block_types)
 
     commands = []
-
     if not output_path.is_file():
-        command = '/global/homes/a/acuceu/desi_acuceu/notebooks_perl'
-        command += '/mocks/covariance/export_individual_cov.py '
-        command += f'-i {cf_paths_str} -o {output_path}\n'
+        command = '/global/cfs/projectdirs/desi/science/lya/y1-kp6/iron-tests'
+        command += '/correlations/scripts/write_full_covariance_matrix_flex_size_shuffled.py '
+        for key, path in ordered_cf_paths.items():
+            type = key.split('-')
+            field = f'{type[1]}-{type[2]}'
+            if len(type) > 3:
+                field += f'-{type[3]}'
+            command += f'--{field} {path} '
+
+        command += f'-o {output_path}\n'
         commands += [command]
 
     if not output_path_smoothed.is_file():
-        command = '/global/homes/a/acuceu/desi_acuceu/notebooks_perl'
-        command += '/mocks/covariance/smoothit.py '
-        command += f'-i {output_path} -o {output_path_smoothed}\n'
+        command = '/global/cfs/cdirs/desicollab/science/lya/y1-kp6/iron-tests/'
+        command += 'correlations/scripts/write_smooth_covariance_flex_size.py '
+        command += f'--input-cov {output_path} --output-cov {output_path_smoothed} '
+        command += f'--block-types {block_types_str}\n'
         commands += [command]
 
-    stacked_cov_flag = config.getboolean('stacked_cov_flag', False)
-    if stacked_cov_flag:
-        stacked_cov_path = config.get('stacked_cov_path')
-        output_stacked_cov_path = corr_paths[0].parent / 'full_cov_stacked.fits'
-        if not output_stacked_cov_path.is_file():
-            command = '/global/homes/a/acuceu/desi_acuceu/notebooks_perl'
-            command += '/mocks/covariance/export_full_cov.py '
-            command += f'-i {stacked_cov_path} -c {cf_paths_str} -o {output_stacked_cov_path}\n'
-            commands += [command]
+    # stacked_cov_flag = config.getboolean('stacked_cov_flag', False)
+    # if stacked_cov_flag:
+    #     stacked_cov_path = config.get('stacked_cov_path')
+    #     output_stacked_cov_path = corr_paths[0].parent / 'full_cov_stacked.fits'
+    #     if not output_stacked_cov_path.is_file():
+    #         command = '/global/homes/a/acuceu/desi_acuceu/notebooks_perl'
+    #         command += '/mocks/covariance/export_full_cov.py '
+    #         command += f'-i {stacked_cov_path} -c {cf_paths_str} -o {output_stacked_cov_path}\n'
+    #         commands += [command]
 
     if len(commands) < 1:
         print(f'Full covariance already exists for seed {seed}.')
