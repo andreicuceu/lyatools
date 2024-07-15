@@ -135,13 +135,11 @@ def run_correlation(
     if shuffled:
         assert not dmat and not metal_dmat
         name_string = 'shuffled' if name_string is None else f'{name_string}_shuffled'
+    gzed = '' if (dmat or metal_dmat) else '.gz'
     if name_string is None:
-        output_path = analysis_struct.corr_dir / f'{name}_{zmin}_{zmax}.fits'
+        output_path = analysis_struct.corr_dir / f'{name}_{zmin}_{zmax}.fits{gzed}'
     else:
-        output_path = analysis_struct.corr_dir / f'{name}_{zmin}_{zmax}_{name_string}.fits'
-
-    if not dmat and not metal_dmat:
-        output_path += '.gz'
+        output_path = analysis_struct.corr_dir / f'{name}_{zmin}_{zmax}_{name_string}.fits{gzed}'
 
     if output_path.is_file():
         print(f'Correlation already exists, skipping: {output_path}.')
