@@ -1,4 +1,3 @@
-from os import mkdir
 from typing import Union
 from pathlib import Path
 from subprocess import call
@@ -25,58 +24,89 @@ def check_dir(dir: Path):
             Directory to check
     """
     if not dir.is_dir():
-        mkdir(dir)
+        dir.mkdir(parents=True, exist_ok=True)
         make_permission_group_desi(dir)
 
 
 @dataclass
-class QQDir:
+class QQTree:
     """
-    An object that contains the directory structure for a quickquasars run.
+    An object that contains the directory structure for mock generation and analysis.
     """
-    main_path: Union[str, Path]
-    qq_dirname: str
-    spectra_dirname: str = 'spectra-16'
-    run_dirname: str = 'run_files'
-    log_dirname: str = 'logs'
-    scripts_dirname: str = 'scripts'
+    mock_start_path: Union[str, Path]
 
+    skewers_name: str
+    skewers_version: str
+    mock_seed: str
+
+    survey_name: str
+    qq_version: str
+    qq_run_name: str
+
+    qq_seeds: Union[str, None] = None
+    spectra_dirname: str = 'spectra-16'
+
+    skewers_path: Path = field(init=False)
     qq_dir: Path = field(init=False)
     spectra_dir: Path = field(init=False)
-    run_dir: Path = field(init=False)
-    log_dir: Path = field(init=False)
+    runfiles_dir: Path = field(init=False)
+    logs_dir: Path = field(init=False)
     scripts_dir: Path = field(init=False)
 
     def __post_init__(self):
-        main_path = Path(self.main_path)
-        check_dir(main_path)
+        # This is the start point for the mock tree
+        # E.g. desi/mocks/lya_forest/london
+        mock_start_path = Path(self.mock_start_path)
+        if not mock_start_path.is_dir():
+            raise RuntimeError(f'The mock start path does not exist: {mock_start_path}')
 
-        self.qq_dir = main_path / self.qq_dirname
+        # This is the path to the skewers for this mock
+        # E.g. desi/mocks/lya_forest/london/lyacolore_skewers/v5.9/skewers-0/
+        self.skewers_path = mock_start_path / self.skewers_name / self.skewers_version
+        self.skewers_path = self.skewers_path / f'skewers-{self.mock_seed}'
+        if not self.skewers_path.is_dir():
+            raise RuntimeError(f'The skewers path does not exist: {self.skewers_path}')
+
+        # This is the path to the quickquasars run for this mock
+        # E.g. desi/mocks/lya_forest/london/qq_desi_y3/v5.9.4/mock-0/jura-124
+        # the mock seed also allows multiple seeds for the quickquasars run (e.g. mock-0.1.0)
+        full_mock_seed = f'{self.mock_seed}'
+        if self.qq_seeds is not None:
+            full_mock_seed = f'{self.mock_seed}.{self.qq_seeds}'
+
+        self.qq_dir = mock_start_path / self.survey_name
+        check_dir(self.qq_dir)
+        self.qq_dir = self.qq_dir / f'{self.skewers_version}.{self.qq_version}'
+        check_dir(self.qq_dir)
+        self.qq_dir = self.qq_dir / f'mock-{full_mock_seed}'
+        check_dir(self.qq_dir)
+        self.qq_dir = self.qq_dir / self.qq_run_name
         check_dir(self.qq_dir)
 
+        # These are the directories needed for the quickquasars run
         self.spectra_dir = self.qq_dir / self.spectra_dirname
         check_dir(self.spectra_dir)
-
-        self.run_dir = self.qq_dir / self.run_dirname
-        check_dir(self.run_dir)
-
-        self.log_dir = self.qq_dir / self.log_dirname
-        check_dir(self.log_dir)
-
-        self.scripts_dir = self.qq_dir / self.scripts_dirname
+        self.runfiles_dir = self.qq_dir / 'run_files'
+        check_dir(self.runfiles_dir)
+        self.logs_dir = self.qq_dir / 'logs'
+        check_dir(self.logs_dir)
+        self.scripts_dir = self.qq_dir / 'scripts'
         check_dir(self.scripts_dir)
 
 
 @dataclass
-class AnalysisDir:
-    """
-    An object that contains the directory structure for our analysis.
-    """
-    main_path: Union[str, Path]
+class AnalysisTree:
+
+    analysis_start_path: Union[str, Path]
+
+    skewers_version: str
+    mock_seed: str
+    survey_name: str
+    qq_version: str
     qq_run_name: str
-    analysis_version: str = 'baseline'
-    deltas_lya_dirname: str = 'deltas_lya'
-    deltas_lyb_dirname: str = 'deltas_lyb'
+
+    qq_seeds: Union[str, None] = None
+    analysis_name: str = 'baseline'
 
     analysis_dir: Path = field(init=False)
     corr_dir: Path = field(init=False)
@@ -89,35 +119,136 @@ class AnalysisDir:
     scripts_dir: Path = field(init=False)
 
     def __post_init__(self):
-        self.main_path = Path(self.main_path)
-        check_dir(self.main_path)
+        # This is the start point for the analysis tree
+        # E.g. desi/science/lya/mock_analysis/london
+        analysis_start_path = Path(self.analysis_start_path)
+        if not analysis_start_path.is_dir():
+            raise RuntimeError(f'The analysis start path does not exist: {analysis_start_path}')
 
-        main_analysis_dir = self.main_path / self.qq_run_name
-        check_dir(main_analysis_dir)
+        # This is the path to the analysis for this mock
+        # E.g. desi/science/lya/mock_analysis/london/qq_desi_y3/v5.9.4/analysis-0/jura-124/baseline
+        full_mock_seed = f'{self.mock_seed}'
+        if self.qq_seeds is not None:
+            full_mock_seed = f'{self.mock_seed}.{self.qq_seeds}'
 
-        self.analysis_dir = main_analysis_dir / self.analysis_version
+        self.analysis_dir = analysis_start_path / self.survey_name
+        check_dir(self.analysis_dir)
+        self.analysis_dir = self.analysis_dir / f'{self.skewers_version}.{self.qq_version}'
+        check_dir(self.analysis_dir)
+        self.analysis_dir = self.analysis_dir / f'analysis-{full_mock_seed}'
+        check_dir(self.analysis_dir)
+        self.analysis_dir = self.analysis_dir / self.qq_run_name
+        check_dir(self.analysis_dir)
+        self.analysis_dir = self.analysis_dir / self.analysis_name
         check_dir(self.analysis_dir)
 
+        # These are the directories needed for the analysis
         self.corr_dir = self.analysis_dir / 'correlations'
         check_dir(self.corr_dir)
-
-        self.deltas_lya_dir = self.analysis_dir / self.deltas_lya_dirname
+        self.deltas_lya_dir = self.analysis_dir / 'picca_deltas_lya'
         check_dir(self.deltas_lya_dir)
-
-        self.deltas_lyb_dir = self.analysis_dir / self.deltas_lyb_dirname
+        self.deltas_lyb_dir = self.analysis_dir / 'picca_deltas_lyb'
         check_dir(self.deltas_lyb_dir)
-
-        self.qsonic_deltas_lya_dir = self.analysis_dir / ('qsonic_' + self.deltas_lya_dirname)
+        self.qsonic_deltas_lya_dir = self.analysis_dir / 'qsonic_deltas_lya'
         check_dir(self.qsonic_deltas_lya_dir)
-
-        self.qsonic_deltas_lyb_dir = self.analysis_dir / ('qsonic_' + self.deltas_lyb_dirname)
+        self.qsonic_deltas_lyb_dir = self.analysis_dir / 'qsonic_deltas_lyb'
         check_dir(self.qsonic_deltas_lyb_dir)
-
         self.fits_dir = self.analysis_dir / 'fits'
         check_dir(self.fits_dir)
-
         self.logs_dir = self.analysis_dir / 'logs'
         check_dir(self.logs_dir)
-
         self.scripts_dir = self.analysis_dir / 'scripts'
         check_dir(self.scripts_dir)
+
+# @dataclass
+# class QQDir:
+#     """
+#     An object that contains the directory structure for a quickquasars run.
+#     """
+#     main_path: Union[str, Path]
+#     qq_dirname: str
+#     spectra_dirname: str = 'spectra-16'
+#     run_dirname: str = 'run_files'
+#     log_dirname: str = 'logs'
+#     scripts_dirname: str = 'scripts'
+
+#     qq_dir: Path = field(init=False)
+#     spectra_dir: Path = field(init=False)
+#     run_dir: Path = field(init=False)
+#     log_dir: Path = field(init=False)
+#     scripts_dir: Path = field(init=False)
+
+#     def __post_init__(self):
+#         main_path = Path(self.main_path)
+#         check_dir(main_path)
+
+#         self.qq_dir = main_path / self.qq_dirname
+#         check_dir(self.qq_dir)
+
+#         self.spectra_dir = self.qq_dir / self.spectra_dirname
+#         check_dir(self.spectra_dir)
+
+#         self.run_dir = self.qq_dir / self.run_dirname
+#         check_dir(self.run_dir)
+
+#         self.log_dir = self.qq_dir / self.log_dirname
+#         check_dir(self.log_dir)
+
+#         self.scripts_dir = self.qq_dir / self.scripts_dirname
+#         check_dir(self.scripts_dir)
+
+
+# @dataclass
+# class AnalysisDir:
+#     """
+#     An object that contains the directory structure for our analysis.
+#     """
+#     main_path: Union[str, Path]
+#     qq_run_name: str
+#     analysis_version: str = 'baseline'
+#     deltas_lya_dirname: str = 'deltas_lya'
+#     deltas_lyb_dirname: str = 'deltas_lyb'
+
+#     analysis_dir: Path = field(init=False)
+#     corr_dir: Path = field(init=False)
+#     deltas_lya_dir: Path = field(init=False)
+#     deltas_lyb_dir: Path = field(init=False)
+#     qsonic_deltas_lya_dir: Path = field(init=False)
+#     qsonic_deltas_lyb_dir: Path = field(init=False)
+#     fits_dir: Path = field(init=False)
+#     logs_dir: Path = field(init=False)
+#     scripts_dir: Path = field(init=False)
+
+#     def __post_init__(self):
+#         self.main_path = Path(self.main_path)
+#         check_dir(self.main_path)
+
+#         main_analysis_dir = self.main_path / self.qq_run_name
+#         check_dir(main_analysis_dir)
+
+#         self.analysis_dir = main_analysis_dir / self.analysis_version
+#         check_dir(self.analysis_dir)
+
+#         self.corr_dir = self.analysis_dir / 'correlations'
+#         check_dir(self.corr_dir)
+
+#         self.deltas_lya_dir = self.analysis_dir / self.deltas_lya_dirname
+#         check_dir(self.deltas_lya_dir)
+
+#         self.deltas_lyb_dir = self.analysis_dir / self.deltas_lyb_dirname
+#         check_dir(self.deltas_lyb_dir)
+
+#         self.qsonic_deltas_lya_dir = self.analysis_dir / ('qsonic_' + self.deltas_lya_dirname)
+#         check_dir(self.qsonic_deltas_lya_dir)
+
+#         self.qsonic_deltas_lyb_dir = self.analysis_dir / ('qsonic_' + self.deltas_lyb_dirname)
+#         check_dir(self.qsonic_deltas_lyb_dir)
+
+#         self.fits_dir = self.analysis_dir / 'fits'
+#         check_dir(self.fits_dir)
+
+#         self.logs_dir = self.analysis_dir / 'logs'
+#         check_dir(self.logs_dir)
+
+#         self.scripts_dir = self.analysis_dir / 'scripts'
+#         check_dir(self.scripts_dir)

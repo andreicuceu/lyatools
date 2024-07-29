@@ -2,39 +2,27 @@ from . import dir_handlers, submit_utils
 from lyatools.qq_run_args import QQ_RUN_ARGS
 
 
-def run_qq(config, job, qq_run_type, cat_seed, qq_seed,
-           mock_code, input_dir, output_dir):
+def run_qq(qq_tree, config, job, mock_type):
     """Create a QQ run and submit it
 
     Parameters
     ----------
-    qq_run_type : str
-        Run type. Must be a key in the QQ_RUN_ARGS dict.
-    test_run : bool
-        Test run flag
-    no_submit : bool
-        Submit flag
-    args : list
-        List with args passed to create_qq_script
+    qq_tree : QQTree
+        The QQ directory tree object.
+    config : dict
+        The configuration dictionary.
+    job : dict
+        The job dictionary.
+    mock_type : str
+        The mock type.
     """
-
-    # Check if it is a test run and update args accordingly
-    if job.getboolean('test_run'):
-        print('Test run enabled, overriding arguments to setup it up.')
-        qq_run_type = 'desi-test'
-
     # Print run config
-    print(f'Submitting quickquasars runs with configuration {qq_run_type}')
-
-    # Set up the directory structure to put everything into.
-    qq_dir = dir_handlers.QQDir(output_dir, qq_run_type)
+    print(f'Submitting quickquasars runs with configuration {qq_tree.qq_run_name}')
 
     job_id = None
     seed_cat_path = None
     y1_flag = config.getboolean('y1_flag', False)
-    if y1_flag:
-        job_id, seed_cat_path = create_qq_catalog(
-            config, input_dir, job, qq_dir, cat_seed, mock_code)
+    job_id, seed_cat_path = create_qq_catalog(qq_tree, config, job, mock_type)
 
     run_args = QQ_RUN_ARGS[qq_run_type]
 
@@ -67,15 +55,17 @@ def run_qq(config, job, qq_run_type, cat_seed, qq_seed,
     return job_id, dla_flag, bal_flag
 
 
-def create_qq_catalog(config, input_dir, job, qq_dir, cat_seed, mock_code):
+def create_qq_catalog(qq_tree, config, job, seed):
     submit_utils.set_umask()
 
     # Make the header
     time = submit_utils.convert_job_time(0.2)
-    header = submit_utils.make_header(job.get('nersc_machine'), 'regular', 1, time=time,
-                                      omp_threads=128, job_name=f'qq_cat_{cat_seed}',
-                                      err_file=qq_dir.run_dir/'run-%j.err',
-                                      out_file=qq_dir.run_dir/'run-%j.out')
+    header = submit_utils.make_header(
+        job.get('nersc_machine'), 'regular', 1, time=time,
+        omp_threads=128, job_name=f'qq_cat_{seed}',
+        err_file=qq_tree.runfiles_dir/'run-%j.err',
+        out_file=qq_tree.runfiles_dir/'run-%j.out'
+    )
 
     text = '\n\n'
     if job.get('desi_env_command', None) is None:
@@ -84,16 +74,16 @@ def create_qq_catalog(config, input_dir, job, qq_dir, cat_seed, mock_code):
         text += job.get('desi_env_command')
 
     text += '\n\n'
-    seed_cat_path = qq_dir.qq_dir / "seed_zcat.fits"
-    if mock_code == 'lyacolore':
+    seed_cat_path = qq_tree.qq_dir / "seed_zcat.fits"
+    if mock_type == 'lyacolore':
         master_cat_path = f"{input_dir}/master.fits"
-    elif mock_code == 'saclay':
+    elif mock_type == 'saclay':
         master_cat_path = f"{input_dir}/master.fits"
     else:
         raise ValueError(f'Unknown mock code {mock_code}')
 
     # text += '/global/cfs/cdirs/desicollab/users/acuceu/notebooks_perl/mocks/run_mocks/make_y1_cat.py'
-    text += f'gen_qso_catalog -i {master_cat_path} -o {seed_cat_path} --seed {cat_seed}'
+    text += f'gen_qso_catalog -i {master_cat_path} -o {seed_cat_path} --seed {seed}'
     if config.getboolean('invert_cat_seed', False):
         text += ' --invert'
     text += '\n\n'
