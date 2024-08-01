@@ -2,61 +2,22 @@ from . import dir_handlers, submit_utils
 from lyatools.qq_run_args import QQ_RUN_ARGS
 
 
-def run_qq(qq_tree, config, job, mock_type):
-    """Create a QQ run and submit it
-
-    Parameters
-    ----------
-    qq_tree : QQTree
-        The QQ directory tree object.
-    config : dict
-        The configuration dictionary.
-    job : dict
-        The job dictionary.
-    mock_type : str
-        The mock type.
-    """
-    # Print run config
-    print(f'Submitting quickquasars runs with configuration {qq_tree.qq_run_name}')
-
-    job_id = None
-    seed_cat_path = None
-    y1_flag = config.getboolean('y1_flag', False)
-    job_id, seed_cat_path = create_qq_catalog(qq_tree, config, job, mock_type)
-
-    run_args = QQ_RUN_ARGS[qq_run_type]
-
-    print('Found the following arguments to pass to quickquasars:')
-    qq_args = ''
-    dla_flag = False
-    bal_flag = False
-    for key, val in run_args.items():
-        if 'dla' in key:
-            dla_flag = True
-        elif 'bal' in key:
-            bal_flag = True
-
-        if key == 'add-LYB' and mock_code == 'saclay':
-            continue
-        else:
-            qq_args += f' --{key} {val}'
-
-    if y1_flag:
-        qq_args += f' --from-catalog {seed_cat_path}'
-
-    qq_args += f' --seed {qq_seed} --raw-mock {mock_code} '
-    print(qq_args)
-
-    qq_script = create_qq_script(config, job, qq_dir, qq_args, qq_seed, input_dir)
-
-    job_id = submit_utils.run_job(qq_script, dependency_ids=job_id,
-                                  no_submit=job.getboolean('no_submit'))
-
-    return job_id, dla_flag, bal_flag
-
-
-def create_qq_catalog(qq_tree, config, job, seed):
+def create_qq_catalog(qq_tree, seed_cat_path, config, job, seed, run_local=True):
     submit_utils.set_umask()
+
+    release = config.get('release', 'jura')
+    master_cat_path = f"{qq_tree.skewers_path}/master.fits"
+
+    command = f'gen_qso_catalog -i {master_cat_path} -o {seed_cat_path} --seed {seed}'
+    command += f' --release {release}'
+    if config.getboolean('invert_cat_seed', False):
+        command += ' --invert'
+    if config.getboolean('include_nonqso_targets', True):
+        command += ' --include-nonqso-targets'
+    command += '\n\n'
+
+    if not run_local:
+        return command, seed_cat_path
 
     # Make the header
     time = submit_utils.convert_job_time(0.2)
@@ -67,31 +28,16 @@ def create_qq_catalog(qq_tree, config, job, seed):
         out_file=qq_tree.runfiles_dir/'run-%j.out'
     )
 
-    text = '\n\n'
+    env_text = '\n\n'
     if job.get('desi_env_command', None) is None:
-        text += 'source /global/common/software/desi/desi_environment.sh master'
+        env_text += 'source /global/common/software/desi/desi_environment.sh master'
     else:
-        text += job.get('desi_env_command')
-
-    text += '\n\n'
-    seed_cat_path = qq_tree.qq_dir / "seed_zcat.fits"
-    if mock_type == 'lyacolore':
-        master_cat_path = f"{input_dir}/master.fits"
-    elif mock_type == 'saclay':
-        master_cat_path = f"{input_dir}/master.fits"
-    else:
-        raise ValueError(f'Unknown mock code {mock_code}')
-
-    # text += '/global/cfs/cdirs/desicollab/users/acuceu/notebooks_perl/mocks/run_mocks/make_y1_cat.py'
-    text += f'gen_qso_catalog -i {master_cat_path} -o {seed_cat_path} --seed {seed}'
-    if config.getboolean('invert_cat_seed', False):
-        text += ' --invert'
-    text += '\n\n'
-
-    full_text = header + text
+        env_text += job.get('desi_env_command')
+    env_text += '\n\n'
 
     # Write the script to file and run it.
-    script_path = qq_dir.scripts_dir / 'run_qq_seed_cat.sh'
+    script_path = qq_tree.scripts_dir / 'run_qq_seed_cat.sh'
+    full_text = header + env_text + command
 
     job_id = None
     if not seed_cat_path.is_file():
@@ -101,33 +47,69 @@ def create_qq_catalog(qq_tree, config, job, seed):
     return job_id, seed_cat_path
 
 
-def create_qq_script(config, job, qq_dir, qq_args, qq_seed, input_dir):
+def run_qq(qq_tree, config, job, seed_cat_path, qq_seed, prev_job_id=None):
+    """Create a QQ run and submit it
 
+    Parameters
+    ----------
+    qq_tree : QQTree
+        The QQ directory tree object.
+    config : dict
+        The configuration dictionary.
+    job : dict
+        The job dictionary.
+    """
+    # Print run config
+    print(f'Submitting quickquasars runs with configuration {qq_tree.qq_run_name}')
+
+    run_args = QQ_RUN_ARGS[qq_tree.qq_run_name]
+
+    qq_args = ''
+    dla_flag = False
+    bal_flag = False
+    for key, val in run_args.items():
+        if 'dla' in key:
+            dla_flag = True
+        elif 'bal' in key:
+            bal_flag = True
+
+        qq_args += f' --{key} {val}'
+
+    qq_args += f' --from-catalog {seed_cat_path}'
+    qq_args += f' --seed {qq_seed}'
+
+    print('Found the following arguments to pass to quickquasars:')
+    print(qq_args)
+
+    qq_script = create_qq_script(qq_tree, config, job, qq_args, qq_seed)
+
+    job_id = submit_utils.run_job(
+        qq_script, dependency_ids=prev_job_id, no_submit=job.getboolean('no_submit'))
+
+    return job_id, dla_flag, bal_flag
+
+
+def create_qq_script(qq_tree, config, job, qq_args, qq_seed):
     submit_utils.set_umask()
 
-    if job.getboolean('test_run'):
-        print('Test run enabled, only using first 10 transmission files.')
-        slurm_queue = 'debug'
-        nodes = 1
-        nproc = 2
-        slurm_hours = 0.25
-    else:
-        slurm_queue = job.get('slurm_queue', 'regular')
-        nodes = config.getint('nodes', 8)
-        nproc = config.getint('nproc', 32)
-        slurm_hours = config.getfloat('slurm_hours', 0.5)
+    slurm_queue = job.get('slurm_queue', 'regular')
+    nodes = config.getint('nodes', 8)
+    nproc = config.getint('nproc', 32)
+    slurm_hours = config.getfloat('slurm_hours', 0.5)
 
     # Make the header
     time = submit_utils.convert_job_time(slurm_hours)
-    header = submit_utils.make_header(job.get('nersc_machine'), slurm_queue, nodes, time=time,
-                                      omp_threads=nproc, job_name=f'qq_{qq_seed}',
-                                      err_file=qq_dir.run_dir/'run-%j.err',
-                                      out_file=qq_dir.run_dir/'run-%j.out')
+    header = submit_utils.make_header(
+        job.get('nersc_machine'), slurm_queue, nodes, time=time,
+        omp_threads=nproc, job_name=f'qq_{qq_seed}',
+        err_file=qq_tree.runfiles_dir/'run-%j.err',
+        out_file=qq_tree.runfiles_dir/'run-%j.out'
+    )
 
     # Create the main qq run command
     qq_run = f'    command="srun -N 1 -n 1 -c {nproc} '
     qq_run += f'quickquasars -i $tfiles --nproc {nproc} '
-    qq_run += f'--outdir {qq_dir.spectra_dir} {qq_args}"\n'
+    qq_run += f'--outdir {qq_tree.spectra_dir} {qq_args}"\n'
 
     # Make the text body of the script.
     text = '\n\n'
@@ -141,9 +123,9 @@ def create_qq_script(config, job, qq_dir, qq_args, qq_seed, input_dir):
 
     if job.getboolean('test_run'):
         text += 'echo "test run enabled, selecting only first 10 files"\n'
-        text += f'files=`ls -1 {input_dir}/*/*/transmission*.fits* | head -10`\n'
+        text += f'files=`ls -1 {qq_tree.skewers_path}/*/*/transmission*.fits* | head -10`\n'
     else:
-        text += f'files=`ls -1 {input_dir}/*/*/transmission*.fits*`\n'
+        text += f'files=`ls -1 {qq_tree.skewers_path}/*/*/transmission*.fits*`\n'
 
     text += 'nfiles=`echo $files | wc -w`\n'
     text += f'nfilespernode=$(( $nfiles / {nodes} + 1 ))\n\n'
@@ -166,17 +148,66 @@ def create_qq_script(config, job, qq_dir, qq_args, qq_seed, input_dir):
     text += qq_run
 
     text += '    echo $command\n'
-    text += f'    echo "log in {qq_dir.log_dir}/node-$node.log"\n\n'
-    text += f'    $command >& {qq_dir.log_dir}/node-$node.log &\n\n'
+    text += f'    echo "log in {qq_tree.logs_dir}/node-$node.log"\n\n'
+    text += f'    $command >& {qq_tree.logs_dir}/node-$node.log &\n\n'
     text += 'done\n\n'
-    text += 'wait\n'
+    text += 'wait\n\n'
+
+    zcat_file = qq_tree.qq_dir / 'zcat.fits'
+    text += f'desi_zcatalog -i {qq_tree.spectra_dir} -o {zcat_file} '
+    text += '--minimal --prefix zbest\n\n'
+
     text += 'echo "END"\n\n'
 
     full_text = header + text
 
     # Write the script to file and run it.
-    script_path = qq_dir.scripts_dir / 'run_quickquasars.sh'
-
+    script_path = qq_tree.scripts_dir / 'run_quickquasars.sh'
     submit_utils.write_script(script_path, full_text)
 
     return script_path
+
+
+def make_contaminant_catalogs(qq_tree, config, job, dla_flag, bal_flag, qq_job_id, run_local=True):
+    assert dla_flag or bal_flag
+
+    command = ''
+    if dla_flag:
+        command += f'lyatools-make-dla-cat -i {qq_tree.spectra_dir} -o {qq_tree.qq_dir} '
+        mask_nhi_cut = config.getfloat('dla_mask_nhi_cut')
+        command += f'--mask-nhi-cut {mask_nhi_cut} --nproc {128}\n\n'
+
+    if bal_flag:
+        command += f'lyatools-make-bal-cat -i {qq_tree.spectra_dir} -o {qq_tree.qq_dir} '
+
+        ai_cut = config.getint('bal_ai_cut', None)
+        if ai_cut is not None:
+            command += f'--ai-cut {ai_cut} '
+
+        bi_cut = config.getint('bal_bi_cut', None)
+        if bi_cut is not None:
+            command += f'--bi-cut {bi_cut} '
+
+        command += f'--nproc {128}\n\n'
+
+    if run_local:
+        return command
+
+    print('Submitting Contaminant catalog job')
+    header = submit_utils.make_header(
+        job.get('nersc_machine'), nodes=1, time=0.5,
+        omp_threads=128, job_name=f'cont_cat_{qq_tree.mock_seed}',
+        err_file=qq_tree.runfiles_dir/'run-cont-cat-%j.err',
+        out_file=qq_tree.runfiles_dir/'run-cont-cat-%j.out'
+    )
+
+    env_command = job.get('env_command')
+    text = header + f'{env_command}\n\n' + command
+
+    script_path = qq_tree.scripts_dir / 'make_cont_cat.sh'
+    submit_utils.write_script(script_path, text)
+
+    job_id = submit_utils.run_job(
+        script_path, dependency_ids=qq_job_id, no_submit=job.getboolean('no_submit'))
+
+    return job_id

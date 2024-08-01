@@ -3,7 +3,7 @@ from pathlib import Path
 
 from . import submit_utils, dir_handlers
 from lyatools.raw_deltas import make_raw_deltas
-from lyatools.quickquasars import run_qq
+from lyatools.quickquasars import run_qq, create_qq_catalog, make_contaminant_catalogs
 from lyatools.delta_extraction import make_delta_runs
 from lyatools.qsonic import make_qsonic_runs
 from lyatools.correlations import make_correlation_runs
@@ -43,6 +43,7 @@ class MockRun:
             raise ValueError(f'Unknown mock analysis type {self.mock_analysis_type}')
 
         # Get the mock info we need to build the tree
+        self.mock_code = config['mock_setup'].get('mock_code')
         self.mock_type = config['mock_setup'].get('mock_type')
         skewers_name = config['mock_setup'].get('skewers_name')
         skewers_version = config['mock_setup'].get('skewers_version')
@@ -84,18 +85,134 @@ class MockRun:
                 qq_version, qq_run_name, qq_seeds, name
             )
 
-    def run(self):
+        # Figure out the seeds
+        self.qq_cat_seed = mock_seed
+        self.qq_seed = mock_seed
+        if qq_seeds is not None:
+            qq_seeds_list = qq_seeds.split('.')
+            assert len(qq_seeds_list) == 2
+            self.qq_cat_seed = int(qq_seeds_list[0])
+            self.qq_seed = int(qq_seeds_list[1])
+
+        self.masked_bal_qso_flag = self.qq_config.getboolean('masked_bal_qso')
+
+    def run_mock(self):
+        job_id = None
         if self.run_qq_flag:
-            run_qq(self.qq_tree, self.qq_config, self.job_config, self.mock_type)
+            job_id = self.run_qq(job_id)
+
+        if self.run_zerr_flag:
+            job_id = self.make_zerr_cat(job_id)
 
         if self.run_deltas_flag:
-            make_delta_runs(self.analysis_struct, self.mock_seed)
+            job_id = self.run_deltas(job_id)
 
-        if self.run_qsonic_flag:
-            make_qsonic_runs(self.analysis_struct, self.mock_seed)
+        # if self.run_qsonic_flag:
+        #     make_qsonic_runs(self.analysis_struct, self.mock_seed)
 
-        if self.run_correlations_flag:
-            make_correlation_runs(self.analysis_struct, self.mock_seed)
+        # if self.run_correlations_flag:
+        #     make_correlation_runs(self.analysis_struct, self.mock_seed)
 
-        if self.run_export:
-            make_export_runs(self.analysis_struct, self.mock_seed)
+        # if self.run_export:
+        #     make_export_runs(self.analysis_struct, self.mock_seed)
+
+    def run_qq(self, job_id):
+        seed_cat_path = self.qq_tree.qq_dir / "seed_zcat.fits"
+
+        # Make QQ input catalog
+        if seed_cat_path.is_dir():
+            print(f'Found QQ input catalog: {seed_cat_path}. Skipping gen_qso_catalog.')
+        else:
+            job_id = create_qq_catalog(
+                self.qq_tree, seed_cat_path, self.qq_config, self.job_config,
+                self.qq_cat_seed, run_local=True
+            )
+
+        # TODO Figure out a way to check if QQ run already exists
+        # Run quickquasars
+        job_id, dla_flag, bal_flag = run_qq(
+            self.qq_tree, self.qq_config, self.job_config, seed_cat_path, self.qq_seed, job_id
+        )
+
+        # Make DLA and BAL catalogs if needed
+        if dla_flag or bal_flag:
+            job_id = make_contaminant_catalogs(
+                self.qq_tree, self.qq_config, self.job_config,
+                dla_flag, bal_flag, job_id, run_local=True
+            )
+
+        return job_id
+
+    def make_zerr_cat(self, qq_job_id, run_local=True):
+        distribution = self.inject_zerr_config.get('distribution')
+        amplitude = self.inject_zerr_config.get('amplitude')
+
+        zcat_file = self.get_zcat_path(no_zerr=True)
+        zcat_zerr_file = self.get_zcat_path()
+
+        if zcat_zerr_file.is_file():
+            return qq_job_id
+
+        command = f'lyatools-add-zerr -i {zcat_file} -o {zcat_zerr_file} '
+        command += f'-a {amplitude} -t {distribution} -s {self.qq_seed}\n\n'
+
+        if not run_local:
+            return command
+
+        print('Submitting inject zerr job')
+        header = submit_utils.make_header(
+            self.job_config.get('nersc_machine'), nodes=1, time=0.2,
+            omp_threads=128, job_name=f'zerr_{self.qq_tree.mock_seed}',
+            err_file=self.qq_tree.runfiles_dir/'run-zerr-%j.err',
+            out_file=self.qq_tree.runfiles_dir/'run-zerr-%j.out'
+        )
+
+        env_command = self.job_config.get('env_command')
+        text = header + f'{env_command}\n\n' + command
+
+        script_path = self.qq_tree.scripts_dir / 'inject_zerr.sh'
+        submit_utils.write_script(script_path, text)
+
+        zerr_job_id = submit_utils.run_job(
+            script_path, dependency_ids=qq_job_id,
+            no_submit=self.job_config.getboolean('no_submit')
+        )
+
+        return zerr_job_id
+
+    def run_detals(self, qq_job_id):
+        # if 'raw' in self.mock_analysis_type:
+        #     job_ids = make_raw_deltas(
+        #         qq_tree
+        #         self.job, zcat_job_id=zcat_job_id,
+        #         run_lyb_region=self.deltas.getboolean('run_lyb_region'),
+        #         delta_lambda=self.deltas.getfloat('delta_lambda'),
+        #         max_num_spec=self.deltas.getint('max_num_spec', None),
+        #         use_old_weights=self.deltas.getboolean('use_old_weights')
+        #     )
+
+        # elif self.mock_analysis_type == 'true_continuum':
+        #     make_true_cont_deltas(self.analysis_tree, self.deltas_config, qq_job_id)
+        # elif self.mock_analysis_type == 'continuum_fitted':
+        #     make_baseline_deltas(self.analysis_tree, self.deltas_config, qq_job_id)
+        # else:
+        #     raise ValueError(f'Unknown mock analysis type {self.mock_analysis_type}')
+
+        return qq_job_id
+
+    def get_zcat_path(self, no_bal_mask=False, no_zerr=False):
+        zcat_name = 'zcat'
+        if self.masked_bal_qso_flag and (not no_bal_mask):
+            ai_cut = self.qq_config.getint('bal_ai_cut', None)
+            bi_cut = self.qq_config.getint('bal_bi_cut', None)
+
+            if not (ai_cut is None and bi_cut is None):
+                zcat_name += f'_masked_AI_{ai_cut}_BI_{bi_cut}'
+
+        if self.run_zerr_flag and (not no_zerr):
+            distribution = self.inject_zerr_config.get('distribution')
+            amplitude = self.inject_zerr_config.get('amplitude')
+            zcat_name += f'_{distribution}_{amplitude}'
+
+        zcat_file = self.qq_tree.qq_dir / (zcat_name + '.fits')
+        return zcat_file
