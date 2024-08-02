@@ -1,11 +1,11 @@
 from . import submit_utils, dir_handlers
 
 
-def make_raw_deltas(input_dir, zcat_file, analysis_struct, job, zcat_job_id=None,
+def make_raw_deltas(input_dir, zcat_file, analysis_struct, job, zcat_job_id=None, lyacolore_job_id=None,
                     run_lyb_region=False, delta_lambda=0.8, max_num_spec=None,
                     use_old_weights=False):
     job_ids = []
-    id = run_raw_deltas(input_dir, zcat_file, analysis_struct, job, zcat_job_id=zcat_job_id,
+    id = run_raw_deltas(input_dir, zcat_file, analysis_struct, job, zcat_job_id=zcat_job_id, lyacolore_job_id=lyacolore_job_id,
                         region_name='lya', lambda_rest_min=1040., lambda_rest_max=1205.,
                         delta_lambda=delta_lambda, max_num_spec=max_num_spec,
                         use_old_weights=use_old_weights)
@@ -13,7 +13,7 @@ def make_raw_deltas(input_dir, zcat_file, analysis_struct, job, zcat_job_id=None
 
     if run_lyb_region:
         id = run_raw_deltas(input_dir, zcat_file, analysis_struct, job,
-                            zcat_job_id=zcat_job_id, region_name='lyb',
+                            zcat_job_id=zcat_job_id, lyacolore_job_id=lyacolore_job_id, region_name='lyb',
                             lambda_rest_min=920., lambda_rest_max=1020.,
                             delta_lambda=delta_lambda, max_num_spec=max_num_spec,
                             use_old_weights=use_old_weights)
@@ -22,7 +22,7 @@ def make_raw_deltas(input_dir, zcat_file, analysis_struct, job, zcat_job_id=None
     return job_ids
 
 
-def run_raw_deltas(input_dir, zcat_file, analysis_struct, job, zcat_job_id=None,
+def run_raw_deltas(input_dir, zcat_file, analysis_struct, job, zcat_job_id=None, lyacolore_job_id=None,
                    region_name='lya', lambda_rest_min=1040., lambda_rest_max=1200.,
                    delta_lambda=0.8, max_num_spec=None, use_old_weights=False):
     if region_name == 'lya':
@@ -73,8 +73,13 @@ def run_raw_deltas(input_dir, zcat_file, analysis_struct, job, zcat_job_id=None,
     sh_text += f'srun -n 1 -c 128 {pyscript_path}\n'
 
     submit_utils.write_script(slurm_script_path, sh_text)
+    
 
-    job_id = submit_utils.run_job(slurm_script_path, dependency_ids=zcat_job_id,
+    if zcat_job_id is None and lyacolore_job_id is not None:
+        job_id = submit_utils.run_job(slurm_script_path, dependency_ids=lyacolore_job_id,
+                                  no_submit=job.getboolean('no_submit'))
+    else:
+        job_id = submit_utils.run_job(slurm_script_path, dependency_ids=zcat_job_id,
                                   no_submit=job.getboolean('no_submit'))
 
     return job_id

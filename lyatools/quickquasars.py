@@ -3,7 +3,8 @@ from lyatools.qq_run_args import QQ_RUN_ARGS
 
 
 def run_qq(config, job, qq_run_type, cat_seed, qq_seed,
-           mock_code, input_dir, output_dir):
+           mock_code, input_dir, output_dir, lyacolore_job_id=None):
+    print(lyacolore_job_id)
     """Create a QQ run and submit it
 
     Parameters
@@ -59,9 +60,14 @@ def run_qq(config, job, qq_run_type, cat_seed, qq_seed,
     qq_args += f' --seed {qq_seed} --raw-mock {mock_code} '
     print(qq_args)
 
-    qq_script = create_qq_script(config, job, qq_dir, qq_args, qq_seed, input_dir)
+    qq_script = create_qq_script(config, job, qq_dir, qq_args, qq_seed, input_dir, lyacolore_job_id=None)
 
-    job_id = submit_utils.run_job(qq_script, dependency_ids=job_id,
+    if lyacolore_job_id is not None:
+    
+        job_id = submit_utils.run_job(qq_script, dependency_ids=lyacolore_job_id,
+                                  no_submit=job.getboolean('no_submit'))
+    else:
+        job_id = submit_utils.run_job(qq_script, dependency_ids=job_id,
                                   no_submit=job.getboolean('no_submit'))
 
     return job_id, dla_flag, bal_flag
@@ -111,10 +117,10 @@ def create_qq_catalog(config, input_dir, job, qq_dir, cat_seed, mock_code):
     return job_id, seed_cat_path
 
 
-def create_qq_script(config, job, qq_dir, qq_args, qq_seed, input_dir):
+def create_qq_script(config, job, qq_dir, qq_args, qq_seed, input_dir, lyacolore_job_id=None):
 
     submit_utils.set_umask()
-
+    
     if job.getboolean('test_run'):
         print('Test run enabled, only using first 10 transmission files.')
         slurm_queue = 'debug'

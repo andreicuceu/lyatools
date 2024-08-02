@@ -2,6 +2,8 @@ import configparser
 from pathlib import Path
 
 from . import submit_utils, dir_handlers
+from lyatools.colore import run_colore
+from lyatools.lyacolore import run_lyacolore
 from lyatools.raw_deltas import make_raw_deltas
 from lyatools.quickquasars import run_qq
 from lyatools.delta_extraction import make_delta_runs
@@ -44,6 +46,15 @@ class RunMocks:
         self.run_type = self.config['mock_setup'].get('run_type')
         self.analysis_name = self.config['mock_setup'].get('analysis_name')
         self.custom_qso_cat = self.config['mock_setup'].get('custom_qso_cat', None)
+        
+        # Get path to executables
+        self.colore=self.config['colore']
+        self.lyacolore=self.config['lyacolore']
+
+        self.lyacolore_path= self.config['lyacolore'].get('lyacolore_path')
+        self.colore_path= self.config['colore'].get('colore_path')
+
+
 
         if self.job.getboolean('test_run'):
             self.qq_run_type = 'desi-test'
@@ -52,6 +63,8 @@ class RunMocks:
             self.run_type = self.qq_run_type
 
         # Get control flags
+        self.run_colore_flag = self.config['control'].getboolean('run_colore')
+        self.run_lyacolore_flag = self.config['control'].getboolean('run_lyacolore')
         self.run_qq_flag = self.config['control'].getboolean('run_qq')
         self.run_zerr_flag = self.config['control'].getboolean('run_zerr')
         self.run_deltas_flag = self.config['control'].getboolean('run_deltas')
@@ -96,16 +109,30 @@ class RunMocks:
         raw_export_dict = {'export_commands': [], 'export_cov_commands': []}
         true_export_dict = {'export_commands': [], 'export_cov_commands': []}
         export_dict = {'export_commands': [], 'export_cov_commands': []}
-
+        
+        if self.run_colore_flag:
+            print(f"Starting colore boxes {self.colore.get('colore_boxes')}.")
+            colore_job_id = run_colore(self.analysis_dir, self.mock_version, self.colore, self.job)
+        submit_utils.print_spacer_line()
+        
+        lyacolore_job_id = None
+        if self.run_lyacolore_flag:
+            print(f"Starting lyacolore skewers for boxes {self.colore.get('colore_boxes')}.")
+            lyacolore_job_id = run_lyacolore(self.colore, self.lyacolore, self.job, dependency_ids=colore_job_id)
+        else:
+            lyacolore_job_id = None
+        submit_utils.print_spacer_line()
+        
         for input_seed, cat_seed, qq_seed in zip(input_seeds, cat_seeds, run_seeds):
             seed = f'{input_seed}.{cat_seed}.{qq_seed}'
             if self.invert_cat_seed:
                 seed = f'{input_seed}.{cat_seed}i.{qq_seed}'
+                
 
             # Run QQ
             zcat_job_id = None
             if self.run_qq_flag:
-                qq_job_id = self.run_qq(input_seed, cat_seed, qq_seed, seed)
+                qq_job_id = self.run_qq(input_seed, cat_seed, qq_seed, seed, lyacolore_job_id=lyacolore_job_id)
                 submit_utils.print_spacer_line()
 
                 zcat_job_id = [self.run_zcat(seed, qq_job_id)]
@@ -130,7 +157,7 @@ class RunMocks:
                 self.save_config(raw_analysis_struct)
                 corr_files, job_id, export_commands, export_cov_commands = self.run_analysis(
                     seed, raw_analysis_struct, true_continuum=False, raw_analysis=True,
-                    zcat_job_id=zcat_job_id, input_seed=input_seed
+                    zcat_job_id=zcat_job_id, input_seed=input_seed, lyacolore_job_id=lyacolore_job_id
                 )
                 if isinstance(job_id, list):
                     raw_exp_job_ids += job_id
@@ -149,7 +176,7 @@ class RunMocks:
                 self.save_config(true_analysis_struct)
                 corr_files, job_id, export_commands, export_cov_commands = self.run_analysis(
                     seed, true_analysis_struct, true_continuum=True, raw_analysis=False,
-                    zcat_job_id=zcat_job_id
+                    zcat_job_id=zcat_job_id, lyacolore_job_id=lyacolore_job_id
                 )
                 if isinstance(job_id, list):
                     true_exp_job_ids += job_id
@@ -168,7 +195,7 @@ class RunMocks:
                 self.save_config(analysis_struct)
                 corr_files, job_id, export_commands, export_cov_commands = self.run_analysis(
                     seed, analysis_struct, true_continuum=False, raw_analysis=False,
-                    zcat_job_id=zcat_job_id
+                    zcat_job_id=zcat_job_id, lyacolore_job_id=lyacolore_job_id
                 )
                 if isinstance(job_id, list):
                     exp_job_ids += job_id
@@ -229,14 +256,14 @@ class RunMocks:
         submit_utils.print_spacer_line()
 
     def run_analysis(self, seed, analysis_struct, true_continuum=False, raw_analysis=False,
-                     zcat_job_id=None, input_seed=None):
+                     zcat_job_id=None, input_seed=None, lyacolore_job_id=None):
         # Run deltas
         delta_job_ids = None
         if self.run_deltas_flag:
             if raw_analysis:
                 print(f'Starting raw deltas jobs for seed {seed}.')
                 delta_job_ids = self.run_raw_deltas(
-                    input_seed, analysis_struct, zcat_job_id=zcat_job_id)
+                    input_seed, seed, analysis_struct, zcat_job_id=zcat_job_id, lyacolore_job_id=lyacolore_job_id)
             else:
                 print(f'Starting delta extraction jobs for seed {seed}.')
                 delta_job_ids = self.run_delta_extraction(
@@ -272,14 +299,17 @@ class RunMocks:
 
         return corr_files, job_id, export_commands, export_cov_commands
 
-    def run_qq(self, input_seed, cat_seed, qq_seed, seed):
-        input_dir = Path(self.input_dir) / f'{self.mock_version}.{input_seed}'
+    def run_qq(self, input_seed, cat_seed, qq_seed, seed, lyacolore_job_id=None):
+        if self.run_lyacolore_flag:
+            input_dir = Path(self.analysis_dir)/'lyacolore'/f'skewers-{input_seed}'
+        else:        
+            input_dir = Path(self.input_dir) / f'{self.mock_version}.{input_seed}'
         output_dir = Path(self.qq_dir) / f'{self.mock_version}.{seed}'
         print(f'Submitting QQ run for mock {self.mock_version}.{seed}')
 
         qq_job_id, self.dla_flag, self.bal_flag = run_qq(
             self.qq, self.job, self.qq_run_type, cat_seed, qq_seed,
-            self.mock_code, input_dir, output_dir
+            self.mock_code, input_dir, output_dir, lyacolore_job_id=lyacolore_job_id
         )
 
         return qq_job_id
@@ -388,23 +418,36 @@ class RunMocks:
 
         return zerr_job_id
 
-    def run_raw_deltas(self, input_seed, analysis_struct, zcat_job_id=None):
-        input_dir = self.input_dir_from_seed(input_seed)
+    def run_raw_deltas(self, input_seed, seed, analysis_struct, zcat_job_id=None, lyacolore_job_id=None):
+        # Adjusted to accept dependency_ids
+        if self.run_lyacolore_flag:
+            input_dir = self.input_dir_from_seed(input_seed)
+        
+        else:
+            print(input_seed)
+            input_dir = Path(self.analysis_dir)/'lyacolore'/f'skewers-{input_seed}'
+    
 
         zcat_file = self.deltas.get('raw_catalog')
         if zcat_file is None:
             zcat_file = self.get_zcat_path(input_seed)
+            if not zcat_file.is_file():
+                print('Attempting to find zcat file in full seed directory.')
+                zcat_file = self.get_zcat_path(seed)
+                assert zcat_file.is_file()
         else:
             zcat_file = submit_utils.find_path(zcat_file)
 
         delta_job_ids = make_raw_deltas(input_dir, zcat_file, analysis_struct,
                                         self.job, zcat_job_id=zcat_job_id,
+                                        lyacolore_job_id=lyacolore_job_id, 
                                         run_lyb_region=self.deltas.getboolean('run_lyb_region'),
                                         delta_lambda=self.deltas.getfloat('delta_lambda'),
                                         max_num_spec=self.deltas.getint('max_num_spec', None),
                                         use_old_weights=self.deltas.getboolean('use_old_weights'))
 
         return delta_job_ids
+
 
     def get_deltas_config(self, seed):
         qq_dir = self.qq_dir_from_seed(seed) / f'{self.qq_run_type}'
