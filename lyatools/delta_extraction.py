@@ -3,57 +3,62 @@ from configparser import ConfigParser
 from . import submit_utils
 
 
-def make_delta_runs(
-    config, job, qq_dir, zcat_file, analysis_struct, mask_dla_cat=None, mask_bal_cat=None,
-    zcat_job_id=None, true_continuum=False
+def make_picca_delta_runs(
+    qso_cat, qq_tree, analysis_tree, config, job, qq_job_id=None,
+    mask_dla_cat=None, mask_bal_cat=None, true_continuum=False,
 ):
     job_ids = []
     if config.getboolean('run_lya_region'):
         id = run_delta_extraction(
-            config, job, qq_dir, analysis_struct, zcat_file, mask_dla_cat, mask_bal_cat,
-            region_name='lya', lambda_rest_min=1040., lambda_rest_max=1205.,
-            zcat_job_id=zcat_job_id, true_continuum=true_continuum
+            qso_cat, qq_tree, analysis_tree, config, job, qq_job_id=qq_job_id, region_name='lya',
+            mask_dla_cat=mask_dla_cat, mask_bal_cat=mask_bal_cat, true_continuum=true_continuum,
+            lambda_rest_min=config.getfloat('lambda_rest_lya_min'),
+            lambda_rest_max=config.getfloat('lambda_rest_lya_max'),
         )
         job_ids += [id]
 
     if config.getboolean('run_lyb_region'):
         id = run_delta_extraction(
-            config, job, qq_dir, analysis_struct, zcat_file, mask_dla_cat, mask_bal_cat,
-            region_name='lyb', lambda_rest_min=920., lambda_rest_max=1020.,
-            zcat_job_id=zcat_job_id, true_continuum=true_continuum
+            qso_cat, qq_tree, analysis_tree, config, job, qq_job_id=qq_job_id, region_name='lyb',
+            lambda_rest_min=config.getfloat('lambda_rest_lyb_min'),
+            lambda_rest_max=config.getfloat('lambda_rest_lyb_max'),
         )
         job_ids += [id]
+
+    if len(job_ids) < 1:
+        raise ValueError('Asked for deltas, but turned off both lya and lyb regions.')
 
     return job_ids
 
 
 def run_delta_extraction(
-    config, job, qq_dir, analysis_struct, catalogue, mask_dla_cat=None, mask_bal_cat=None,
-    region_name='lya', lambda_rest_min=1040., lambda_rest_max=1205.,
-    zcat_job_id=None, true_continuum=False
+    qso_cat, qq_tree, analysis_tree, config, job, qq_job_id=None, region_name='lya',
+    mask_dla_cat=None, mask_bal_cat=None, true_continuum=False,
+    lambda_rest_min=1040., lambda_rest_max=1205.,
 ):
     print(f'Submitting job to run delta extraction on {region_name} region')
     submit_utils.set_umask()
 
     if region_name == 'lya':
-        deltas_dirname = analysis_struct.deltas_lya_dir
+        deltas_dirname = analysis_tree.deltas_lya_dir
     elif region_name == 'lyb':
-        deltas_dirname = analysis_struct.deltas_lyb_dir
+        deltas_dirname = analysis_tree.deltas_lyb_dir
     else:
         raise ValueError('Unkown region name. Choose from ["lya", "lyb"].')
 
     # Create the path and name for the config file
     type = 'true' if true_continuum else 'fitted'
-    config_path = analysis_struct.scripts_dir / f'deltas_{region_name}_{type}.ini'
+    config_path = analysis_tree.scripts_dir / f'deltas_{region_name}_{type}.ini'
 
     # Create the config file for running picca_delta_extraction
     nproc = config.getint('nproc', 64)
     create_config(
-        config, config_path, qq_dir, catalogue, mask_dla_cat, mask_bal_cat, deltas_dirname,
-        lambda_rest_min, lambda_rest_max, true_continuum, nproc)
+        config, config_path, qq_tree.qq_dir, qso_cat, mask_dla_cat, mask_bal_cat, deltas_dirname,
+        lambda_rest_min, lambda_rest_max, true_continuum, nproc
+    )
 
     run_name = f'picca_delta_extraction_{region_name}_{type}'
-    script_path = analysis_struct.scripts_dir / f'run_{run_name}.sh'
+    script_path = analysis_tree.scripts_dir / f'run_{run_name}.sh'
 
     slurm_hours = config.getfloat(f'slurm_hours_{region_name}', None)
     if slurm_hours is None:
@@ -65,8 +70,9 @@ def run_delta_extraction(
     header = submit_utils.make_header(
         job.get('nersc_machine'), job.get('slurm_queue'),
         time=slurm_hours, omp_threads=nproc, job_name=run_name,
-        err_file=analysis_struct.logs_dir/f'{run_name}-%j.err',
-        out_file=analysis_struct.logs_dir/f'{run_name}-%j.out')
+        err_file=analysis_tree.logs_dir/f'{run_name}-%j.err',
+        out_file=analysis_tree.logs_dir/f'{run_name}-%j.out'
+    )
 
     # Create the script
     text = header
@@ -76,14 +82,16 @@ def run_delta_extraction(
 
     submit_utils.write_script(script_path, text)
 
-    job_id = submit_utils.run_job(script_path, dependency_ids=zcat_job_id,
-                                  no_submit=job.getboolean('no_submit'))
+    job_id = submit_utils.run_job(
+        script_path, dependency_ids=qq_job_id, no_submit=job.getboolean('no_submit'))
 
     return job_id
 
 
-def create_config(config, config_path, qq_dir, catalogue, mask_dla_cat, mask_bal_cat, deltas_dir,
-                  lambda_rest_min, lambda_rest_max, true_continuum, nproc):
+def create_config(
+    config, config_path, qq_dir, qso_cat, mask_dla_cat, mask_bal_cat, deltas_dir,
+    lambda_rest_min, lambda_rest_max, true_continuum, nproc
+):
     """Create picca_delta_extraction config file.
     See https://github.com/igmhub/picca/blob/master/tutorials/
     /delta_extraction/picca_delta_extraction_configuration_tutorial.ipynb
@@ -96,7 +104,7 @@ def create_config(config, config_path, qq_dir, catalogue, mask_dla_cat, mask_bal
 
     out_config['data'] = {'type': 'DesisimMocks',
                           'input directory': spectra_dir,
-                          'catalogue': catalogue,
+                          'catalogue': qso_cat,
                           'wave solution': 'lin',
                           'delta lambda': config.get('delta_lambda'),
                           'lambda min': config.get('lambda_min'),

@@ -4,7 +4,7 @@ from pathlib import Path
 from . import submit_utils, dir_handlers
 from lyatools.raw_deltas import make_raw_deltas
 from lyatools.quickquasars import run_qq, create_qq_catalog, make_contaminant_catalogs
-from lyatools.delta_extraction import make_delta_runs
+from lyatools.delta_extraction import make_picca_delta_runs
 from lyatools.qsonic import make_qsonic_runs
 from lyatools.correlations import make_correlation_runs
 from lyatools.export import make_export_runs, stack_correlations, export_full_cov, mpi_export
@@ -36,6 +36,9 @@ class MockRun:
         self.run_qsonic_flag = config['control'].getboolean('run_qsonic')
         self.run_corr_flag = config['control'].getboolean('run_corr')
         self.run_export_flag = config['control'].getboolean('run_export')
+
+        if self.run_deltas_flag and self.run_qsonic_flag:
+            raise ValueError('Cannot run deltas and qsonic at the same time.')
 
         # Get the mock type
         self.mock_analysis_type = config['control'].get('mock_type')
@@ -95,6 +98,7 @@ class MockRun:
             self.qq_seed = int(qq_seeds_list[1])
 
         self.masked_bal_qso_flag = self.qq_config.getboolean('masked_bal_qso')
+        self.custom_qso_catalog = config['mock_setup'].get('custom_qso_catalog')
 
     def run_mock(self):
         job_id = None
@@ -104,11 +108,8 @@ class MockRun:
         if self.run_zerr_flag:
             job_id = self.make_zerr_cat(job_id)
 
-        if self.run_deltas_flag:
+        if self.run_deltas_flag or self.run_qsonic_flag:
             job_id = self.run_deltas(job_id)
-
-        # if self.run_qsonic_flag:
-        #     make_qsonic_runs(self.analysis_struct, self.mock_seed)
 
         # if self.run_correlations_flag:
         #     make_correlation_runs(self.analysis_struct, self.mock_seed)
@@ -120,7 +121,7 @@ class MockRun:
         seed_cat_path = self.qq_tree.qq_dir / "seed_zcat.fits"
 
         # Make QQ input catalog
-        if seed_cat_path.is_dir():
+        if seed_cat_path.is_file():
             print(f'Found QQ input catalog: {seed_cat_path}. Skipping gen_qso_catalog.')
         else:
             job_id = create_qq_catalog(
@@ -180,25 +181,64 @@ class MockRun:
 
         return zerr_job_id
 
-    def run_detals(self, qq_job_id):
-        # if 'raw' in self.mock_analysis_type:
-        #     job_ids = make_raw_deltas(
-        #         qq_tree
-        #         self.job, zcat_job_id=zcat_job_id,
-        #         run_lyb_region=self.deltas.getboolean('run_lyb_region'),
-        #         delta_lambda=self.deltas.getfloat('delta_lambda'),
-        #         max_num_spec=self.deltas.getint('max_num_spec', None),
-        #         use_old_weights=self.deltas.getboolean('use_old_weights')
-        #     )
+    def run_deltas(self, qq_job_id):
+        qso_cat = self.get_analysis_qso_cat()
 
-        # elif self.mock_analysis_type == 'true_continuum':
-        #     make_true_cont_deltas(self.analysis_tree, self.deltas_config, qq_job_id)
-        # elif self.mock_analysis_type == 'continuum_fitted':
-        #     make_baseline_deltas(self.analysis_tree, self.deltas_config, qq_job_id)
-        # else:
-        #     raise ValueError(f'Unknown mock analysis type {self.mock_analysis_type}')
+        # Run raw deltas
+        if 'raw' in self.mock_analysis_type:
+            job_id = make_raw_deltas(
+                qso_cat, self.qq_tree, self.analysis_tree,
+                self.deltas_config, self.job_config, qq_job_id=qq_job_id
+            )
+            return job_id
 
-        return qq_job_id
+        # Get information for the delta extraction
+        true_continuum = self.mock_analysis_type == 'true_continuum'
+
+        mask_dla_cat = None
+        if self.deltas_config.getboolean('mask_DLAs'):
+            mask_nhi_cut = self.qq_config.getfloat('dla_mask_nhi_cut')
+            mask_dla_cat = self.qq_tree.qq_dir / f'dla_cat_mask_{mask_nhi_cut:.2f}.fits'
+
+        mask_bal_cat = self.qq_tree.qq_dir / 'bal_cat.fits'
+        if self.deltas_config.getboolean('mask_BALs'):
+            ai_cut = self.qq.getint('bal_ai_cut', None)
+            bi_cut = self.qq.getint('bal_bi_cut', None)
+            if not (ai_cut is None and bi_cut is None):
+                mask_bal_cat = self.qq_tree.qq_dir / f'bal_cat_AI_{ai_cut}_BI_{bi_cut}.fits'
+
+        # Run picca delta extraction
+        if self.run_deltas_flag:
+            job_id = make_picca_delta_runs(
+                qso_cat, self.qq_tree, self.analysis_tree,
+                self.deltas_config, self.job_config, qq_job_id=qq_job_id,
+                mask_dla_cat=mask_dla_cat, mask_bal_cat=mask_bal_cat, true_continuum=true_continuum,
+            )
+
+            return job_id
+
+        # Run QSOnic
+        if self.run_qsonic_flag:
+            job_id = make_qsonic_runs(
+                qso_cat, self.qq_tree, self.analysis_tree,
+                self.deltas_config, self.job_config, qq_job_id=qq_job_id,
+                mask_dla_cat=mask_dla_cat, mask_bal_cat=mask_bal_cat, true_continuum=true_continuum,
+            )
+
+            return job_id
+
+    def get_analysis_qso_cat(self):
+        if self.custom_qso_catalog is not None:
+            qso_cat = submit_utils.find_path(self.custom_qso_catalog)
+        elif self.mock_analysis_type == 'raw_master':
+            qso_cat = self.qq_tree.skewers_path / 'master.fits'
+            if not qso_cat.is_file():
+                raise FileNotFoundError(f'QSO catalog {qso_cat} not found.')
+        else:
+            no_zerr = not self.inject_zerr_config.getboolean('zerr_in_deltas', False)
+            qso_cat = self.get_zcat_path(no_zerr=no_zerr)
+
+        return qso_cat
 
     def get_zcat_path(self, no_bal_mask=False, no_zerr=False):
         zcat_name = 'zcat'
