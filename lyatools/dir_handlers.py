@@ -52,6 +52,7 @@ class QQTree:
     runfiles_dir: Path = field(init=False)
     logs_dir: Path = field(init=False)
     scripts_dir: Path = field(init=False)
+    full_mock_seed: str = field(init=False)
 
     def __post_init__(self):
         # This is the start point for the mock tree
@@ -70,15 +71,15 @@ class QQTree:
         # This is the path to the quickquasars run for this mock
         # E.g. desi/mocks/lya_forest/london/qq_desi_y3/v5.9.4/mock-0/jura-124
         # the mock seed also allows multiple seeds for the quickquasars run (e.g. mock-0.1.0)
-        full_mock_seed = f'{self.mock_seed}'
+        self.full_mock_seed = f'{self.mock_seed}'
         if self.qq_seeds is not None:
-            full_mock_seed = f'{self.mock_seed}.{self.qq_seeds}'
+            self.full_mock_seed = f'{self.mock_seed}.{self.qq_seeds}'
 
         self.qq_dir = mock_start_path / self.survey_name
         check_dir(self.qq_dir)
         self.qq_dir = self.qq_dir / f'{self.skewers_version}.{self.qq_version}'
         check_dir(self.qq_dir)
-        self.qq_dir = self.qq_dir / f'mock-{full_mock_seed}'
+        self.qq_dir = self.qq_dir / f'mock-{self.full_mock_seed}'
         check_dir(self.qq_dir)
         self.qq_dir = self.qq_dir / self.qq_run_name
         check_dir(self.qq_dir)
@@ -112,11 +113,10 @@ class AnalysisTree:
     corr_dir: Path = field(init=False)
     deltas_lya_dir: Path = field(init=False)
     deltas_lyb_dir: Path = field(init=False)
-    qsonic_deltas_lya_dir: Path = field(init=False)
-    qsonic_deltas_lyb_dir: Path = field(init=False)
     fits_dir: Path = field(init=False)
     logs_dir: Path = field(init=False)
     scripts_dir: Path = field(init=False)
+    full_mock_seed: str = field(init=False)
 
     def __post_init__(self):
         # This is the start point for the analysis tree
@@ -127,15 +127,15 @@ class AnalysisTree:
 
         # This is the path to the analysis for this mock
         # E.g. desi/science/lya/mock_analysis/london/qq_desi_y3/v5.9.4/analysis-0/jura-124/baseline
-        full_mock_seed = f'{self.mock_seed}'
+        self.full_mock_seed = f'{self.mock_seed}'
         if self.qq_seeds is not None:
-            full_mock_seed = f'{self.mock_seed}.{self.qq_seeds}'
+            self.full_mock_seed = f'{self.mock_seed}.{self.qq_seeds}'
 
         self.analysis_dir = analysis_start_path / self.survey_name
         check_dir(self.analysis_dir)
         self.analysis_dir = self.analysis_dir / f'{self.skewers_version}.{self.qq_version}'
         check_dir(self.analysis_dir)
-        self.analysis_dir = self.analysis_dir / f'analysis-{full_mock_seed}'
+        self.analysis_dir = self.analysis_dir / f'analysis-{self.full_mock_seed}'
         check_dir(self.analysis_dir)
         self.analysis_dir = self.analysis_dir / self.qq_run_name
         check_dir(self.analysis_dir)
@@ -145,14 +145,10 @@ class AnalysisTree:
         # These are the directories needed for the analysis
         self.corr_dir = self.analysis_dir / 'correlations'
         check_dir(self.corr_dir)
-        self.deltas_lya_dir = self.analysis_dir / 'picca_deltas_lya'
+        self.deltas_lya_dir = self.analysis_dir / 'deltas_lya'
         check_dir(self.deltas_lya_dir)
-        self.deltas_lyb_dir = self.analysis_dir / 'picca_deltas_lyb'
+        self.deltas_lyb_dir = self.analysis_dir / 'deltas_lyb'
         check_dir(self.deltas_lyb_dir)
-        self.qsonic_deltas_lya_dir = self.analysis_dir / 'qsonic_deltas_lya'
-        check_dir(self.qsonic_deltas_lya_dir)
-        self.qsonic_deltas_lyb_dir = self.analysis_dir / 'qsonic_deltas_lyb'
-        check_dir(self.qsonic_deltas_lyb_dir)
         self.fits_dir = self.analysis_dir / 'fits'
         check_dir(self.fits_dir)
         self.logs_dir = self.analysis_dir / 'logs'

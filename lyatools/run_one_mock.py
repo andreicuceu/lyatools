@@ -111,11 +111,12 @@ class MockRun:
         if self.run_deltas_flag or self.run_qsonic_flag:
             job_id = self.run_deltas(job_id)
 
-        # if self.run_correlations_flag:
-        #     make_correlation_runs(self.analysis_struct, self.mock_seed)
+        corr_paths = None
+        if self.run_corr_flag:
+            corr_paths, job_id = self.run_correlations(job_id)
 
-        # if self.run_export:
-        #     make_export_runs(self.analysis_struct, self.mock_seed)
+        if self.run_export_flag:
+            job_id = self.run_export(corr_paths, job_id)
 
     def run_qq(self, job_id):
         seed_cat_path = self.qq_tree.qq_dir / "seed_zcat.fits"
@@ -226,6 +227,46 @@ class MockRun:
             )
 
             return job_id
+
+    def run_correlations(self, delta_job_ids):
+        qso_cat = self.get_analysis_qso_cat()
+
+        corr_types = []
+        if self.corr_config.getboolean('run_auto'):
+            corr_types += ['lya_lya']
+            if self.corr_config.getboolean('run_lyb_region'):
+                corr_types += ['lya_lyb']
+
+        if self.corr_config.getboolean('run_cross'):
+            corr_types += ['lya_qso']
+            if self.corr_config.getboolean('run_lyb_region'):
+                corr_types += ['lyb_qso']
+
+        if len(corr_types) < 1:
+            raise ValueError(
+                'Run correlations did not find anything to run. Add "run_auto" and/or "run_cross".')
+
+        corr_paths, corr_job_ids = make_correlation_runs(
+            qso_cat, self.analysis_tree, self.corr_config,
+            self.job_config, corr_types, delta_job_ids
+        )
+
+        return corr_paths, corr_job_ids
+
+    def run_export(self, corr_paths, corr_job_ids, run_local=True):
+        if corr_paths is None:
+            raise ValueError(
+                'Export only runs must include correlation runs as well. '
+                'In the [control] section set "run_corr" to True. '
+                'Correlations are *not* recomputed if they already exist.'
+            )
+
+        corr_dict, job_id, export_commands = make_export_runs(
+            corr_paths, self.analysis_tree, self.export_config,
+            self.job_config, corr_job_ids=corr_job_ids, run_local=run_local
+        )
+
+        return corr_dict, job_id, export_commands
 
     def get_analysis_qso_cat(self):
         if self.custom_qso_catalog is not None:

@@ -3,30 +3,13 @@ from pathlib import Path
 from . import submit_utils
 from . import dir_handlers
 
-CORR_TYPES = {'cf_lya_lya': 'dmat_lya_lya', 'cf_lya_lyb': 'dmat_lya_lyb',
-              'xcf_lya_qso': 'xdmat_lya_qso', 'xcf_lyb_qso': 'xdmat_lyb_qso'}
+CORR_TYPES = {
+    'cf_lya_lya': 'dmat_lya_lya', 'cf_lya_lyb': 'dmat_lya_lyb',
+    'xcf_lya_qso': 'xdmat_lya_qso', 'xcf_lyb_qso': 'xdmat_lyb_qso'
+}
 
 
-def find_dmat(dmat_path, corr_type):
-    if dmat_path is None:
-        raise ValueError('Asked for distortion matrix, but did not provide a path.')
-
-    dmat_dir = Path(dmat_path)
-    dmat_dir_files = dmat_dir.glob('*.fits*')
-    dmat_type = CORR_TYPES[corr_type]
-    name_list = [file.name for file in dmat_dir_files if dmat_type in file.name]
-
-    if len(name_list) < 1:
-        raise ValueError(f'No distortion matrix of type "{dmat_type}" '
-                         f'found in {dmat_dir}')
-    elif len(name_list) > 1:
-        raise ValueError(f'Found more than one distortion matrix of type "{dmat_type}" '
-                         f'in {dmat_dir}. Please move test files to a separate folder.')
-
-    return dmat_dir / name_list[0]
-
-
-def make_export_runs(seed, analysis_struct, corr_paths, job, config, corr_job_ids=None):
+def make_export_runs(corr_paths, analysis_tree, config, job, corr_job_ids=None, run_local=True):
     subtract_shuffled = config.getboolean('subtract_shuffled')
 
     corr_dict = {}
@@ -43,9 +26,11 @@ def make_export_runs(seed, analysis_struct, corr_paths, job, config, corr_job_id
         if subtract_shuffled and 'xcf' in cf_path.name:
             shuffled_path = submit_utils.append_string_to_correlation_path(cf_path, '_shuffled')
             if not shuffled_path.is_file() and corr_job_ids is None:
-                raise ValueError('Asked to subtract shuffled correlation, but could not '
-                                 f'find the shuffled correlation at {shuffled_path}. '
-                                 'Make sure it was run by activating "compute_shuffled".')
+                raise ValueError(
+                    'Asked to subtract shuffled correlation, but could not '
+                    f'find the shuffled correlation at {shuffled_path}. '
+                    'Make sure it was run by activating "compute_shuffled".'
+                )
 
             exp_file = submit_utils.append_string_to_correlation_path(exp_file, '-shuff')
 
@@ -73,14 +58,18 @@ def make_export_runs(seed, analysis_struct, corr_paths, job, config, corr_job_id
             export_commands += [command]
 
     if len(export_commands) < 1:
-        print(f'No individual mock export needed for seed {seed}.')
+        print(f'No individual mock export needed for seed {analysis_tree.full_mock_seed}.')
         return corr_dict, None, None
+    elif run_local:
+        return corr_dict, corr_job_ids, export_commands
 
     # Make the header
-    header = submit_utils.make_header(job.get('nersc_machine'), time=0.2,
-                                      omp_threads=64, job_name=f'export_{seed}',
-                                      err_file=analysis_struct.logs_dir/f'export-{seed}-%j.err',
-                                      out_file=analysis_struct.logs_dir/f'export-{seed}-%j.out')
+    header = submit_utils.make_header(
+        job.get('nersc_machine'), time=0.2,
+        omp_threads=64, job_name=f'export_{analysis_tree.full_mock_seed}',
+        err_file=analysis_tree.logs_dir/f'export-{analysis_tree.full_mock_seed}-%j.err',
+        out_file=analysis_tree.logs_dir/f'export-{analysis_tree.full_mock_seed}-%j.out'
+    )
 
     # Create the script
     text = header
@@ -90,15 +79,14 @@ def make_export_runs(seed, analysis_struct, corr_paths, job, config, corr_job_id
         text += command + '\n'
 
     # Write the script.
-    script_path = analysis_struct.scripts_dir / f'export-{seed}.sh'
+    script_path = analysis_tree.scripts_dir / 'export.sh'
     submit_utils.write_script(script_path, text)
 
     job_id = corr_job_ids
-    if not config.getboolean('mpi_export_flag', False):
-        job_id = submit_utils.run_job(script_path, dependency_ids=corr_job_ids,
-                                      no_submit=job.getboolean('no_submit'))
+    job_id = submit_utils.run_job(
+        script_path, dependency_ids=corr_job_ids, no_submit=job.getboolean('no_submit'))
 
-    return corr_dict, job_id, export_commands
+    return corr_dict, job_id, None
 
 
 def export_full_cov(seed, analysis_struct, corr_paths, job, config, corr_job_ids=None):

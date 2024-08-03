@@ -38,9 +38,9 @@ def run_qsonic(
     submit_utils.set_umask()
 
     if region_name == 'lya':
-        deltas_dirname = analysis_tree.qsonic_deltas_lya_dir
+        deltas_dirname = analysis_tree.deltas_lya_dir
     elif region_name == 'lyb':
-        deltas_dirname = analysis_tree.qsonic_deltas_lyb_dir
+        deltas_dirname = analysis_tree.deltas_lyb_dir
     else:
         raise ValueError('Unkown region name. Choose from ["lya", "lyb"].')
 
