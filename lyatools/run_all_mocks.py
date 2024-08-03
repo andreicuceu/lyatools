@@ -75,7 +75,7 @@ class MockBatchRun:
         job_ids = []
         if self.run_mocks_individually:
             for mock_obj in self.run_mock_objects:
-                mock_corr_dict, job_id = mock_obj.run()
+                mock_corr_dict, job_id = mock_obj.run_mock()
 
                 for key, file in mock_corr_dict.items():
                     if key not in corr_dict:
