@@ -53,8 +53,8 @@ class MockRun:
         skewers_version = config['mock_setup'].get('skewers_version')
         survey_name = config['mock_setup'].get('survey_name')
         qq_version = config['mock_setup'].get('qq_version')
-        qq_run_name = config['mock_setup'].get('qq_run_name')
-        spectra_dirname = self.qq_config.get('spectra_dirname')
+        qq_run_type = config['mock_setup'].get('qq_run_type')
+        spectra_dirname = self.qq_config.get('spectra_dirname', 'spectra-16')
         analysis_name = config['mock_setup'].get('analysis_name')
 
         # Initialize the analysis name
@@ -82,11 +82,11 @@ class MockRun:
         else:
             self.qq_tree = dir_handlers.QQTree(
                 mock_start_path, skewers_name, skewers_version, mock_seed, survey_name,
-                qq_version, qq_run_name, skewers_start_path, qq_seeds, spectra_dirname
+                qq_version, qq_run_type, skewers_start_path, qq_seeds, spectra_dirname
             )
             self.analysis_tree = dir_handlers.AnalysisTree(
                 analysis_start_path, skewers_version, mock_seed, survey_name,
-                qq_version, qq_run_name, qq_seeds, name
+                qq_version, qq_run_type, qq_seeds, name
             )
 
         # Figure out the seeds
