@@ -43,6 +43,7 @@ class QQTree:
     qq_version: str
     qq_run_name: str
 
+    skewers_start_path: Union[str, None] = None
     qq_seeds: Union[str, None] = None
     spectra_dirname: str = 'spectra-16'
 
@@ -61,9 +62,16 @@ class QQTree:
         if not mock_start_path.is_dir():
             raise RuntimeError(f'The mock start path does not exist: {mock_start_path}')
 
+        if self.skewers_start_path is not None:
+            self.skewers_path = Path(self.skewers_start_path)
+            if not self.skewers_path.is_dir():
+                raise RuntimeError(f'The skewers start path does not exist: {self.skewers_path}')
+        else:
+            self.skewers_path = mock_start_path
+
         # This is the path to the skewers for this mock
         # E.g. desi/mocks/lya_forest/london/lyacolore_skewers/v5.9/skewers-0/
-        self.skewers_path = mock_start_path / self.skewers_name / self.skewers_version
+        self.skewers_path = self.skewers_path / self.skewers_name / self.skewers_version
         self.skewers_path = self.skewers_path / f'skewers-{self.mock_seed}'
         if not self.skewers_path.is_dir():
             raise RuntimeError(f'The skewers path does not exist: {self.skewers_path}')
@@ -155,6 +163,14 @@ class AnalysisTree:
         check_dir(self.logs_dir)
         self.scripts_dir = self.analysis_dir / 'scripts'
         check_dir(self.scripts_dir)
+
+    @classmethod
+    def stack_from_other(cls, other, stack_name: str = 'stack'):
+        return cls(
+            other.analysis_start_path, other.skewers_version, stack_name,
+            other.survey_name, other.qq_version, other.qq_run_name, None,
+            other.analysis_name
+        )
 
 # @dataclass
 # class QQDir:

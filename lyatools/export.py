@@ -61,7 +61,7 @@ def make_export_runs(corr_paths, analysis_tree, config, job, corr_job_ids=None, 
         print(f'No individual mock export needed for seed {analysis_tree.full_mock_seed}.')
         return corr_dict, None, None
     elif run_local:
-        return corr_dict, corr_job_ids, export_commands
+        return corr_dict, None, export_commands
 
     # Make the header
     header = submit_utils.make_header(
@@ -89,7 +89,7 @@ def make_export_runs(corr_paths, analysis_tree, config, job, corr_job_ids=None, 
     return corr_dict, job_id, None
 
 
-def export_full_cov(seed, analysis_struct, corr_paths, job, config, corr_job_ids=None):
+def export_full_cov(corr_paths, analysis_tree, config, job, corr_job_ids=None, run_local=True):
     subtract_shuffled = config.getboolean('subtract_shuffled')
     ordered_cf_paths = {}
     block_types = []
@@ -112,8 +112,10 @@ def export_full_cov(seed, analysis_struct, corr_paths, job, config, corr_job_ids
 
                     ordered_cf_paths[key + '-shuff'] = shuffled_path
 
-    output_path = corr_paths[0].parent / 'full_cov.fits'
-    output_path_smoothed = corr_paths[0].parent / 'full_cov_smooth.fits'
+    exp_string = config.get('exp_string')
+    name = 'full_cov' if exp_string is None else f'full_cov_{exp_string}'
+    output_path = corr_paths[0].parent / f'{name}.fits'
+    output_path_smoothed = corr_paths[0].parent / f'{name}_smooth.fits'
     block_types_str = ' '.join(block_types)
 
     commands = []
@@ -148,15 +150,19 @@ def export_full_cov(seed, analysis_struct, corr_paths, job, config, corr_job_ids
     #         commands += [command]
 
     if len(commands) < 1:
-        print(f'Full covariance already exists for seed {seed}.')
+        print(f'Full covariance already exists for seed {analysis_tree.full_mock_seed}.')
         return None, None
+    elif run_local:
+        return None, commands
 
     # Make the header
     export_cov_time = config.get('export-cov-slurm-hours', 0.5)
-    header = submit_utils.make_header(job.get('nersc_machine'), time=export_cov_time,
-                                      omp_threads=64, job_name=f'export-cov_{seed}',
-                                      err_file=analysis_struct.logs_dir/f'export-cov-{seed}-%j.err',
-                                      out_file=analysis_struct.logs_dir/f'export-cov-{seed}-%j.out')
+    header = submit_utils.make_header(
+        job.get('nersc_machine'), time=export_cov_time,
+        omp_threads=64, job_name=f'export-cov_{analysis_tree.full_mock_seed}',
+        err_file=analysis_tree.logs_dir/f'export-cov-{analysis_tree.full_mock_seed}-%j.err',
+        out_file=analysis_tree.logs_dir/f'export-cov-{analysis_tree.full_mock_seed}-%j.out'
+    )
 
     # Create the script
     text = header
@@ -167,19 +173,19 @@ def export_full_cov(seed, analysis_struct, corr_paths, job, config, corr_job_ids
         text += command + '\n'
 
     # Write the script.
-    script_path = analysis_struct.scripts_dir / f'export-cov-{seed}.sh'
+    script_path = analysis_tree.scripts_dir / 'export-cov.sh'
     submit_utils.write_script(script_path, text)
 
     job_id = corr_job_ids
     if not config.getboolean('mpi_export_flag', False):
-        job_id = submit_utils.run_job(script_path, dependency_ids=corr_job_ids,
-                                      no_submit=job.getboolean('no_submit'))
+        job_id = submit_utils.run_job(
+            script_path, dependency_ids=corr_job_ids, no_submit=job.getboolean('no_submit'))
 
-    return job_id, commands
+    return job_id, None
 
 
 def stack_correlations(
-    corr_dict, global_struct, job, shuffled=False, name_string=None, exp_job_ids=None
+    corr_dict, stack_tree, job, shuffled=False, name_string=None, corr_job_ids=None
 ):
     # Stack correlations from different seeds
     export_commands = []
@@ -207,7 +213,7 @@ def stack_correlations(
             shuffled_files = ' '.join(shuffled_list)
 
         name_ext = '' if name_string is None else '_' + name_string
-        exp_out_file = global_struct.corr_dir / f'{cf_name}{name_ext}-exp.fits.gz'
+        exp_out_file = stack_tree.corr_dir / f'{cf_name}{name_ext}-exp.fits.gz'
 
         if shuffled_files is not None:
             exp_out_file = submit_utils.append_string_to_correlation_path(exp_out_file, '-shuff')
@@ -222,10 +228,12 @@ def stack_correlations(
         export_commands += [command]
 
     # Make the header
-    header = submit_utils.make_header(job.get('nersc_machine'), time=0.2,
-                                      omp_threads=64, job_name='stack_export',
-                                      err_file=global_struct.logs_dir/'stack_export-%j.err',
-                                      out_file=global_struct.logs_dir/'stack_export-%j.out')
+    header = submit_utils.make_header(
+        job.get('nersc_machine'), time=0.2,
+        omp_threads=64, job_name='stack_export',
+        err_file=stack_tree.logs_dir/'stack_export-%j.err',
+        out_file=stack_tree.logs_dir/'stack_export-%j.out'
+    )
 
     # Create the script
     text = header
@@ -235,11 +243,11 @@ def stack_correlations(
         text += command + '\n'
 
     # Write the script.
-    script_path = global_struct.scripts_dir / 'stack_export.sh'
+    script_path = stack_tree.scripts_dir / 'stack_export.sh'
     submit_utils.write_script(script_path, text)
 
-    job_id = submit_utils.run_job(script_path, dependency_ids=exp_job_ids,
-                                  no_submit=job.getboolean('no_submit'))
+    job_id = submit_utils.run_job(
+        script_path, dependency_ids=corr_job_ids, no_submit=job.getboolean('no_submit'))
 
     return job_id
 

@@ -3,7 +3,8 @@
 import argparse
 
 from lyatools import submit_utils
-from lyatools.run_mock import RunMocks
+# from lyatools.run_mock import RunMocks
+from lyatools.run_all_mocks import MockBatchRun
 
 
 def main():
@@ -15,9 +16,9 @@ def main():
 
     args = parser.parse_args()
 
-    mocks = RunMocks(args.config_file)
+    mocks = MockBatchRun(args.config_file)
 
-    mocks.run_mocks()
+    mocks.run()
 
 
 if __name__ == '__main__':

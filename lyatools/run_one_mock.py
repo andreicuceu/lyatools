@@ -19,7 +19,10 @@ MOCK_ANALYSIS_TYPES = [
 
 
 class MockRun:
-    def __init__(self, config, mock_start_path, analysis_start_path, mock_seed, qq_seeds=None):
+    def __init__(
+        self, config, mock_start_path, analysis_start_path, mock_seed,
+        skewers_start_path=None, qq_seeds=None
+    ):
         # Get individual configs
         self.job_config = config['job_info']
         self.inject_zerr_config = config['inject_zerr']
@@ -41,13 +44,13 @@ class MockRun:
             raise ValueError('Cannot run deltas and qsonic at the same time.')
 
         # Get the mock type
-        self.mock_analysis_type = config['control'].get('mock_type')
+        self.mock_analysis_type = config['control'].get('mock_analysis_type')
         if self.mock_analysis_type not in MOCK_ANALYSIS_TYPES:
             raise ValueError(f'Unknown mock analysis type {self.mock_analysis_type}')
 
         # Get the mock info we need to build the tree
-        self.mock_code = config['mock_setup'].get('mock_code')
         self.mock_type = config['mock_setup'].get('mock_type')
+        # self.mock_type = config['mock_setup'].get('mock_type')
         skewers_name = config['mock_setup'].get('skewers_name')
         skewers_version = config['mock_setup'].get('skewers_version')
         survey_name = config['mock_setup'].get('survey_name')
@@ -57,19 +60,19 @@ class MockRun:
         analysis_name = config['mock_setup'].get('analysis_name')
 
         # Initialize the analysis name
-        if self.mock_type == 'raw' or self.mock_type == 'raw_master':
+        if self.mock_analysis_type == 'raw' or self.mock_analysis_type == 'raw_master':
             name = 'raw'
             if analysis_name is not None:
                 name += f'_{analysis_name}'
-        if self.mock_type == 'true_continuum':
+        if self.mock_analysis_type == 'true_continuum':
             name = 'true_cont'
             if analysis_name is not None:
                 name += f'_{analysis_name}'
-        if self.mock_type == 'continuum_fitted':
+        if self.mock_analysis_type == 'continuum_fitted':
             name = 'baseline' if analysis_name is None else analysis_name
 
         # Initialize the directory structure
-        if self.mock_type == 'raw_master':
+        if self.mock_analysis_type == 'raw_master':
             assert not self.run_qq_flag
             assert not self.run_zerr_flag
             assert not self.run_qsonic_flag
@@ -80,8 +83,8 @@ class MockRun:
             )
         else:
             self.qq_tree = dir_handlers.QQTree(
-                mock_start_path, skewers_name, skewers_version, mock_seed,
-                survey_name, qq_version, qq_run_name, qq_seeds, spectra_dirname
+                mock_start_path, skewers_name, skewers_version, mock_seed, survey_name,
+                qq_version, qq_run_name, skewers_start_path, qq_seeds, spectra_dirname
             )
             self.analysis_tree = dir_handlers.AnalysisTree(
                 analysis_start_path, skewers_version, mock_seed, survey_name,
@@ -116,7 +119,9 @@ class MockRun:
             corr_paths, job_id = self.run_correlations(job_id)
 
         if self.run_export_flag:
-            job_id = self.run_export(corr_paths, job_id)
+            corr_dict, _, __, ___ = self.run_export(corr_paths, job_id)
+
+        return corr_dict, job_id
 
     def run_qq(self, job_id):
         seed_cat_path = self.qq_tree.qq_dir / "seed_zcat.fits"
@@ -266,7 +271,15 @@ class MockRun:
             self.job_config, corr_job_ids=corr_job_ids, run_local=run_local
         )
 
-        return corr_dict, job_id, export_commands
+        job_id_cov = None
+        export_cov_commands = None
+        if not self.export.getboolean('no_export_full_cov'):
+            job_id_cov, export_cov_commands = export_full_cov(
+                corr_paths, self.analysis_tree, self.export_config,
+                self.job_config, corr_job_ids=corr_job_ids, run_local=run_local
+            )
+
+        return corr_dict, [job_id, job_id_cov], export_commands, export_cov_commands
 
     def get_analysis_qso_cat(self):
         if self.custom_qso_catalog is not None:
