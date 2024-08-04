@@ -96,7 +96,7 @@ class MockBatchRun:
         if self.stack_correlations:
             submit_utils.print_spacer_line()
             name_string = self.config['picca_corr'].get('name_string', None)
-            subtract_shuffled = self.config['export'].getboolean('subtract_shuffled')
+            subtract_shuffled = self.config['picca_export'].getboolean('subtract_shuffled')
             _ = stack_correlations(
                     corr_dict, self.stack_tree, self.job_config, shuffled=subtract_shuffled,
                     name_string=name_string, corr_job_ids=job_ids
