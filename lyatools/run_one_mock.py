@@ -87,8 +87,8 @@ class MockRun:
 
             qso_cat = qso_cat / skewers_name / skewers_version / f'skewers-{mock_seed}'
             self.raw_master_qso_cat = qso_cat / 'master.fits'
-            if not self.qso_cat.is_file():
-                raise FileNotFoundError(f'QSO catalog {self.qso_cat} not found.')
+            if not self.raw_master_qso_cat.is_file():
+                raise FileNotFoundError(f'QSO catalog {self.raw_master_qso_cat} not found.')
 
         else:
             self.qq_tree = dir_handlers.QQTree(
