@@ -6,16 +6,11 @@ from lyatools.submit_utils import find_path
 
 
 def read_bals_from_truth(truth_file):
-    hdul = fitsio.FITS(truth_file)
+    with fitsio.FITS(truth_file) as hdul:
+        data = hdul['BAL_META'].read()
 
-    header = hdul['BAL_META'].read_header()
-    nrows = header['NAXIS']
-    if nrows == 0:
-        hdul.close()
+    if data.shape[0] < 1:
         return None
-
-    data = hdul['BAL_META'].read()
-    hdul.close()
 
     return data
 
