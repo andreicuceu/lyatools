@@ -1,4 +1,3 @@
-
 from . import submit_utils, dir_handlers
 from lyatools.raw_deltas import make_raw_deltas
 from lyatools.quickquasars import run_qq, create_qq_catalog, make_contaminant_catalogs
@@ -271,7 +270,7 @@ class MockRun:
 
         job_id_cov = None
         export_cov_commands = None
-        if not self.export.getboolean('no_export_full_cov'):
+        if not self.export_config.getboolean('no_export_full_cov'):
             job_id_cov, export_cov_commands = export_full_cov(
                 corr_paths, self.analysis_tree, self.export_config,
                 self.job_config, corr_job_ids=corr_job_ids, run_local=run_local
