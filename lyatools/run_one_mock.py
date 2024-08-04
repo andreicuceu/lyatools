@@ -156,7 +156,7 @@ class MockRun:
         submit_utils.print_spacer_line()
         job_id, dla_flag, bal_flag = run_qq(
             self.qq_tree, self.qq_config, self.job_config, seed_cat_path,
-            self.qq_seed, self.mock_type, job_id
+            self.qq_seed, self.mock_type, prev_job_id=job_id
         )
 
         # Make DLA and BAL catalogs if needed
