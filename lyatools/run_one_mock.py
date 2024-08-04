@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from . import submit_utils, dir_handlers
 from lyatools.raw_deltas import make_raw_deltas
 from lyatools.quickquasars import run_qq, create_qq_catalog, make_contaminant_catalogs
@@ -77,6 +79,17 @@ class MockRun:
                 analysis_start_path, skewers_version, mock_seed,
                 'raw_master', '0', 'raw_master', None, name
             )
+
+            if skewers_start_path is None:
+                qso_cat = Path(mock_start_path)
+            else:
+                qso_cat = Path(skewers_start_path)
+
+            qso_cat = qso_cat / skewers_name / skewers_version / f'skewers-{mock_seed}'
+            self.raw_master_qso_cat = qso_cat / 'master.fits'
+            if not self.qso_cat.is_file():
+                raise FileNotFoundError(f'QSO catalog {self.qso_cat} not found.')
+
         else:
             self.qq_tree = dir_handlers.QQTree(
                 mock_start_path, skewers_name, skewers_version, mock_seed, survey_name,
@@ -290,9 +303,7 @@ class MockRun:
         if self.custom_qso_catalog is not None:
             qso_cat = submit_utils.find_path(self.custom_qso_catalog)
         elif self.mock_analysis_type == 'raw_master':
-            qso_cat = self.qq_tree.skewers_path / 'master.fits'
-            if not qso_cat.is_file():
-                raise FileNotFoundError(f'QSO catalog {qso_cat} not found.')
+            qso_cat = self.raw_master_qso_cat
         else:
             no_zerr = not self.inject_zerr_config.getboolean('zerr_in_deltas', False)
             qso_cat = self.get_zcat_path(no_zerr=no_zerr)
