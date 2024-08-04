@@ -206,8 +206,8 @@ class MockRun:
 
         mask_bal_cat = self.qq_tree.qq_dir / 'bal_cat.fits'
         if self.deltas_config.getboolean('mask_BALs'):
-            ai_cut = self.qq.getint('bal_ai_cut', None)
-            bi_cut = self.qq.getint('bal_bi_cut', None)
+            ai_cut = self.qq_config.getint('bal_ai_cut', None)
+            bi_cut = self.qq_config.getint('bal_bi_cut', None)
             if not (ai_cut is None and bi_cut is None):
                 mask_bal_cat = self.qq_tree.qq_dir / f'bal_cat_AI_{ai_cut}_BI_{bi_cut}.fits'
 
