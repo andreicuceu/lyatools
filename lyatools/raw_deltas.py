@@ -1,11 +1,12 @@
 from . import submit_utils, dir_handlers
 
 
-def make_raw_deltas(qso_cat, qq_tree, analysis_tree, config, job, qq_job_id=None):
+def make_raw_deltas(qso_cat, skewers_path, analysis_tree, config, job, qq_job_id=None):
     job_ids = []
     if config.getboolean('run_lya_region'):
         id = run_raw_deltas(
-            qso_cat, qq_tree, analysis_tree, config, job, qq_job_id=qq_job_id, region_name='lya',
+            qso_cat, skewers_path, analysis_tree, config, job,
+            qq_job_id=qq_job_id, region_name='lya',
             lambda_rest_min=config.getfloat('lambda_rest_lya_min'),
             lambda_rest_max=config.getfloat('lambda_rest_lya_max'),
         )
@@ -13,7 +14,8 @@ def make_raw_deltas(qso_cat, qq_tree, analysis_tree, config, job, qq_job_id=None
 
     if config.getboolean('run_lyb_region'):
         id = run_raw_deltas(
-            qso_cat, qq_tree, analysis_tree, config, job, qq_job_id=qq_job_id, region_name='lyb',
+            qso_cat, skewers_path, analysis_tree, config, job,
+            qq_job_id=qq_job_id, region_name='lyb',
             lambda_rest_min=config.getfloat('lambda_rest_lyb_min'),
             lambda_rest_max=config.getfloat('lambda_rest_lyb_max'),
         )
@@ -26,7 +28,7 @@ def make_raw_deltas(qso_cat, qq_tree, analysis_tree, config, job, qq_job_id=None
 
 
 def run_raw_deltas(
-        qso_cat, qq_tree, analysis_tree, config, job, qq_job_id=None,
+        qso_cat, skewers_path, analysis_tree, config, job, qq_job_id=None,
         region_name='lya', lambda_rest_min=1040, lambda_rest_max=1200,
 ):
     if region_name == 'lya':
@@ -53,7 +55,7 @@ def run_raw_deltas(
     text = '#!/usr/bin/env python\n\n'
     text += 'from picca import raw_io\n\n'
     text += 'raw_io.convert_transmission_to_deltas('
-    text += f'"{qso_cat}", "{deltas_output_dir}", "{qq_tree.skewers_path}", '
+    text += f'"{qso_cat}", "{deltas_output_dir}", "{skewers_path}", '
     text += f'lambda_min={lambda_min}, lambda_max={lambda_max}, '
     text += f'lambda_min_rest_frame={lambda_rest_min}, '
     text += f'lambda_max_rest_frame={lambda_rest_max}, '

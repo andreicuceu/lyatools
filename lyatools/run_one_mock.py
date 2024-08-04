@@ -81,12 +81,13 @@ class MockRun:
             )
 
             if skewers_start_path is None:
-                qso_cat = Path(mock_start_path)
+                raw_path = Path(mock_start_path)
             else:
-                qso_cat = Path(skewers_start_path)
+                raw_path = Path(skewers_start_path)
 
-            qso_cat = qso_cat / skewers_name / skewers_version / f'skewers-{mock_seed}'
-            self.raw_master_qso_cat = qso_cat / 'master.fits'
+            self.skewers_path = raw_path / skewers_name / skewers_version / f'skewers-{mock_seed}'
+            self.raw_master_qso_cat = self.skewers_path / 'master.fits'
+
             if not self.raw_master_qso_cat.is_file():
                 raise FileNotFoundError(f'QSO catalog {self.raw_master_qso_cat} not found.')
 
@@ -210,9 +211,14 @@ class MockRun:
 
         # Run raw deltas
         if 'raw' in self.mock_analysis_type:
+            if 'master' in self.mock_analysis_type:
+                skewers_path = self.skewers_path
+            else:
+                skewers_path = self.qq_tree.skewers_path
+
             job_id = make_raw_deltas(
-                qso_cat, self.qq_tree, self.analysis_tree,
-                self.deltas_config, self.job_config, qq_job_id=qq_job_id
+                qso_cat, skewers_path, self.analysis_tree, self.deltas_config,
+                self.job_config, qq_job_id=qq_job_id
             )
             return job_id
 
