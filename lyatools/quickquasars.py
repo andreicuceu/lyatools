@@ -21,9 +21,8 @@ def create_qq_catalog(qq_tree, seed_cat_path, config, job, seed, run_local=True)
         return command, seed_cat_path
 
     # Make the header
-    time = submit_utils.convert_job_time(0.2)
     header = submit_utils.make_header(
-        job.get('nersc_machine'), 'regular', 1, time=time,
+        job.get('nersc_machine'), 'regular', 1, time=0.2,
         omp_threads=128, job_name=f'qq_cat_{seed}',
         err_file=qq_tree.runfiles_dir/'run-%j.err',
         out_file=qq_tree.runfiles_dir/'run-%j.out'
