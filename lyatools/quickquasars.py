@@ -73,9 +73,6 @@ def run_qq(qq_tree, config, job, seed_cat_path, qq_seed, mock_type, prev_job_id=
     qq_args = ' '.join(qq_run_args.QQ_DEFAULTS)
     qq_args += f' --seed {qq_seed}'
     qq_args += f' --from-catalog {seed_cat_path}'
-
-    dla_flag = False
-    bal_flag = False
     for digit in split_qq_run_type[1]:
         if digit not in qq_run_args.QQ_RUN_CODES:
             raise ValueError(
@@ -91,10 +88,9 @@ def run_qq(qq_tree, config, job, seed_cat_path, qq_seed, mock_type, prev_job_id=
             if metal_strengths is None:
                 metal_strengths = qq_run_args.QQ_DEFAULT_METAL_STRENGTHS[mock_type]
             qq_args += f' --metals-strengths {metal_strengths}'
-        if digit == '1':
-            dla_flag = True
-        if digit == '4':
-            bal_flag = True
+
+    dla_flag = '1' in split_qq_run_type[1]
+    bal_flag = '4' in split_qq_run_type[1]
 
     print('Found the following arguments to pass to quickquasars:')
     print(qq_args)
@@ -208,7 +204,7 @@ def make_contaminant_catalogs(qq_tree, config, job, dla_flag, bal_flag, qq_job_i
 
         command += f'--nproc {128}\n\n'
 
-    if run_local:
+    if not run_local:
         return command
 
     print('Submitting Contaminant catalog job')
