@@ -18,7 +18,7 @@ def create_qq_catalog(qq_tree, seed_cat_path, config, job, seed, run_local=True)
     command += '\n\n'
 
     if not run_local:
-        return command, seed_cat_path
+        return command
 
     # Make the header
     header = submit_utils.make_header(
@@ -44,7 +44,7 @@ def create_qq_catalog(qq_tree, seed_cat_path, config, job, seed, run_local=True)
         submit_utils.write_script(script_path, full_text)
         job_id = submit_utils.run_job(script_path, no_submit=job.getboolean('no_submit'))
 
-    return job_id, seed_cat_path
+    return job_id
 
 
 def run_qq(qq_tree, config, job, seed_cat_path, qq_seed, mock_type, prev_job_id=None):

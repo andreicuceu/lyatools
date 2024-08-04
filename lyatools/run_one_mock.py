@@ -151,7 +151,6 @@ class MockRun:
                 self.qq_cat_seed, run_local=True
             )
 
-        print('Job id is: ', job_id)
         # TODO Figure out a way to check if QQ run already exists
         # Run quickquasars
         submit_utils.print_spacer_line()
