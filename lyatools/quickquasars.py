@@ -87,7 +87,7 @@ def run_qq(qq_tree, config, job, seed_cat_path, qq_seed, mock_type, prev_job_id=
             metal_strengths = config.get('metal_strengths')
             if metal_strengths is None:
                 metal_strengths = qq_run_args.QQ_DEFAULT_METAL_STRENGTHS[mock_type]
-            qq_args += f' --metals-strengths {metal_strengths}'
+            qq_args += f' --metal-strengths {metal_strengths}'
 
     dla_flag = '1' in split_qq_run_type[1]
     bal_flag = '4' in split_qq_run_type[1]
