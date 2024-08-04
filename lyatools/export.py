@@ -60,7 +60,7 @@ def make_export_runs(corr_paths, analysis_tree, config, job, corr_job_ids=None, 
     if len(export_commands) < 1:
         print(f'No individual mock export needed for seed {analysis_tree.full_mock_seed}.')
         return corr_dict, None, None
-    elif run_local:
+    elif not run_local:
         return corr_dict, None, export_commands
 
     # Make the header
@@ -152,7 +152,7 @@ def export_full_cov(corr_paths, analysis_tree, config, job, corr_job_ids=None, r
     if len(commands) < 1:
         print(f'Full covariance already exists for seed {analysis_tree.full_mock_seed}.')
         return None, None
-    elif run_local:
+    elif not run_local:
         return None, commands
 
     # Make the header
