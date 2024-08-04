@@ -67,7 +67,7 @@ class MockBatchRun:
         if self.stack_correlations:
             stack_name = self.config['mock_setup'].get('stack_name', 'stack')
             self.stack_tree = dir_handlers.AnalysisTree.stack_from_other(
-                self.run_mock_objects[0], stack_name
+                self.run_mock_objects[0].analysis_tree, stack_name
             )
 
     def run(self):
