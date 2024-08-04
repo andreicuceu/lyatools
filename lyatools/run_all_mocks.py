@@ -75,6 +75,9 @@ class MockBatchRun:
         job_ids = []
         if self.run_mocks_individually:
             for mock_obj in self.run_mock_objects:
+                submit_utils.print_spacer_line()
+                print('Running mock:', mock_obj.analysis_tree.full_mock_seed)
+
                 mock_corr_dict, job_id = mock_obj.run_mock()
 
                 for key, file in mock_corr_dict.items():
@@ -91,9 +94,14 @@ class MockBatchRun:
 
         # Stack mocks
         if self.stack_correlations:
+            submit_utils.print_spacer_line()
             name_string = self.config['picca_corr'].get('name_string', None)
             subtract_shuffled = self.config['export'].getboolean('subtract_shuffled')
             _ = stack_correlations(
                     corr_dict, self.stack_tree, self.job_config, shuffled=subtract_shuffled,
                     name_string=name_string, corr_job_ids=job_ids
                 )
+
+        submit_utils.print_spacer_line()
+        print('All mocks submitted. Done!')
+        submit_utils.print_spacer_line()

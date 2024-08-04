@@ -101,19 +101,25 @@ class MockRun:
 
     def run_mock(self):
         job_id = None
+
+        submit_utils.print_spacer_line()
         if self.run_qq_flag:
             job_id = self.run_qq(job_id)
 
+        submit_utils.print_spacer_line()
         if self.run_zerr_flag:
             job_id = self.make_zerr_cat(job_id)
 
+        submit_utils.print_spacer_line()
         if self.run_deltas_flag or self.run_qsonic_flag:
             job_id = self.run_deltas(job_id)
 
+        submit_utils.print_spacer_line()
         corr_paths = None
         if self.run_corr_flag:
             corr_paths, job_id = self.run_correlations(job_id)
 
+        submit_utils.print_spacer_line()
         if self.run_export_flag:
             corr_dict, _, __, ___ = self.run_export(corr_paths, job_id)
 
@@ -133,12 +139,14 @@ class MockRun:
 
         # TODO Figure out a way to check if QQ run already exists
         # Run quickquasars
+        submit_utils.print_spacer_line()
         job_id, dla_flag, bal_flag = run_qq(
             self.qq_tree, self.qq_config, self.job_config, seed_cat_path,
             self.qq_seed, self.mock_type, job_id
         )
 
         # Make DLA and BAL catalogs if needed
+        submit_utils.print_spacer_line()
         if dla_flag or bal_flag:
             job_id = make_contaminant_catalogs(
                 self.qq_tree, self.qq_config, self.job_config,
