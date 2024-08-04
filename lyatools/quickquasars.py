@@ -7,9 +7,10 @@ def create_qq_catalog(qq_tree, seed_cat_path, config, job, seed, run_local=True)
 
     release = config.get('release', 'jura')
     master_cat_path = f"{qq_tree.skewers_path}/master.fits"
+    input_data_catalog = config.get('input_data_catalog')
 
     command = f'gen_qso_catalog -i {master_cat_path} -o {seed_cat_path} --seed {seed}'
-    command += f' --release {release}'
+    command += f' --release {release} --input-data {input_data_catalog}'
     if config.getboolean('invert_cat_seed', False):
         command += ' --invert'
     if config.getboolean('include_nonqso_targets', True):
