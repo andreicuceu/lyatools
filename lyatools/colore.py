@@ -25,7 +25,7 @@ def compute_colore(box, analysis_struct, mock_version, colore_setup, job, versio
     n_grid = 4096 # Grid size
     overwrite_colore = True # Overwrite if already exists.
     overwrite_corrf = False 
-    overwrite_config=True
+    overwrite_config=False
     # We need the path to the CoLoRe executable to run it.
     colore_executables = colore_setup.get('colore_path')
     env_colore= job.get('env_colore')
@@ -107,7 +107,7 @@ def compute_colore(box, analysis_struct, mock_version, colore_setup, job, versio
     slurm_header_args = dict(
         qos="regular",
         nodes=8,
-        time = "00:10:00",
+        time = "00:15:00",
         output=str(colore_logs_dir / "CoLoRe-%j.out"),
         error=str(colore_logs_dir / "CoLoRe-%j.err"),
         constraint = "cpu",
@@ -138,6 +138,7 @@ def compute_colore(box, analysis_struct, mock_version, colore_setup, job, versio
     if len(list((colore_box/"results").glob("out_srcs*fits"))) == 0 or overwrite_colore:
         # If there are no results, we just run the job
         tasker.write_job()
+        print(tasker._make_body())
         
         if no_submit is False:
             tasker.send_job()
