@@ -48,7 +48,6 @@ class MockRun:
 
         # Get the mock info we need to build the tree
         self.mock_type = config['mock_setup'].get('mock_type')
-        # self.mock_type = config['mock_setup'].get('mock_type')
         skewers_name = config['mock_setup'].get('skewers_name')
         skewers_version = config['mock_setup'].get('skewers_version')
         survey_name = config['mock_setup'].get('survey_name')
@@ -136,7 +135,8 @@ class MockRun:
         # TODO Figure out a way to check if QQ run already exists
         # Run quickquasars
         job_id, dla_flag, bal_flag = run_qq(
-            self.qq_tree, self.qq_config, self.job_config, seed_cat_path, self.qq_seed, job_id
+            self.qq_tree, self.qq_config, self.job_config, seed_cat_path,
+            self.qq_seed, mock_type, job_id
         )
 
         # Make DLA and BAL catalogs if needed

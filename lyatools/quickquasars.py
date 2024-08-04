@@ -1,5 +1,5 @@
-from . import dir_handlers, submit_utils
-from lyatools.qq_run_args import QQ_RUN_ARGS
+from . import submit_utils
+from lyatools import qq_run_args
 
 
 def create_qq_catalog(qq_tree, seed_cat_path, config, job, seed, run_local=True):
@@ -47,7 +47,7 @@ def create_qq_catalog(qq_tree, seed_cat_path, config, job, seed, run_local=True)
     return job_id, seed_cat_path
 
 
-def run_qq(qq_tree, config, job, seed_cat_path, qq_seed, prev_job_id=None):
+def run_qq(qq_tree, config, job, seed_cat_path, qq_seed, mock_type, prev_job_id=None):
     """Create a QQ run and submit it
 
     Parameters
@@ -62,21 +62,36 @@ def run_qq(qq_tree, config, job, seed_cat_path, qq_seed, prev_job_id=None):
     # Print run config
     print(f'Submitting quickquasars runs with configuration {qq_tree.qq_run_name}')
 
-    run_args = QQ_RUN_ARGS[qq_tree.qq_run_name]
+    split_qq_run_type = qq_tree.qq_run_name.split('-')
+    if '_' in split_qq_run_type[1]:
+        raise ValueError(
+            f'Cannot have underscores in middle part of qq_run_type: {split_qq_run_type[1]}'
+            ' Please separate the control digits from the rest of the name with dash lines.'
+            ' E.g. Use jura-124-test instead of jura-124_test'
+        )
 
-    qq_args = ''
-    dla_flag = False
-    bal_flag = False
-    for key, val in run_args.items():
-        if 'dla' in key:
-            dla_flag = True
-        elif 'bal' in key:
-            bal_flag = True
-
-        qq_args += f' --{key} {val}'
-
-    qq_args += f' --from-catalog {seed_cat_path}'
+    qq_args = ' '.join(qq_run_args.QQ_DEFAULTS)
     qq_args += f' --seed {qq_seed}'
+    qq_args += f' --from-catalog {seed_cat_path}'
+
+    for digit in split_qq_run_type[1]:
+        if digit not in qq_run_args.QQ_RUN_CODES:
+            raise ValueError(
+                f'Invalid digit {digit} in qq_run_type: {split_qq_run_type[1]}.'
+                f' Only the following digits are currently recognized: {qq_run_args.QQ_RUN_CODES}.'
+                ' Please add the new digit to the QQ_RUN_CODES dictionary in qq_run_args.py'
+            )
+
+        qq_args += f' {qq_run_args.QQ_RUN_CODES[digit]}'
+
+        if digit == '2':
+            metal_strengths = config.get('metal_strengths')
+            if metal_strengths is None:
+                metal_strengths = qq_run_args.QQ_DEFAULT_METAL_STRENGTHS[mock_type]
+            qq_args += f' --metals-strengths {metal_strengths}'
+
+    dla_flag = '1' in split_qq_run_type[1]
+    bal_flag = '4' in split_qq_run_type[1]
 
     print('Found the following arguments to pass to quickquasars:')
     print(qq_args)
