@@ -85,7 +85,7 @@ def main():
     args = parser.parse_args()
 
     make_z_catalog(
-        args.input_dir, args.output_dir, ai_cut=args.ai_cut, bi_cut=args.bi_cut, nproc=args.nproc
+        args.input_dir, args.output_file, args.prefix, args.nproc
     )
 
 
