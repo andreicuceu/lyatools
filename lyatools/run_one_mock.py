@@ -7,6 +7,7 @@ from lyatools.delta_extraction import make_picca_delta_runs
 from lyatools.qsonic import make_qsonic_runs
 from lyatools.correlations import make_correlation_runs
 from lyatools.export import make_export_runs, export_full_cov
+from lyatools import qq_run_args
 
 
 MOCK_ANALYSIS_TYPES = [
@@ -113,6 +114,11 @@ class MockRun:
         self.masked_bal_qso_flag = self.qq_config.getboolean('masked_bal_qso')
         self.custom_qso_catalog = config['mock_setup'].get('custom_qso_catalog')
 
+        self.bal_flag = False
+        self.dla_flag = False
+        if self.mock_analysis_type != 'raw_master':
+            self.qq_special_args, self.bal_flag, self.dla_flag = self.get_qq_special_args()
+
     def run_mock(self):
         job_id = None
 
@@ -156,7 +162,7 @@ class MockRun:
         submit_utils.print_spacer_line()
         check_spectra_files = list(self.qq_tree.spectra_dir.glob("*/*/spectra-*.fits*"))
         if len(check_spectra_files) < 1:
-            job_id, dla_flag, bal_flag = run_qq(
+            job_id = run_qq(
                 self.qq_tree, self.qq_config, self.job_config, seed_cat_path,
                 self.qq_seed, self.mock_type, prev_job_id=job_id
             )
@@ -167,7 +173,7 @@ class MockRun:
         submit_utils.print_spacer_line()
         job_id = make_catalogs(
             self.qq_tree, self.qq_config, self.job_config,
-            dla_flag, bal_flag, job_id, run_local=True
+            self.dla_flag, self.bal_flag, job_id, run_local=True
         )
 
         return job_id
@@ -335,3 +341,35 @@ class MockRun:
 
         zcat_file = self.qq_tree.qq_dir / (zcat_name + '.fits')
         return zcat_file
+
+    def get_qq_special_args(self):
+        split_qq_run_type = self.qq_tree.qq_run_name.split('-')
+        if '_' in split_qq_run_type[1]:
+            raise ValueError(
+                f'Cannot have underscores in middle part of qq_run_type: {split_qq_run_type[1]}'
+                ' Please separate the control digits from the rest of the name with dash lines.'
+                ' E.g. Use jura-124-test instead of jura-124_test'
+            )
+
+        qq_special_args = []
+        for digit in split_qq_run_type[1]:
+            if digit not in qq_run_args.QQ_RUN_CODES:
+                raise ValueError(
+                    f'Invalid digit {digit} in qq_run_type: {split_qq_run_type[1]}.'
+                    ' Only the following digits are currently recognized:'
+                    f' {qq_run_args.QQ_RUN_CODES}. Please add the new digit to the'
+                    ' QQ_RUN_CODES dictionary in qq_run_args.py'
+                )
+
+            qq_special_args += [qq_run_args.QQ_RUN_CODES[digit]]
+
+            if digit == '2':
+                metal_strengths = self.qq_config.get('metal_strengths')
+                if metal_strengths is None:
+                    metal_strengths = qq_run_args.QQ_DEFAULT_METAL_STRENGTHS[self.mock_type]
+                qq_special_args += [f'--metal-strengths {metal_strengths}']
+
+        dla_flag = '1' in split_qq_run_type[1]
+        bal_flag = '4' in split_qq_run_type[1]
+
+        return qq_special_args, bal_flag, dla_flag
