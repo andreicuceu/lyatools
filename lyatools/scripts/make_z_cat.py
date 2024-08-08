@@ -43,7 +43,7 @@ def one_zcatalog(fzbest):
 
 def make_z_catalog(input_dir, output_file, prefix='zbest', nproc=None):
     spec_dir = submit_utils.find_path(input_dir)
-    zbest_files = spec_dir.glob(f"*/*/{prefix}-*.fits**")
+    zbest_files = spec_dir.glob(f"*/*/{prefix}-*.fits*")
 
     # Read quasars from truth files
     print("Iterating over files")
