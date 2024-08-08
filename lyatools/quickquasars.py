@@ -167,10 +167,6 @@ def create_qq_script(qq_tree, config, job, qq_args, qq_seed):
     text += 'done\n\n'
     text += 'wait\n\n'
 
-    zcat_file = qq_tree.qq_dir / 'zcat.fits'
-    text += f'desi_zcatalog -i {qq_tree.spectra_dir} -o {zcat_file} '
-    text += '--minimal --prefix zbest\n\n'
-
     text += 'echo "END"\n\n'
 
     full_text = header + text
@@ -182,10 +178,13 @@ def create_qq_script(qq_tree, config, job, qq_args, qq_seed):
     return script_path
 
 
-def make_contaminant_catalogs(qq_tree, config, job, dla_flag, bal_flag, qq_job_id, run_local=True):
-    assert dla_flag or bal_flag
-
+def make_catalogs(qq_tree, config, job, dla_flag, bal_flag, qq_job_id, run_local=True):
     command = ''
+
+    zcat_file = qq_tree.qq_dir / 'zcat.fits'
+    if not zcat_file.is_file():
+        command += f'lyatools-make-zcat -i {qq_tree.spectra_dir} -o {zcat_file} --nproc {128}\n\n'
+
     if dla_flag:
         command += f'lyatools-make-dla-cat -i {qq_tree.spectra_dir} -o {qq_tree.qq_dir} '
         mask_nhi_cut = config.getfloat('dla_mask_nhi_cut')
@@ -204,13 +203,15 @@ def make_contaminant_catalogs(qq_tree, config, job, dla_flag, bal_flag, qq_job_i
 
         command += f'--nproc {128}\n\n'
 
+    if len(command) < 1:
+        return qq_job_id
     if not run_local:
         return command
 
-    print('Submitting Contaminant catalog job')
+    print('Submitting catalog job')
     header = submit_utils.make_header(
         job.get('nersc_machine'), nodes=1, time=0.5,
-        omp_threads=128, job_name=f'cont_cat_{qq_tree.mock_seed}',
+        omp_threads=128, job_name=f'cat_{qq_tree.mock_seed}',
         err_file=qq_tree.runfiles_dir/'run-cont-cat-%j.err',
         out_file=qq_tree.runfiles_dir/'run-cont-cat-%j.out'
     )
@@ -218,7 +219,7 @@ def make_contaminant_catalogs(qq_tree, config, job, dla_flag, bal_flag, qq_job_i
     env_command = job.get('env_command')
     text = header + f'{env_command}\n\n' + command
 
-    script_path = qq_tree.scripts_dir / 'make_cont_cat.sh'
+    script_path = qq_tree.scripts_dir / 'make_catalogs.sh'
     submit_utils.write_script(script_path, text)
 
     job_id = submit_utils.run_job(

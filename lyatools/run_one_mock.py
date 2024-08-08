@@ -2,7 +2,7 @@ from pathlib import Path
 
 from . import submit_utils, dir_handlers
 from lyatools.raw_deltas import make_raw_deltas
-from lyatools.quickquasars import run_qq, create_qq_catalog, make_contaminant_catalogs
+from lyatools.quickquasars import run_qq, create_qq_catalog, make_catalogs
 from lyatools.delta_extraction import make_picca_delta_runs
 from lyatools.qsonic import make_qsonic_runs
 from lyatools.correlations import make_correlation_runs
@@ -159,13 +159,12 @@ class MockRun:
             self.qq_seed, self.mock_type, prev_job_id=job_id
         )
 
-        # Make DLA and BAL catalogs if needed
+        # Make QSO, DLA, BAL catalogs
         submit_utils.print_spacer_line()
-        if dla_flag or bal_flag:
-            job_id = make_contaminant_catalogs(
-                self.qq_tree, self.qq_config, self.job_config,
-                dla_flag, bal_flag, job_id, run_local=True
-            )
+        job_id = make_catalogs(
+            self.qq_tree, self.qq_config, self.job_config,
+            dla_flag, bal_flag, job_id, run_local=True
+        )
 
         return job_id
 
