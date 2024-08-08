@@ -154,10 +154,14 @@ class MockRun:
         # TODO Figure out a way to check if QQ run already exists
         # Run quickquasars
         submit_utils.print_spacer_line()
-        job_id, dla_flag, bal_flag = run_qq(
-            self.qq_tree, self.qq_config, self.job_config, seed_cat_path,
-            self.qq_seed, self.mock_type, prev_job_id=job_id
-        )
+        check_spectra_files = list(self.qq_tree.spectra_dir.glob("*/*/spectra-*.fits*"))
+        if len(check_spectra_files) < 1:
+            job_id, dla_flag, bal_flag = run_qq(
+                self.qq_tree, self.qq_config, self.job_config, seed_cat_path,
+                self.qq_seed, self.mock_type, prev_job_id=job_id
+            )
+        else:
+            print(f'Found spectra files in {self.qq_tree.spectra_dir}. Skipping quickquasars.')
 
         # Make QSO, DLA, BAL catalogs
         submit_utils.print_spacer_line()

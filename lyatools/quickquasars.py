@@ -185,12 +185,14 @@ def make_catalogs(qq_tree, config, job, dla_flag, bal_flag, qq_job_id, run_local
     if not zcat_file.is_file():
         command += f'lyatools-make-zcat -i {qq_tree.spectra_dir} -o {zcat_file} --nproc {128}\n\n'
 
-    if dla_flag:
+    dla_cat_check = qq_tree.qq_dir / 'dla_cat.fits'
+    if dla_flag and not dla_cat_check.is_file():
         command += f'lyatools-make-dla-cat -i {qq_tree.spectra_dir} -o {qq_tree.qq_dir} '
         mask_nhi_cut = config.getfloat('dla_mask_nhi_cut')
         command += f'--mask-nhi-cut {mask_nhi_cut} --nproc {128}\n\n'
 
-    if bal_flag:
+    bal_cat_check = qq_tree.qq_dir / 'bal_cat.fits'
+    if bal_flag and not bal_cat_check.is_file():
         command += f'lyatools-make-bal-cat -i {qq_tree.spectra_dir} -o {qq_tree.qq_dir} '
 
         ai_cut = config.getint('bal_ai_cut', None)
@@ -204,6 +206,7 @@ def make_catalogs(qq_tree, config, job, dla_flag, bal_flag, qq_job_id, run_local
         command += f'--nproc {128}\n\n'
 
     if len(command) < 1:
+        print('No catalogs to make. Skipping.')
         return qq_job_id
     if not run_local:
         return command
