@@ -47,10 +47,7 @@ def create_qq_catalog(qq_tree, seed_cat_path, config, job, seed, run_local=True)
     return job_id
 
 
-def run_qq(
-    qq_tree, config, job, seed_cat_path, qq_seed,
-    qq_special_args, mock_type, prev_job_id=None
-):
+def run_qq(qq_tree, config, job, seed_cat_path, qq_seed, qq_special_args, prev_job_id=None):
     """Create a QQ run and submit it
 
     Parameters
