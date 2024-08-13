@@ -216,7 +216,8 @@ class MockRun:
         return zerr_job_id
 
     def run_deltas(self, qq_job_id):
-        qso_cat = self.get_analysis_qso_cat()
+        no_zerr = not self.inject_zerr_config.getboolean('zerr_in_deltas', False)
+        qso_cat = self.get_analysis_qso_cat(no_zerr=no_zerr)
 
         # Run raw deltas
         if 'raw' in self.mock_analysis_type:
@@ -314,13 +315,12 @@ class MockRun:
 
         return corr_dict, [job_id, job_id_cov], export_commands, export_cov_commands
 
-    def get_analysis_qso_cat(self):
+    def get_analysis_qso_cat(self, no_zerr=False):
         if self.custom_qso_catalog is not None:
             qso_cat = submit_utils.find_path(self.custom_qso_catalog)
         elif self.mock_analysis_type == 'raw_master':
             qso_cat = self.raw_master_qso_cat
         else:
-            no_zerr = not self.inject_zerr_config.getboolean('zerr_in_deltas', False)
             qso_cat = self.get_zcat_path(no_zerr=no_zerr)
 
         return qso_cat
