@@ -1,4 +1,5 @@
 from . import submit_utils
+from . import dir_handlers
 
 
 def make_qsonic_runs(
@@ -44,6 +45,9 @@ def run_qsonic(
     else:
         raise ValueError('Unkown region name. Choose from ["lya", "lyb"].')
 
+    deltas_dir = deltas_dirname / 'Delta'
+    dir_handlers.check_dir(deltas_dir)
+
     # Create the path and name for the config file
     type = 'true' if true_continuum else 'fitted'
     run_name = f'qsonic_{region_name}_{type}'
@@ -65,7 +69,7 @@ def run_qsonic(
     text += 'source /global/cfs/projectdirs/desi/science/lya/scripts/activate_qsonic.sh \n\n'
     text += f'srun -n {config.get("num_mpi")} -c 2 qsonic-fit '
     text += f'-i {qq_tree.spectra_dir} '
-    text += f'-o {deltas_dirname} '
+    text += f'-o {deltas_dir} '
     text += f'--catalog {qso_cat} '
     text += '--mock-analysis '
     text += '--skip-resomat '
