@@ -116,6 +116,7 @@ class MockRun:
 
         self.bal_flag = False
         self.dla_flag = False
+        self.qq_special_args = None
         if self.mock_analysis_type != 'raw_master':
             self.qq_special_args, self.bal_flag, self.dla_flag = self.get_qq_special_args()
 
@@ -147,6 +148,7 @@ class MockRun:
 
     def run_qq(self, job_id):
         seed_cat_path = self.qq_tree.qq_dir / "seed_zcat.fits"
+        assert self.qq_special_args is not None
 
         # Make QQ input catalog
         if seed_cat_path.is_file():
@@ -164,7 +166,7 @@ class MockRun:
         if len(check_spectra_files) < 1:
             job_id = run_qq(
                 self.qq_tree, self.qq_config, self.job_config, seed_cat_path,
-                self.qq_seed, self.mock_type, prev_job_id=job_id
+                self.qq_seed, self.qq_special_args, prev_job_id=job_id
             )
         else:
             print(f'Found spectra files in {self.qq_tree.spectra_dir}. Skipping quickquasars.')

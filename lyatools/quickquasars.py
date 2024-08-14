@@ -65,7 +65,8 @@ def run_qq(qq_tree, config, job, seed_cat_path, qq_seed, qq_special_args, prev_j
     qq_args = ' '.join(qq_run_args.QQ_DEFAULTS)
     qq_args += f' --seed {qq_seed}'
     qq_args += f' --from-catalog {seed_cat_path} '
-    qq_args += ' '.join(qq_special_args)
+    if len(qq_special_args) > 0:
+        qq_args += ' '.join(qq_special_args)
 
     print('Found the following arguments to pass to quickquasars:')
     print(qq_args)
