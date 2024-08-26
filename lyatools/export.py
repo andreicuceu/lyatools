@@ -265,14 +265,13 @@ def mpi_export(export_commands, export_cov_commands, analysis_tree, job, corr_jo
     # Restructure the export_cov_commands
     individual_cov_commands = []
     smooth_cov_commands = []
-    for cov_commands in export_cov_commands:
-        for command in cov_commands:
-            if 'write_full_covariance_matrix_flex_size_shuffled' in command:
-                individual_cov_commands += [command]
-            elif 'write_smooth_covariance_flex_size' in command:
-                smooth_cov_commands += [command]
-            else:
-                raise ValueError(f'Unknown covariance command: {command}')
+    for command in export_cov_commands:
+        if 'write_full_covariance_matrix_flex_size_shuffled' in command:
+            individual_cov_commands += [command]
+        elif 'write_smooth_covariance_flex_size' in command:
+            smooth_cov_commands += [command]
+        else:
+            raise ValueError(f'Unknown covariance command: {command}')
 
     cov_job_id = None
     if len(individual_cov_commands) > 1:
