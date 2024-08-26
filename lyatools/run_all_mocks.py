@@ -2,7 +2,7 @@ import configparser
 
 from . import submit_utils, dir_handlers
 from lyatools.run_one_mock import MockRun
-from lyatools.export import stack_correlations
+from lyatools.export import stack_correlations, mpi_export
 
 
 class MockBatchRun:
@@ -64,7 +64,7 @@ class MockBatchRun:
             self.stack_correlations = False
 
         self.stack_tree = None
-        if self.stack_correlations:
+        if self.stack_correlations or not self.run_mocks_individually:
             stack_name = self.config['mock_setup'].get('stack_name', 'stack')
             self.stack_tree = dir_handlers.AnalysisTree.stack_from_other(
                 self.run_mock_objects[0].analysis_tree, stack_name
@@ -90,7 +90,7 @@ class MockBatchRun:
                 else:
                     job_ids += [job_id]
         else:
-            pass
+            corr_dict, job_ids = self.run_parallel()
 
         # Stack mocks
         if self.stack_correlations:
@@ -105,3 +105,61 @@ class MockBatchRun:
         submit_utils.print_spacer_line()
         print('All mocks submitted. Done!')
         submit_utils.print_spacer_line()
+
+    def run_parallel(self):
+        assert not self.run_mocks_individually
+
+        corr_dict = {}
+        job_ids = []
+        all_export_commands = []
+        all_export_cov_commands = []
+        for mock_obj in self.run_mock_objects:
+            submit_utils.print_spacer_line()
+            print('Running mock:', mock_obj.analysis_tree.full_mock_seed)
+
+            job_id = None
+            submit_utils.print_spacer_line()
+            if mock_obj.run_qq_flag:
+                # TODO unpack and parallelize catalog creation
+                job_id = mock_obj.run_qq(job_id)
+
+            submit_utils.print_spacer_line()
+            if mock_obj.run_zerr_flag:
+                # TODO parallelize this
+                job_id = mock_obj.make_zerr_cat(job_id, run_local=True)
+
+            submit_utils.print_spacer_line()
+            if mock_obj.run_deltas_flag or mock_obj.run_qsonic_flag:
+                job_id = mock_obj.run_deltas(job_id)
+
+            submit_utils.print_spacer_line()
+            corr_paths = None
+            if mock_obj.run_corr_flag:
+                corr_paths, job_id = mock_obj.run_correlations(job_id)
+
+            submit_utils.print_spacer_line()
+            if self.run_export_flag:
+                mock_corr_dict, _, export_commands, export_cov_commands = self.run_export(
+                    corr_paths, job_id, run_local=False)
+
+            for key, file in mock_corr_dict.items():
+                if key not in corr_dict:
+                    corr_dict[key] = []
+                corr_dict[key] += [file]
+
+            if isinstance(job_id, list):
+                job_ids += job_id
+            else:
+                job_ids += [job_id]
+
+            all_export_commands += export_commands
+            if export_cov_commands is not None:
+                all_export_cov_commands += export_cov_commands
+
+        assert self.stack_tree is not None
+        mpi_export(
+            all_export_commands, all_export_cov_commands,
+            self.stack_tree, self.job_config, job_ids
+        )
+
+        return corr_dict, job_ids
