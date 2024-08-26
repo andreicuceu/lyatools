@@ -152,7 +152,8 @@ class MockBatchRun:
             else:
                 job_ids += [job_id]
 
-            all_export_commands += export_commands
+            if export_commands is not None:
+                all_export_commands += export_commands
             if export_cov_commands is not None:
                 all_export_cov_commands += export_cov_commands
 
