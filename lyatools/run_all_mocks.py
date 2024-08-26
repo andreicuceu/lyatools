@@ -138,8 +138,8 @@ class MockBatchRun:
                 corr_paths, job_id = mock_obj.run_correlations(job_id)
 
             submit_utils.print_spacer_line()
-            if self.run_export_flag:
-                mock_corr_dict, _, export_commands, export_cov_commands = self.run_export(
+            if mock_obj.run_export_flag:
+                mock_corr_dict, _, export_commands, export_cov_commands = mock_obj.run_export(
                     corr_paths, job_id, run_local=False)
 
             for key, file in mock_corr_dict.items():
