@@ -140,6 +140,7 @@ class MockRun:
         if self.run_corr_flag:
             corr_paths, job_id = self.run_correlations(job_id)
 
+        corr_dict = {}
         submit_utils.print_spacer_line()
         if self.run_export_flag:
             corr_dict, _, __, ___ = self.run_export(corr_paths, job_id)
