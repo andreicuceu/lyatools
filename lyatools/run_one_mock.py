@@ -356,6 +356,10 @@ class MockRun:
 
         qq_special_args = []
         for digit in split_qq_run_type[1]:
+            if digit == '0':
+                assert len(split_qq_run_type[1]) == 1
+                continue
+
             if digit not in qq_run_args.QQ_RUN_CODES:
                 raise ValueError(
                     f'Invalid digit {digit} in qq_run_type: {split_qq_run_type[1]}.'
