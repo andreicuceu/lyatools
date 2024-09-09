@@ -183,8 +183,10 @@ def get_builder(builder_config):
             if key == 'metals':
                 options[key] = builder_config[key].split(' ')
             else:
-                # TODO fix booleans
-                options[key] = builder_config[key]
+                try:
+                    options[key] = builder_config.getboolean(key)
+                except ValueError:
+                    options[key] = builder_config[key]
 
     return BuildConfig(options, overwrite=True)
 
@@ -214,7 +216,10 @@ def get_fit_info(fit_info_config):
                 fit_info['priors'][key2] = fit_info_config[key]
 
         elif key in fit_info:
-            fit_info[key] = fit_info_config[key]
+            try:
+                fit_info[key] = fit_info_config.getboolean(key)
+            except ValueError:
+                fit_info[key] = fit_info_config[key]
 
         if key == 'global_cov_file':
             fit_info['global_cov_file'] = fit_info_config[key]
