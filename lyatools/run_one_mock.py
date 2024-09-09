@@ -7,6 +7,7 @@ from lyatools.delta_extraction import make_picca_delta_runs
 from lyatools.qsonic import make_qsonic_runs
 from lyatools.correlations import make_correlation_runs
 from lyatools.export import make_export_runs, export_full_cov
+from lyatools.vegafit import make_vega_config
 from lyatools import qq_run_args
 
 
@@ -31,6 +32,7 @@ class MockRun:
         self.qsonic_config = config['qsonic']
         self.corr_config = config['picca_corr']
         self.export_config = config['picca_export']
+        self.vega_config = {key: config[key] for key in config.keys() if key.startswith('vega')}
 
         # Get control flags
         self.run_qq_flag = config['control'].getboolean('run_qq')
@@ -39,6 +41,7 @@ class MockRun:
         self.run_qsonic_flag = config['control'].getboolean('run_qsonic')
         self.run_corr_flag = config['control'].getboolean('run_corr')
         self.run_export_flag = config['control'].getboolean('run_export')
+        self.run_vega_flag = config['control'].getboolean('run_vega')
 
         if self.run_deltas_flag and self.run_qsonic_flag:
             raise ValueError('Cannot run deltas and qsonic at the same time.')
@@ -144,6 +147,10 @@ class MockRun:
         submit_utils.print_spacer_line()
         if self.run_export_flag:
             corr_dict, _, __, ___ = self.run_export(corr_paths, job_id)
+
+        submit_utils.print_spacer_line()
+        if self.run_vega_flag:
+            job_id, _ = self.run_vega(job_id)
 
         return corr_dict, job_id
 
@@ -317,6 +324,16 @@ class MockRun:
             )
 
         return corr_dict, [job_id, job_id_cov], export_commands, export_cov_commands
+
+    def run_vega(self, export_job_id, run_local=True):
+        qso_cat = self.get_analysis_qso_cat()
+
+        job_id, command = make_vega_config(
+            self.analysis_tree, qso_cat, self.vega_config,
+            self.job_config, export_job_id, run_local=run_local
+        )
+
+        return job_id, command
 
     def get_analysis_qso_cat(self, no_zerr=False):
         if self.custom_qso_catalog is not None:

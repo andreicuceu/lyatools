@@ -260,7 +260,8 @@ def mpi_export(export_commands, export_cov_commands, analysis_tree, job, corr_jo
     if len(export_commands) < 2:
         raise ValueError('Something went wrong. Fewer than 2 export command found.')
 
-    mpi_export_correlations(export_commands, analysis_tree, job, corr_job_ids=corr_job_ids)
+    export_job_id = mpi_export_correlations(
+        export_commands, analysis_tree, job, corr_job_ids=corr_job_ids)
 
     # Restructure the export_cov_commands
     individual_cov_commands = []
@@ -286,10 +287,12 @@ def mpi_export(export_commands, export_cov_commands, analysis_tree, job, corr_jo
     if len(smooth_cov_commands) > 1:
         num_nodes = max(len(smooth_cov_commands) // 32, 1)
         ntasks_per_node = min(len(smooth_cov_commands), 32)
-        _ = mpi_export_covariances(
+        cov_smooth_job_id = mpi_export_covariances(
             smooth_cov_commands, analysis_tree, job, script_name='smooth_cov',
             num_nodes=num_nodes, ntasks_per_node=ntasks_per_node, corr_job_ids=cov_job_id
         )
+
+    return export_job_id, cov_smooth_job_id
 
 
 def mpi_export_correlations(export_commands, analysis_tree, job, corr_job_ids=None):
@@ -318,8 +321,10 @@ def mpi_export_correlations(export_commands, analysis_tree, job, corr_job_ids=No
     script_path = analysis_tree.scripts_dir / 'mpi_export.sh'
     submit_utils.write_script(script_path, text)
 
-    _ = submit_utils.run_job(
+    job_id = submit_utils.run_job(
         script_path, dependency_ids=corr_job_ids, no_submit=job.getboolean('no_submit'))
+
+    return job_id
 
 
 def mpi_export_covariances(

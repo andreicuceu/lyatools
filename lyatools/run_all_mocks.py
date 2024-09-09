@@ -3,12 +3,14 @@ import configparser
 from . import submit_utils, dir_handlers
 from lyatools.run_one_mock import MockRun
 from lyatools.export import stack_correlations, mpi_export
+from lyatools.vegafit import run_vega_mpi
 
 
 class MockBatchRun:
     def __init__(self, config_path):
         # Read default config and overwrite with input config
         self.config = configparser.ConfigParser()
+        self.config.optionxform = lambda option: option
         self.config.read(submit_utils.find_path('defaults/desi_y5.ini'))
         self.config.read(submit_utils.find_path(config_path))
         self.job_config = self.config['job_info']
@@ -113,6 +115,7 @@ class MockBatchRun:
         job_ids = []
         all_export_commands = []
         all_export_cov_commands = []
+        all_vega_commands = []
         for mock_obj in self.run_mock_objects:
             submit_utils.print_spacer_line()
             print('Running mock:', mock_obj.analysis_tree.full_mock_seed)
@@ -147,6 +150,10 @@ class MockBatchRun:
                     corr_dict[key] = []
                 corr_dict[key] += [file]
 
+            vega_command = None
+            if mock_obj.run_vega_flag:
+                _, vega_command = mock_obj.run_vega(job_id, run_local=False)
+
             if isinstance(job_id, list):
                 job_ids += job_id
             else:
@@ -156,11 +163,18 @@ class MockBatchRun:
                 all_export_commands += export_commands
             if export_cov_commands is not None:
                 all_export_cov_commands += export_cov_commands
+            if vega_command is not None:
+                all_vega_commands += [vega_command]
 
         assert self.stack_tree is not None
-        mpi_export(
+        export_job_ids = mpi_export(
             all_export_commands, all_export_cov_commands,
             self.stack_tree, self.job_config, job_ids
+        )
+
+        run_vega_mpi(
+            all_vega_commands, self.stack_tree, self.run_mock_objects[0].vega_config,
+            self.job_config, export_job_ids
         )
 
         return corr_dict, job_ids
