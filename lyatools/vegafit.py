@@ -111,7 +111,7 @@ def run_vega_mpi(vega_commands, analysis_tree, config, job, export_job_ids=None)
 def get_correlations_dict(config, corr_dir, qso_cat):
     correlations = {'lyaxlya': {}, 'lyaxqso': {}, 'lyaxlyb': {}, 'lybxqso': {}}
 
-    dist_path = Path(corr_dir['distortion_path'])
+    dist_path = Path(config['distortion_path'])
     if not dist_path.exists():
         raise ValueError(f'Distortion path does not exist: {dist_path}')
 
