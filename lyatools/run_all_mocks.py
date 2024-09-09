@@ -145,36 +145,41 @@ class MockBatchRun:
                 mock_corr_dict, _, export_commands, export_cov_commands = mock_obj.run_export(
                     corr_paths, job_id, run_local=False)
 
-            for key, file in mock_corr_dict.items():
-                if key not in corr_dict:
-                    corr_dict[key] = []
-                corr_dict[key] += [file]
+                for key, file in mock_corr_dict.items():
+                    if key not in corr_dict:
+                        corr_dict[key] = []
+                    corr_dict[key] += [file]
 
-            vega_command = None
+                if export_commands is not None:
+                    all_export_commands += export_commands
+                if export_cov_commands is not None:
+                    all_export_cov_commands += export_cov_commands
+
             if mock_obj.run_vega_flag:
                 _, vega_command = mock_obj.run_vega(job_id, run_local=False)
+
+                if vega_command is not None:
+                    all_vega_commands += [vega_command]
 
             if isinstance(job_id, list):
                 job_ids += job_id
             else:
                 job_ids += [job_id]
 
-            if export_commands is not None:
-                all_export_commands += export_commands
-            if export_cov_commands is not None:
-                all_export_cov_commands += export_cov_commands
-            if vega_command is not None:
-                all_vega_commands += [vega_command]
-
         assert self.stack_tree is not None
-        export_job_ids = mpi_export(
-            all_export_commands, all_export_cov_commands,
-            self.stack_tree, self.job_config, job_ids
-        )
 
-        run_vega_mpi(
-            all_vega_commands, self.stack_tree, self.run_mock_objects[0].vega_config,
-            self.job_config, export_job_ids
-        )
+        export_job_ids = None
+        if self.run_mock_objects[0].run_export_flag:
+            export_job_ids = mpi_export(
+                all_export_commands, all_export_cov_commands,
+                self.stack_tree, self.job_config, job_ids
+            )
+
+        if self.run_mock_objects[0].run_vega_flag:
+            assert len(all_vega_commands) > 0
+            run_vega_mpi(
+                all_vega_commands, self.stack_tree, self.run_mock_objects[0].vega_config,
+                self.job_config, export_job_ids
+            )
 
         return corr_dict, job_ids
