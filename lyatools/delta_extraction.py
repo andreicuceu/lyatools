@@ -126,12 +126,24 @@ def create_config(
     mask_bal_flag = config.getboolean('mask_BALs')
     if mask_dla_flag or mask_bal_flag:
         if mask_dla_flag:
+            custom_mask_dla_cat = config.get('DLA_catalog', None)
+            if custom_mask_dla_cat is not None:
+                print(
+                    'Passed custom DLA catalog. '
+                    'Note that this opton only works when running one mock at a time!'
+                )
+                mask_dla_cat = custom_mask_dla_cat
+
             assert mask_dla_cat is not None
             print(f'Asked for DLA masking. Assuming DLA catalog exists: {mask_dla_cat}')
 
         if mask_bal_flag:
             custom_mask_bal_cat = config.get('BAL_catalog', None)
             if custom_mask_bal_cat is not None:
+                print(
+                    'Passed custom BAL catalog. '
+                    'Note that this opton only works when running one mock at a time!'
+                )
                 mask_bal_cat = custom_mask_bal_cat
 
             assert mask_bal_cat is not None
