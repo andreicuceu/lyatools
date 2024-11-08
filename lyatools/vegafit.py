@@ -4,9 +4,10 @@ from vega import BuildConfig, FitResults
 from . import submit_utils, dir_handlers
 
 
-def make_vega_config(analysis_tree, qso_cat, config, job, export_job_id=None, run_local=False):
+def make_vega_config(
+        corr_dict, analysis_tree, qso_cat, config, job, export_job_id=None, run_local=False):
     correlations = get_correlations_dict(
-        config['vega.correlations'], analysis_tree.corr_dir, qso_cat)
+        corr_dict, config['vega.correlations'], analysis_tree.corr_dir, qso_cat)
     config_builder = get_builder(config['vega.builder'])
     fit_info = get_fit_info(config['vega.fit_info'])
 
@@ -108,7 +109,7 @@ def run_vega_mpi(vega_commands, analysis_tree, config, job, export_job_ids=None)
         script_path, dependency_ids=export_job_ids, no_submit=job.getboolean('no_submit'))
 
 
-def get_correlations_dict(config, corr_dir, qso_cat):
+def get_correlations_dict(corr_dict, config, corr_dir, qso_cat):
     correlations = {'lyaxlya': {}, 'lyaxqso': {}, 'lyaxlyb': {}, 'lybxqso': {}}
 
     dist_path = Path(config['distortion_path'])
@@ -121,7 +122,7 @@ def get_correlations_dict(config, corr_dir, qso_cat):
     rmin_cross = config.getfloat('rmin-cross', rmin)
     fast_metals = config.getboolean('fast-metals')
 
-    correlations['lyaxlya']['corr_path'] = f"{corr_dir / 'cf_lya_lya_0_10-exp.fits.gz'}"
+    correlations['lyaxlya']['corr_path'] = corr_dict['cf_lya_lya'][1]
     correlations['lyaxlya']['distortion-file'] = f"{dist_path / 'dmat_lya_lya_0_10.fits'}"
     # correlations['lyaxlya']['metal_path'] = f"{dist_path / 'metal_dmat_lya_lya_0_10.fits.gz'}"
     correlations['lyaxlya']['weights-tracer1'] = \
@@ -132,7 +133,7 @@ def get_correlations_dict(config, corr_dir, qso_cat):
     correlations['lyaxlya']['r-max'] = rmax
     correlations['lyaxlya']['fast_metals'] = f'{fast_metals}'
 
-    correlations['lyaxlyb']['corr_path'] = f"{corr_dir / 'cf_lya_lyb_0_10-exp.fits.gz'}"
+    correlations['lyaxlyb']['corr_path'] = corr_dict['cf_lya_lyb'][1]
     correlations['lyaxlyb']['distortion-file'] = f"{dist_path / 'dmat_lya_lyb_0_10.fits'}"
     # correlations['lyaxlyb']['metal_path'] = f"{dist_path / 'metal_dmat_lya_lyb_0_10.fits.gz'}"
     correlations['lyaxlyb']['weights-tracer1'] = \
@@ -143,7 +144,7 @@ def get_correlations_dict(config, corr_dir, qso_cat):
     correlations['lyaxlyb']['r-max'] = rmax
     correlations['lyaxlyb']['fast_metals'] = f'{fast_metals}'
 
-    correlations['lyaxqso']['corr_path'] = f"{corr_dir / 'xcf_lya_qso_0_10-exp.fits.gz'}"
+    correlations['lyaxqso']['corr_path'] = corr_dict['xcf_lya_qso'][1]
     correlations['lyaxqso']['distortion-file'] = f"{dist_path / 'xdmat_lya_qso_0_10.fits'}"
     # correlations['lyaxqso']['metal_path'] = f"{dist_path / 'metal_xdmat_lya_qso_0_10.fits.gz'}"
     correlations['lyaxqso']['weights-tracer1'] = \
@@ -153,7 +154,7 @@ def get_correlations_dict(config, corr_dir, qso_cat):
     correlations['lyaxqso']['r-max'] = rmax
     correlations['lyaxqso']['fast_metals'] = f'{fast_metals}'
 
-    correlations['lybxqso']['corr_path'] = f"{corr_dir / 'xcf_lyb_qso_0_10-exp.fits.gz'}"
+    correlations['lybxqso']['corr_path'] = corr_dict['xcf_lyb_qso'][1]
     correlations['lybxqso']['distortion-file'] = f"{dist_path / 'xdmat_lyb_qso_0_10.fits'}"
     # correlations['lybxqso']['metal_path'] = f"{dist_path / 'metal_xdmat_lyb_qso_0_10.fits.gz'}"
     correlations['lybxqso']['weights-tracer1'] = \
