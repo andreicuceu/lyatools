@@ -191,10 +191,12 @@ class MockBatchRun:
             )
 
         if self.run_mock_objects[0].run_vega_flag:
-            assert len(all_vega_commands) > 0
-            run_vega_mpi(
-                all_vega_commands, self.stack_tree, self.run_mock_objects[0].vega_config,
-                self.job_config, export_job_ids
-            )
+            if len(all_vega_commands) < 1:
+                print('No vega commands to run.')
+            else:
+                run_vega_mpi(
+                    all_vega_commands, self.stack_tree, self.run_mock_objects[0].vega_config,
+                    self.job_config, export_job_ids
+                )
 
         return corr_dict, job_ids

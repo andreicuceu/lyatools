@@ -30,13 +30,27 @@ def make_vega_config(
         res = FitResults(vega_res_path)
         parameters = parameters | res.params
 
-    main_path = config_builder.build(
-        correlations, fit_type, fit_info, analysis_tree.fits_dir,
-        parameters=parameters, name_extension=name_extension
-    )
+    # Check if correlations exist
+    run_config_builder = True
+    for _, corr in correlations.items():
+        check = Path(corr['corr_path']).exists() and Path(corr['distortion-file']).exists()
+        if not check:
+            print(
+                f'Correlation not found: {corr}. If the corr/export jobs are queued up, '
+                'wait for them to finish and re-run lyatools to create the vega configs.'
+            )
+            run_config_builder = False
 
-    vega_command = f'run_vega.py {main_path}'
-    if not run_local:
+    vega_command = None
+    if run_config_builder:
+        main_path = config_builder.build(
+            correlations, fit_type, fit_info, analysis_tree.fits_dir,
+            parameters=parameters, name_extension=name_extension
+        )
+
+        vega_command = f'run_vega.py {main_path}'
+
+    if (not run_local) or (not run_config_builder):
         return export_job_id, vega_command
 
     # Make the header
