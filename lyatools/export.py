@@ -41,7 +41,7 @@ def make_export_runs(corr_paths, analysis_tree, config, job, corr_job_ids=None, 
         if corr_type is None:
             raise ValueError(f'Unknown correlation type {corr_name_split[0]}')
 
-        corr_dict[corr_type] = cf_path
+        corr_dict[corr_type] = (cf_path, exp_file)
         if not exp_file.is_file():
             # Do the exporting
             command = f'picca_export.py --data {cf_path} --out {exp_file} '
@@ -187,7 +187,7 @@ def stack_correlations(
 ):
     # Stack correlations from different seeds
     export_commands = []
-    for cf_name, cf_list in corr_dict.items():
+    for cf_name, (cf_list, _) in corr_dict.items():
         if len(cf_list) < 1:
             continue
 
