@@ -33,11 +33,16 @@ def make_vega_config(
     # Check if correlations exist
     run_config_builder = True
     for _, corr in correlations.items():
-        check = Path(corr['corr_path']).exists() and Path(corr['distortion-file']).exists()
-        if not check:
+        if not Path(corr['corr_path']).exists():
             print(
-                f'Correlation not found: {corr}. If the corr/export jobs are queued up, '
-                'wait for them to finish and re-run lyatools to create the vega configs.'
+                f'Correlation not found: {corr["corr_path"]}. If the corr/export jobs are queued up,'
+                ' wait for them to finish and re-run lyatools to create the vega configs.'
+            )
+            run_config_builder = False
+        if not Path(corr['distortion-file']).exists():
+            print(
+                f'Distortion not found: {corr["distortion-file"]}. If the dmat jobs are queued up,'
+                ' wait for them to finish and re-run lyatools to create the vega configs.'
             )
             run_config_builder = False
 
