@@ -44,6 +44,7 @@ class MockRun:
         self.run_vega_flag = config['control'].getboolean('run_vega')
         self.only_qso_targets_flag = config['quickquasars'].getboolean('only_qso_targets')
 
+
         if self.run_deltas_flag and self.run_qsonic_flag:
             raise ValueError('Cannot run deltas and qsonic at the same time.')
 

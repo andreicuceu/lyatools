@@ -5,6 +5,7 @@ import fitsio
 from astropy.io import fits
 import numpy as np
 from multiprocessing import Pool
+from pathlib import Path
 
 from lyatools import submit_utils
 
@@ -60,8 +61,8 @@ def make_z_catalog(input_dir, output_file, prefix='zbest', nproc=None, only_qso_
 
     final_data = np.concatenate(zcat_list)
     
-    if only_qso_targets=True:
-        seed_zcat=fits.open(output_file.parents[0] / 'seed_zcat.fits')
+    if only_qso_targets:
+        seed_zcat=fits.open(Path(output_file).parents[0] / 'seed_zcat.fits')
         final_data = final_data[seed_zcat[1].data['IS_QSO_TARGET']]
         
     

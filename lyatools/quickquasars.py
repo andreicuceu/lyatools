@@ -156,11 +156,17 @@ def create_qq_script(qq_tree, config, job, qq_args, qq_seed):
 
 def make_catalogs(qq_tree, config, job, dla_flag, bal_flag, qq_job_id, only_qso_targets, run_local=True):
     command = ''
-
     zcat_file = qq_tree.qq_dir / 'zcat.fits'
+    if only_qso_targets:
+        zcat_file = qq_tree.qq_dir / 'zcat_only_qso_targets.fits'
+    print(f"Only QSO Targets flag: {only_qso_targets}")
+    print(f"Expected zcat_file path: {zcat_file}")    
+
     if not zcat_file.is_file():
+       # command += f'lyatools-make-zcat -i {qq_tree.spectra_dir} -o {zcat_file} --nproc {128}\n\n'
         only_qso_targets_flag = "--only_qso_targets" if only_qso_targets else ""
         command += f'lyatools-make-zcat -i {qq_tree.spectra_dir} -o {zcat_file} --nproc {128} {only_qso_targets_flag}\n\n'
+
 
     dla_cat_check = qq_tree.qq_dir / 'dla_cat.fits'
     if dla_flag and not dla_cat_check.is_file():
