@@ -42,6 +42,8 @@ class MockRun:
         self.run_corr_flag = config['control'].getboolean('run_corr')
         self.run_export_flag = config['control'].getboolean('run_export')
         self.run_vega_flag = config['control'].getboolean('run_vega')
+        self.only_qso_targets_flag = config['quickquasars'].getboolean('only_qso_targets')
+
 
         if self.run_deltas_flag and self.run_qsonic_flag:
             raise ValueError('Cannot run deltas and qsonic at the same time.')
@@ -183,7 +185,7 @@ class MockRun:
         submit_utils.print_spacer_line()
         job_id = make_catalogs(
             self.qq_tree, self.qq_config, self.job_config,
-            self.dla_flag, self.bal_flag, job_id, run_local=True
+            self.dla_flag, self.bal_flag, job_id, self.only_qso_targets_flag, run_local=True
         )
 
         return job_id
@@ -352,8 +354,12 @@ class MockRun:
 
         return qso_cat
 
-    def get_zcat_path(self, no_bal_mask=False, no_zerr=False):
-        zcat_name = 'zcat'
+    def get_zcat_path(self, no_bal_mask=False, no_zerr=False):                        
+        zcat_name = 'zcat'      
+        if self.only_qso_targets_flag:
+            zcat_name='zcat_only_qso_targets'
+            
+            
         if self.masked_bal_qso_flag and (not no_bal_mask):
             ai_cut = self.qq_config.getint('bal_ai_cut', None)
             bi_cut = self.qq_config.getint('bal_bi_cut', None)
@@ -365,6 +371,7 @@ class MockRun:
             distribution = self.inject_zerr_config.get('distribution')
             amplitude = self.inject_zerr_config.get('amplitude')
             zcat_name += f'_{distribution}_{amplitude}'
+                
 
         zcat_file = self.qq_tree.qq_dir / (zcat_name + '.fits')
         return zcat_file
