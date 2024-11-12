@@ -57,6 +57,9 @@ def parse(options=None):
     parser.add_argument('-o', '--out', type=str, default=None, required=True,
                         help='output path for SNR catalog, e.g. .../NAME.fits')
 
+    parser.add_argument("--nproc", type=int, default=128, required=False,
+                        help='Number cores for parallelization')
+
     if options is None:
         args = parser.parse_args()
     else:
@@ -235,8 +238,8 @@ def main(args=None):
         {"specfile": specfile, "catalog": catalog} for ih, specfile in enumerate(speclist)
     ]
 
-    with mp.Pool() as pool:
-        tid_snr = pool.map(_getsnr, arguments)
+    with mp.Pool(processes=args.nproc) as pool:
+        tid_snr = pool.map(_getsnr, arguments, chunksize=10)
 
     # removes empty entries
     results = vstack(tid_snr)
