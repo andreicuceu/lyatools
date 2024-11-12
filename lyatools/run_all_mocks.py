@@ -82,10 +82,11 @@ class MockBatchRun:
 
                 mock_corr_dict, job_id = mock_obj.run_mock()
 
-                for key, file in mock_corr_dict.items():
+                for key, (cf, cf_exp) in mock_corr_dict.items():
                     if key not in corr_dict:
-                        corr_dict[key] = []
-                    corr_dict[key] += [file]
+                        corr_dict[key] = [[], []]
+                    corr_dict[key][0] += [cf]
+                    corr_dict[key][1] += [cf_exp]
 
                 if isinstance(job_id, list):
                     job_ids += job_id
@@ -141,14 +142,22 @@ class MockBatchRun:
                 corr_paths, job_id = mock_obj.run_correlations(job_id)
 
             submit_utils.print_spacer_line()
+            mock_corr_dict = {}
             if mock_obj.run_export_flag:
+                if corr_paths is None:
+                    raise ValueError(
+                        'Export runs must include correlation runs as well. '
+                        'In the [control] section set "run_corr" to True. '
+                        'Correlations are *not* recomputed if they already exist.'
+                    )
                 mock_corr_dict, _, export_commands, export_cov_commands = mock_obj.run_export(
                     corr_paths, job_id, run_local=False)
 
-                for key, file in mock_corr_dict.items():
+                for key, (cf, cf_exp) in mock_corr_dict.items():
                     if key not in corr_dict:
-                        corr_dict[key] = []
-                    corr_dict[key] += [file]
+                        corr_dict[key] = [[], []]
+                    corr_dict[key][0] += [cf]
+                    corr_dict[key][1] += [cf_exp]
 
                 if export_commands is not None:
                     all_export_commands += export_commands
@@ -156,7 +165,13 @@ class MockBatchRun:
                     all_export_cov_commands += export_cov_commands
 
             if mock_obj.run_vega_flag:
-                _, vega_command = mock_obj.run_vega(job_id, run_local=False)
+                if not mock_corr_dict:
+                    raise ValueError(
+                        'Vega runs must include correlation and export runs as well. '
+                        'In the [control] section set "run_corr" and "run_export" to True. '
+                        'Correlations are *not* recomputed if they already exist.'
+                    )
+                _, vega_command = mock_obj.run_vega(mock_corr_dict, job_id, run_local=False)
 
                 if vega_command is not None:
                     all_vega_commands += [vega_command]
@@ -176,10 +191,12 @@ class MockBatchRun:
             )
 
         if self.run_mock_objects[0].run_vega_flag:
-            assert len(all_vega_commands) > 0
-            run_vega_mpi(
-                all_vega_commands, self.stack_tree, self.run_mock_objects[0].vega_config,
-                self.job_config, export_job_ids
-            )
+            if len(all_vega_commands) < 1:
+                print('No vega commands to run.')
+            else:
+                run_vega_mpi(
+                    all_vega_commands, self.stack_tree, self.run_mock_objects[0].vega_config,
+                    self.job_config, export_job_ids
+                )
 
         return corr_dict, job_ids

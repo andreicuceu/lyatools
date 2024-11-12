@@ -42,6 +42,8 @@ class MockRun:
         self.run_corr_flag = config['control'].getboolean('run_corr')
         self.run_export_flag = config['control'].getboolean('run_export')
         self.run_vega_flag = config['control'].getboolean('run_vega')
+        self.only_qso_targets_flag = config['quickquasars'].getboolean('only_qso_targets')
+
 
         if self.run_deltas_flag and self.run_qsonic_flag:
             raise ValueError('Cannot run deltas and qsonic at the same time.')
@@ -150,7 +152,7 @@ class MockRun:
 
         submit_utils.print_spacer_line()
         if self.run_vega_flag:
-            job_id, _ = self.run_vega(job_id)
+            job_id, _ = self.run_vega(corr_dict, job_id)
 
         return corr_dict, job_id
 
@@ -183,7 +185,7 @@ class MockRun:
         submit_utils.print_spacer_line()
         job_id = make_catalogs(
             self.qq_tree, self.qq_config, self.job_config,
-            self.dla_flag, self.bal_flag, job_id, run_local=True
+            self.dla_flag, self.bal_flag, job_id, self.only_qso_targets_flag, run_local=True
         )
 
         return job_id
@@ -305,7 +307,7 @@ class MockRun:
     def run_export(self, corr_paths, corr_job_ids, run_local=True):
         if corr_paths is None:
             raise ValueError(
-                'Export only runs must include correlation runs as well. '
+                'Export runs must include correlation runs as well. '
                 'In the [control] section set "run_corr" to True. '
                 'Correlations are *not* recomputed if they already exist.'
             )
@@ -325,11 +327,18 @@ class MockRun:
 
         return corr_dict, [job_id, job_id_cov], export_commands, export_cov_commands
 
-    def run_vega(self, export_job_id, run_local=True):
+    def run_vega(self, corr_dict, export_job_id, run_local=True):
+        if not corr_dict:
+            raise ValueError(
+                'Vega runs must include correlation and export runs as well. '
+                'In the [control] section set "run_corr" and "run_export" to True. '
+                'Correlations are *not* recomputed if they already exist.'
+            )
+
         qso_cat = self.get_analysis_qso_cat()
 
         job_id, command = make_vega_config(
-            self.analysis_tree, qso_cat, self.vega_config,
+            corr_dict, self.analysis_tree, qso_cat, self.vega_config,
             self.job_config, export_job_id, run_local=run_local
         )
 
@@ -345,8 +354,12 @@ class MockRun:
 
         return qso_cat
 
-    def get_zcat_path(self, no_bal_mask=False, no_zerr=False):
-        zcat_name = 'zcat'
+    def get_zcat_path(self, no_bal_mask=False, no_zerr=False):                        
+        zcat_name = 'zcat'      
+        if self.only_qso_targets_flag:
+            zcat_name='zcat_only_qso_targets'
+            
+            
         if self.masked_bal_qso_flag and (not no_bal_mask):
             ai_cut = self.qq_config.getint('bal_ai_cut', None)
             bi_cut = self.qq_config.getint('bal_bi_cut', None)
@@ -358,6 +371,7 @@ class MockRun:
             distribution = self.inject_zerr_config.get('distribution')
             amplitude = self.inject_zerr_config.get('amplitude')
             zcat_name += f'_{distribution}_{amplitude}'
+                
 
         zcat_file = self.qq_tree.qq_dir / (zcat_name + '.fits')
         return zcat_file

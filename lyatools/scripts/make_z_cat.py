@@ -2,8 +2,10 @@
 
 import argparse
 import fitsio
+from astropy.io import fits
 import numpy as np
 from multiprocessing import Pool
+from pathlib import Path
 
 from lyatools import submit_utils
 
@@ -41,7 +43,7 @@ def one_zcatalog(fzbest):
     return newdata
 
 
-def make_z_catalog(input_dir, output_file, prefix='zbest', nproc=None):
+def make_z_catalog(input_dir, output_file, prefix='zbest', nproc=None, only_qso_targets=False):
     spec_dir = submit_utils.find_path(input_dir)
     zbest_files = spec_dir.glob(f"*/*/{prefix}-*.fits*")
 
@@ -58,6 +60,12 @@ def make_z_catalog(input_dir, output_file, prefix='zbest', nproc=None):
             zcat_list.append(arr)
 
     final_data = np.concatenate(zcat_list)
+    
+    if only_qso_targets:
+        seed_zcat=fits.open(Path(output_file).parents[0] / 'seed_zcat.fits')
+        final_data = final_data[seed_zcat[1].data['IS_QSO_TARGET']]
+        
+    
     print(f"There are {final_data.size} QSOs.")
 
     with fitsio.FITS(output_file, 'rw', clobber=True) as fts:
@@ -81,11 +89,14 @@ def main():
 
     parser.add_argument("--nproc", type=int, default=None, required=False,
                         help='Number cores for parallelization')
+    
+    parser.add_argument("--only_qso_targets", action="store_true",
+                        help='Only qso targets')
 
     args = parser.parse_args()
 
     make_z_catalog(
-        args.input_dir, args.output_file, args.prefix, args.nproc
+        args.input_dir, args.output_file, args.prefix, args.nproc, args.only_qso_targets
     )
 
 
