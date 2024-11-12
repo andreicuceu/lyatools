@@ -185,7 +185,7 @@ class MockRun:
         submit_utils.print_spacer_line()
         job_id = make_catalogs(
             self.qq_tree, self.qq_config, self.job_config,
-            self.dla_flag, self.bal_flag, job_id, self.only_qso_targets_flag, run_local=True
+            self.dla_flag, self.bal_flag, job_id, self.only_qso_targets_flag
         )
 
         return job_id
@@ -250,7 +250,12 @@ class MockRun:
         mask_dla_cat = None
         if self.deltas_config.getboolean('mask_DLAs'):
             mask_nhi_cut = self.qq_config.getfloat('dla_mask_nhi_cut')
-            mask_dla_cat = self.qq_tree.qq_dir / f'dla_cat_mask_{mask_nhi_cut:.2f}.fits'
+            mask_snr_cut = self.qq_config.getfloat('dla_mask_snr_cut')
+            completeness = self.qq_config.getfloat('dla_completeness')
+
+            dla_cat_name = f'dla_cat_nhi_{mask_nhi_cut:.2f}_snr_{mask_snr_cut:.1f}'
+            dla_cat_name += f'_completeness_{completeness:.2f}.fits'
+            mask_dla_cat = self.qq_tree.qq_dir / dla_cat_name
 
         mask_bal_cat = self.qq_tree.qq_dir / 'bal_cat.fits'
         if self.deltas_config.getboolean('mask_BALs'):
@@ -355,11 +360,10 @@ class MockRun:
         return qso_cat
 
     def get_zcat_path(self, no_bal_mask=False, no_zerr=False):                        
-        zcat_name = 'zcat'      
+        zcat_name = 'zcat'
         if self.only_qso_targets_flag:
-            zcat_name='zcat_only_qso_targets'
-            
-            
+            zcat_name = 'zcat_only_qso_targets'
+
         if self.masked_bal_qso_flag and (not no_bal_mask):
             ai_cut = self.qq_config.getint('bal_ai_cut', None)
             bi_cut = self.qq_config.getint('bal_bi_cut', None)
@@ -371,7 +375,6 @@ class MockRun:
             distribution = self.inject_zerr_config.get('distribution')
             amplitude = self.inject_zerr_config.get('amplitude')
             zcat_name += f'_{distribution}_{amplitude}'
-                
 
         zcat_file = self.qq_tree.qq_dir / (zcat_name + '.fits')
         return zcat_file
