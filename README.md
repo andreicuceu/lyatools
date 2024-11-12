@@ -1,5 +1,5 @@
 # Lyatools
-This package started with some tools and scripts I use for Lyman-alpha forest analyses, but has since evolved into the mock production and analysis pipeline for the DESI Year 1 Lyman-alpha BAO measurement. It contains functions and scripts for running the different parts of the mock production process which involves the QuickQuasars script in [desisim](https://github.com/desihub/desisim), and the mock analysis using [picca](https://github.com/igmhub/picca.git), [QSOnic](https://github.com/p-slash/qsonic), and/or [lya2pt](https://github.com/igmhub/lya_2pt).
+This package started with some tools and scripts I use for Lyman-alpha forest analyses, but has since evolved into the mock production and analysis pipeline for the DESI Lyman-alpha BAO measurements. It contains functions and scripts for running the different parts of the mock production process which involves the QuickQuasars script in [desisim](https://github.com/desihub/desisim), and the mock analysis using [picca](https://github.com/igmhub/picca.git), [QSOnic](https://github.com/p-slash/qsonic), and/or [lya2pt](https://github.com/igmhub/lya_2pt).
 
 * Free software: GPL-3.0 License
 
