@@ -355,11 +355,10 @@ class MockRun:
         return qso_cat
 
     def get_zcat_path(self, no_bal_mask=False, no_zerr=False):                        
-        zcat_name = 'zcat'      
+        zcat_name = 'zcat'
         if self.only_qso_targets_flag:
-            zcat_name='zcat_only_qso_targets'
-            
-            
+            zcat_name = 'zcat_only_qso_targets'
+
         if self.masked_bal_qso_flag and (not no_bal_mask):
             ai_cut = self.qq_config.getint('bal_ai_cut', None)
             bi_cut = self.qq_config.getint('bal_bi_cut', None)
@@ -371,7 +370,6 @@ class MockRun:
             distribution = self.inject_zerr_config.get('distribution')
             amplitude = self.inject_zerr_config.get('amplitude')
             zcat_name += f'_{distribution}_{amplitude}'
-                
 
         zcat_file = self.qq_tree.qq_dir / (zcat_name + '.fits')
         return zcat_file
