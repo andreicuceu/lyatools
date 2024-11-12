@@ -80,8 +80,12 @@ def read_mock_catalog(mockpath, balmask):
     """
     qsocat = os.path.join(mockpath, 'zcat.fits')
     # read the following columns from qsocat
-    cols = ['TARGETID', 'RA', 'DEC', 'Z']
-    catalog = Table(fitsio.read(qsocat, ext=1, columns=cols))
+    try:
+        cols = ['TARGETID', 'RA', 'DEC', 'Z']
+        catalog = Table(fitsio.read(qsocat, ext=1, columns=cols))
+    except ValueError:
+        cols = ['TARGETID', 'TARGET_RA', 'TARGET_DEC', 'Z']
+        catalog = Table(fitsio.read(qsocat, ext=1, columns=cols))
 
     if balmask:
         try:
