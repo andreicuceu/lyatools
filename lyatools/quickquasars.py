@@ -239,7 +239,8 @@ def run_cat_job(command, name, qq_tree, job, job_id):
 
 
 def snr_cat_job(snr_cat, qq_tree, bal_flag, job, cat_job_id):
-    command = f'lyatools-make-snr-cat --path {qq_tree.qq_dir} -o {snr_cat} '
+    script = submit_utils.find_path('lyatools/scripts/make_snr_cat.py', enforce=True)
+    command = f'python {script} --path {qq_tree.qq_dir} -o {snr_cat} '
     if bal_flag:
         command += '--balmask '
 
