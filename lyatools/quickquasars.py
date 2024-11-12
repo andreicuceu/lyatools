@@ -247,7 +247,7 @@ def snr_cat_job(snr_cat, qq_tree, bal_flag, job, cat_job_id):
     if bal_flag:
         command += '--balmask '
 
-    command += '--nproc {128}\n\n'
+    command += f'--nproc {128}\n\n'
 
     header = submit_utils.make_header(
         job.get('nersc_machine'), nodes=1, time=0.5,
