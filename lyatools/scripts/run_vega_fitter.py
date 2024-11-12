@@ -39,6 +39,7 @@ def main():
     run_flag = config['mock_setup'].getboolean('run_flag', True)
     name_extension = config['fit_info'].get('name_extension', None)
     cat_path = config['mock_setup'].get('cat_path', None)
+    only_qso_targets = config['quickquasars'].get('only_qso_targets', None)
 
     input_seeds = config['mock_setup'].get('input_seeds', None)
     cat_seeds = config['mock_setup'].get('cat_seeds', None)
@@ -86,7 +87,10 @@ def main():
 
         qq_cat_path = None
         if cat_path is not None:
-            qq_cat_path = Path(cat_path) / version / qq_run_type / 'zcat_gauss_400.fits'
+            if only_qso_targets:
+                qq_cat_path = Path(cat_path) / version / qq_run_type / 'zcat_only_qso_targets_gauss_400.fits'
+            else:
+                qq_cat_path = Path(cat_path) / version / qq_run_type / 'zcat_gauss_400.fits'
 
         run_vega_fitter(config, corr_path, output_dir, qq_cat_path, run_flag=run_flag)
         print_func(f'Finished seed {seeds[i]}.')

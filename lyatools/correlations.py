@@ -8,7 +8,7 @@ JOB_CONFIGS = {'cf_lya_lya': 1.5, 'dmat_lya_lya': 2.0, 'metal_dmat_lya_lya': 2.0
 CORR_TYPES = ['lya_lya', 'lya_lyb', 'lya_qso', 'lyb_qso']
 
 
-def make_correlation_runs(config, job, analysis_struct, corr_types, catalogue, delta_job_ids=None):
+def make_correlation_runs(qso_cat, analysis_tree, config, job, corr_types, delta_job_ids=None):
     submit_utils.set_umask()
     cf_out = []
     cf_shuffled_out = []
@@ -27,26 +27,26 @@ def make_correlation_runs(config, job, analysis_struct, corr_types, catalogue, d
 
         if not no_comput_corr:
             cf_out.append(run_correlation(
-                config, job, analysis_struct, catalogue, cross=cross, lyb=lyb,
+                config, job, analysis_tree, qso_cat, cross=cross, lyb=lyb,
                 name=f"{'x' if cross else ''}cf_{corr}", delta_job_ids=delta_job_ids
             ))
 
             if compute_shuffled and cross:
                 cf_shuffled_out.append(run_correlation(
-                    config, job, analysis_struct, catalogue, cross=cross, lyb=lyb,
+                    config, job, analysis_tree, qso_cat, cross=cross, lyb=lyb,
                     name=f"{'x' if cross else ''}cf_{corr}", shuffled=True,
                     delta_job_ids=delta_job_ids
                 ))
 
         if compute_dmat:
             dmat_out.append(run_correlation(
-                config, job, analysis_struct, catalogue, cross=cross, lyb=lyb, dmat=True,
+                config, job, analysis_tree, qso_cat, cross=cross, lyb=lyb, dmat=True,
                 name=f"{'x' if cross else ''}dmat_{corr}", delta_job_ids=delta_job_ids
             ))
 
         if compute_metals:
             metal_out.append(run_correlation(
-                config, job, analysis_struct, catalogue, cross=cross, lyb=lyb, metal_dmat=True,
+                config, job, analysis_tree, qso_cat, cross=cross, lyb=lyb, metal_dmat=True,
                 name=f"{'x' if cross else ''}metal_dmat_{corr}", delta_job_ids=delta_job_ids
             ))
 
@@ -57,7 +57,7 @@ def make_correlation_runs(config, job, analysis_struct, corr_types, catalogue, d
 
 
 def run_correlation(
-    config, job, analysis_struct, catalogue=None, cross=False, lyb=False,
+    config, job, analysis_tree, qso_cat=None, cross=False, lyb=False,
     dmat=False, metal_dmat=False, name='cf_lya_lya', shuffled=False,
     delta_job_ids=None,
 ):
@@ -66,10 +66,12 @@ def run_correlation(
         slurm_hours = JOB_CONFIGS[name]
 
     # Make the header
-    header = submit_utils.make_header(job.get('nersc_machine'), job.get('slurm_queue'),
-                                      time=slurm_hours, omp_threads=256, job_name=name,
-                                      err_file=analysis_struct.logs_dir/f'{name}-%j.err',
-                                      out_file=analysis_struct.logs_dir/f'{name}-%j.out')
+    header = submit_utils.make_header(
+        job.get('nersc_machine'), job.get('slurm_queue'),
+        time=slurm_hours, omp_threads=256, job_name=name,
+        err_file=analysis_tree.logs_dir/f'{name}-%j.err',
+        out_file=analysis_tree.logs_dir/f'{name}-%j.out'
+    )
 
     # TODO implement other options for redshift bins
     zmin, zmax = 0, 10
@@ -83,9 +85,9 @@ def run_correlation(
         name_string = 'shuffled' if name_string is None else f'{name_string}_shuffled'
     gzed = '' if (dmat or metal_dmat) else '.gz'
     if name_string is None:
-        output_path = analysis_struct.corr_dir / f'{name}_{zmin}_{zmax}.fits{gzed}'
+        output_path = analysis_tree.corr_dir / f'{name}_{zmin}_{zmax}.fits{gzed}'
     else:
-        output_path = analysis_struct.corr_dir / f'{name}_{zmin}_{zmax}_{name_string}.fits{gzed}'
+        output_path = analysis_tree.corr_dir / f'{name}_{zmin}_{zmax}_{name_string}.fits{gzed}'
 
     if output_path.is_file():
         print(f'Correlation already exists, skipping: {output_path}.')
@@ -104,7 +106,6 @@ def run_correlation(
     dmat_rejection = config.getfloat('dmat_rejection')
     coeff_binning = config.getint('coeff_binning', None)
     rebin_factor = config.getint('rebin_factor', None)
-    from_qsonic = config.getboolean('from_qsonic')
 
     # Create the script
     text = header
@@ -112,26 +113,19 @@ def run_correlation(
     text += f'srun -n 1 -c {256} picca_{script_type}.py '
     text += f'--out {output_path} '
 
-    if from_qsonic:
-        deltas_lya_dir = analysis_struct.qsonic_deltas_lya_dir
-        deltas_lyb_dir = analysis_struct.qsonic_deltas_lyb_dir
-    else:
-        deltas_lya_dir = analysis_struct.deltas_lya_dir
-        deltas_lyb_dir = analysis_struct.deltas_lyb_dir
-
     if cross and lyb:
-        in_dir = deltas_lyb_dir / 'Delta'
+        in_dir = analysis_tree.deltas_lyb_dir / 'Delta'
     else:
-        in_dir = deltas_lya_dir / 'Delta'
+        in_dir = analysis_tree.deltas_lya_dir / 'Delta'
 
     text += f'--in-dir {in_dir} '
 
     if lyb and not cross:
-        in_dir2 = deltas_lyb_dir / 'Delta'
+        in_dir2 = analysis_tree.deltas_lyb_dir / 'Delta'
         text += f'--in-dir2 {in_dir2} '
 
     if cross:
-        text += f'--drq {catalogue} --mode desi_mocks --z-evol-obj 1.44 --rp-min -{rp_max} '
+        text += f'--drq {qso_cat} --mode desi_mocks --z-evol-obj 1.44 --rp-min -{rp_max} '
     else:
         text += f'--rp-min {rp_min} '
 
@@ -159,21 +153,20 @@ def run_correlation(
         text += '--no-remove-mean-lambda-obs '
 
     if cross and shuffled:
-        seed = analysis_struct.main_path.name.split('.')[-1]
-        text += f'--shuffle-distrib-obj-seed {seed} '
+        text += f'--shuffle-distrib-obj-seed {analysis_tree.mock_seed} '
 
     if rebin_factor is not None:
         text += f'--rebin-factor {rebin_factor} '
 
     text += '\n\n'
 
-    script_path = analysis_struct.scripts_dir / f'{name}_{zmin}_{zmax}.sh'
+    script_path = analysis_tree.scripts_dir / f'{name}_{zmin}_{zmax}.sh'
     if shuffled:
-        script_path = analysis_struct.scripts_dir / f'{name}_{zmin}_{zmax}_shuffled.sh'
+        script_path = analysis_tree.scripts_dir / f'{name}_{zmin}_{zmax}_shuffled.sh'
 
     submit_utils.write_script(script_path, text)
 
-    job_id = submit_utils.run_job(script_path, dependency_ids=delta_job_ids,
-                                  no_submit=job.getboolean('no_submit'))
+    job_id = submit_utils.run_job(
+        script_path, dependency_ids=delta_job_ids, no_submit=job.getboolean('no_submit'))
 
     return output_path, job_id

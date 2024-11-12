@@ -122,7 +122,10 @@ def run_job(script, dependency_ids=None, no_submit=False):
             raise ValueError(f'Running "sbatch {dependency}{script}" returned non-zero exitcode '
                              f'with error {process.stderr}')
 
-        jobid = int(process.stdout)
+        try:
+            jobid = int(process.stdout)
+        except ValueError:
+            raise ValueError(f'Error getting jobid from output: {process.stdout}')
     else:
         print(f'No submit active. Command prepared: {command}')
 

@@ -1,3 +1,25 @@
+QQ_DEFAULTS = [
+    '--zbest',
+    '--bbflux',
+    '--zmin 1.7',
+    '--save-continuum',
+]
+
+
+QQ_RUN_CODES = {
+    '1': '--dla file',
+    '2': '--metals LYB LY3 LY4 LY5 SiII(1260) SiIII(1207) SiII(1193) SiII(1190)',
+    '3': '--metals-from-file all',
+    '4': '--balprob 0.16'
+}
+
+
+QQ_DEFAULT_METAL_STRENGTHS = {
+    'lyacolore': '0.1901 0.0697 0.0335 0.0187 1.3e-03 3.5e-03 0.7e-03 1.4e-03',
+    'saclay': '0.1901 0.0697 0.0335 0.0187 5.7e-04 1.6e-03 5.3e-04 6.8e-04'
+}
+
+
 QQ_RUN_ARGS = {
     'desi-test': {
         'exptime': 4000,
