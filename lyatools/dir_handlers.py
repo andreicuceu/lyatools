@@ -12,7 +12,7 @@ def make_permission_group_desi(dir: Path):
             Directory to deal with.
     """
     call(f'chgrp -R desi {dir}', shell=True)
-    call(f'chmod -R g+rx-w {dir}', shell=True)
+    call(f'chmod -R g+rxw {dir}', shell=True)
     call(f'chmod -R g+s {dir}', shell=True)
 
 
