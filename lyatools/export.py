@@ -257,11 +257,10 @@ def mpi_export(export_commands, export_cov_commands, analysis_tree, job, corr_jo
     export_commands = [command for command in export_commands if command is not None]
     export_cov_commands = [command for command in export_cov_commands if command is not None]
 
-    if len(export_commands) < 2:
-        raise ValueError('Something went wrong. Fewer than 2 export command found.')
-
-    export_job_id = mpi_export_correlations(
-        export_commands, analysis_tree, job, corr_job_ids=corr_job_ids)
+    export_job_id = None
+    if len(export_commands) > 1:
+        export_job_id = mpi_export_correlations(
+            export_commands, analysis_tree, job, corr_job_ids=corr_job_ids)
 
     # Restructure the export_cov_commands
     individual_cov_commands = []
