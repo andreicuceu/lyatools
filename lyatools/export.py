@@ -281,6 +281,7 @@ def mpi_export(export_commands, export_cov_commands, analysis_tree, job, corr_jo
             num_nodes=1, ntasks_per_node=ntasks_per_node, corr_job_ids=corr_job_ids
         )
 
+    cov_smooth_job_id = None
     if cov_job_id is None:
         cov_job_id = corr_job_ids
     if len(smooth_cov_commands) > 1:
