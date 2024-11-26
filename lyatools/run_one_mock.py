@@ -239,7 +239,7 @@ class MockRun:
                 skewers_path = self.qq_tree.skewers_path
 
             job_id = make_raw_deltas(
-                qso_cat, skewers_path, self.analysis_tree, self.deltas_config,
+                qso_cat, skewers_path, self.analysis_tree, self.deltas_config, self.mock_type,
                 self.job_config, qq_job_id=qq_job_id
             )
             return job_id
