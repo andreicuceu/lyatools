@@ -1,9 +1,10 @@
 from . import submit_utils, dir_handlers
 
 LYA_TRANSMISSION_HDUNAME = {
-    'lyacolore':'F_LYA',
+    'lyacolore': 'F_LYA',
     'saclay': 'TRANSMISSION'
 }
+
 
 def make_raw_deltas(qso_cat, skewers_path, analysis_tree, config, mock_type, job, qq_job_id=None):
     job_ids = []
