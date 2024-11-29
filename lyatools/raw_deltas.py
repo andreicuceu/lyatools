@@ -1,11 +1,16 @@
 from . import submit_utils, dir_handlers
 
+LYA_TRANSMISSION_HDUNAME = {
+    'lyacolore': 'F_LYA',
+    'saclay': 'TRANSMISSION'
+}
 
-def make_raw_deltas(qso_cat, skewers_path, analysis_tree, config, job, qq_job_id=None):
+
+def make_raw_deltas(qso_cat, skewers_path, analysis_tree, config, mock_type, job, qq_job_id=None):
     job_ids = []
     if config.getboolean('run_lya_region'):
         id = run_raw_deltas(
-            qso_cat, skewers_path, analysis_tree, config, job,
+            qso_cat, skewers_path, analysis_tree, config, mock_type, job,
             qq_job_id=qq_job_id, region_name='lya',
             lambda_rest_min=config.getfloat('lambda_rest_lya_min'),
             lambda_rest_max=config.getfloat('lambda_rest_lya_max'),
@@ -14,7 +19,7 @@ def make_raw_deltas(qso_cat, skewers_path, analysis_tree, config, job, qq_job_id
 
     if config.getboolean('run_lyb_region'):
         id = run_raw_deltas(
-            qso_cat, skewers_path, analysis_tree, config, job,
+            qso_cat, skewers_path, analysis_tree, config, mock_type, job,
             qq_job_id=qq_job_id, region_name='lyb',
             lambda_rest_min=config.getfloat('lambda_rest_lyb_min'),
             lambda_rest_max=config.getfloat('lambda_rest_lyb_max'),
@@ -28,7 +33,7 @@ def make_raw_deltas(qso_cat, skewers_path, analysis_tree, config, job, qq_job_id
 
 
 def run_raw_deltas(
-        qso_cat, skewers_path, analysis_tree, config, job, qq_job_id=None,
+        qso_cat, skewers_path, analysis_tree, config, mock_type, job, qq_job_id=None,
         region_name='lya', lambda_rest_min=1040, lambda_rest_max=1200,
 ):
     if region_name == 'lya':
@@ -60,6 +65,7 @@ def run_raw_deltas(
     text += f'lambda_min_rest_frame={lambda_rest_min}, '
     text += f'lambda_max_rest_frame={lambda_rest_max}, '
     text += f'delta_lambda={delta_lambda}, lin_spaced=True, nproc={nproc}, use_splines=True, '
+    text += f'tracer="{LYA_TRANSMISSION_HDUNAME[mock_type]}", '
 
     if (max_num_spec is not None) and (max_num_spec > 0):
         text += f'max_num_spec={max_num_spec},  '
