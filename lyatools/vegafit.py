@@ -132,7 +132,7 @@ def run_vega_mpi(vega_commands, analysis_tree, config, job, export_job_ids=None)
 
 
 def get_correlations_dict(corr_dict, config, corr_dir, qso_cat):
-    correlations = {'lyaxlya': {}, 'lyaxqso': {}, 'lyaxlyb': {}, 'lybxqso': {}}
+    correlations = {}
 
     dist_path = None
     if 'distortion_path' in config:
@@ -146,49 +146,55 @@ def get_correlations_dict(corr_dict, config, corr_dir, qso_cat):
     rmin_cross = config.getfloat('rmin-cross', rmin)
     fast_metals = config.getboolean('fast-metals')
 
-    correlations['lyaxlya']['corr_path'] = str(corr_dict['cf_lya_lya'][1])
-    # correlations['lyaxlya']['metal_path'] = f"{dist_path / 'metal_dmat_lya_lya_0_10.fits.gz'}"
-    correlations['lyaxlya']['weights-tracer1'] = \
-        f"{corr_dir.parent / 'deltas_lya/Log/delta_attributes.fits.gz'}"
-    correlations['lyaxlya']['weights-tracer2'] = \
-        f"{corr_dir.parent / 'deltas_lya/Log/delta_attributes.fits.gz'}"
-    correlations['lyaxlya']['r-min'] = rmin_auto
-    correlations['lyaxlya']['r-max'] = rmax
-    correlations['lyaxlya']['fast_metals'] = f'{fast_metals}'
+    if 'cf_lya_lya' in corr_dict:
+        correlations['lyaxlya'] = {}
+        correlations['lyaxlya']['corr_path'] = str(corr_dict['cf_lya_lya'][1])
+        correlations['lyaxlya']['weights-tracer1'] = \
+            f"{corr_dir.parent / 'deltas_lya/Log/delta_attributes.fits.gz'}"
+        correlations['lyaxlya']['weights-tracer2'] = \
+            f"{corr_dir.parent / 'deltas_lya/Log/delta_attributes.fits.gz'}"
+        correlations['lyaxlya']['r-min'] = rmin_auto
+        correlations['lyaxlya']['r-max'] = rmax
+        correlations['lyaxlya']['fast_metals'] = f'{fast_metals}'
+        if dist_path is not None:
+            correlations['lyaxlya']['distortion-file'] = f"{dist_path / 'dmat_lya_lya_0_10.fits'}"
 
-    correlations['lyaxlyb']['corr_path'] = str(corr_dict['cf_lya_lyb'][1])
-    # correlations['lyaxlyb']['metal_path'] = f"{dist_path / 'metal_dmat_lya_lyb_0_10.fits.gz'}"
-    correlations['lyaxlyb']['weights-tracer1'] = \
-        f"{corr_dir.parent / 'deltas_lya/Log/delta_attributes.fits.gz'}"
-    correlations['lyaxlyb']['weights-tracer2'] = \
-        f"{corr_dir.parent / 'deltas_lyb/Log/delta_attributes.fits.gz'}"
-    correlations['lyaxlyb']['r-min'] = rmin_auto
-    correlations['lyaxlyb']['r-max'] = rmax
-    correlations['lyaxlyb']['fast_metals'] = f'{fast_metals}'
+    if 'cf_lya_lyb' in corr_dict:
+        correlations['lyaxlyb'] = {}
+        correlations['lyaxlyb']['corr_path'] = str(corr_dict['cf_lya_lyb'][1])
+        correlations['lyaxlyb']['weights-tracer1'] = \
+            f"{corr_dir.parent / 'deltas_lya/Log/delta_attributes.fits.gz'}"
+        correlations['lyaxlyb']['weights-tracer2'] = \
+            f"{corr_dir.parent / 'deltas_lyb/Log/delta_attributes.fits.gz'}"
+        correlations['lyaxlyb']['r-min'] = rmin_auto
+        correlations['lyaxlyb']['r-max'] = rmax
+        correlations['lyaxlyb']['fast_metals'] = f'{fast_metals}'
+        if dist_path is not None:
+            correlations['lyaxlyb']['distortion-file'] = f"{dist_path / 'dmat_lya_lyb_0_10.fits'}"
 
-    correlations['lyaxqso']['corr_path'] = str(corr_dict['xcf_lya_qso'][1])
-    # correlations['lyaxqso']['metal_path'] = f"{dist_path / 'metal_xdmat_lya_qso_0_10.fits.gz'}"
-    correlations['lyaxqso']['weights-tracer1'] = \
-        f"{corr_dir.parent / 'deltas_lya/Log/delta_attributes.fits.gz'}"
-    correlations['lyaxqso']['weights-tracer2'] = f"{qso_cat}"
-    correlations['lyaxqso']['r-min'] = rmin_cross
-    correlations['lyaxqso']['r-max'] = rmax
-    correlations['lyaxqso']['fast_metals'] = f'{fast_metals}'
+    if 'cf_lya_qso' in corr_dict:
+        correlations['lyaxqso'] = {}
+        correlations['lyaxqso']['corr_path'] = str(corr_dict['xcf_lya_qso'][1])
+        correlations['lyaxqso']['weights-tracer1'] = \
+            f"{corr_dir.parent / 'deltas_lya/Log/delta_attributes.fits.gz'}"
+        correlations['lyaxqso']['weights-tracer2'] = f"{qso_cat}"
+        correlations['lyaxqso']['r-min'] = rmin_cross
+        correlations['lyaxqso']['r-max'] = rmax
+        correlations['lyaxqso']['fast_metals'] = f'{fast_metals}'
+        if dist_path is not None:
+            correlations['lyaxqso']['distortion-file'] = f"{dist_path / 'xdmat_lya_qso_0_10.fits'}"
 
-    correlations['lybxqso']['corr_path'] = str(corr_dict['xcf_lyb_qso'][1])
-    # correlations['lybxqso']['metal_path'] = f"{dist_path / 'metal_xdmat_lyb_qso_0_10.fits.gz'}"
-    correlations['lybxqso']['weights-tracer1'] = \
-        f"{corr_dir.parent / 'deltas_lyb/Log/delta_attributes.fits.gz'}"
-    correlations['lybxqso']['weights-tracer2'] = f"{qso_cat}"
-    correlations['lybxqso']['r-min'] = rmin_cross
-    correlations['lybxqso']['r-max'] = rmax
-    correlations['lybxqso']['fast_metals'] = f'{fast_metals}'
-
-    if dist_path is not None:
-        correlations['lyaxlya']['distortion-file'] = f"{dist_path / 'dmat_lya_lya_0_10.fits'}"
-        correlations['lyaxlyb']['distortion-file'] = f"{dist_path / 'dmat_lya_lyb_0_10.fits'}"
-        correlations['lyaxqso']['distortion-file'] = f"{dist_path / 'xdmat_lya_qso_0_10.fits'}"
-        correlations['lybxqso']['distortion-file'] = f"{dist_path / 'xdmat_lyb_qso_0_10.fits'}"
+    if 'cf_lyb_qso' in corr_dict:
+        correlations['lybxqso'] = {}
+        correlations['lybxqso']['corr_path'] = str(corr_dict['xcf_lyb_qso'][1])
+        correlations['lybxqso']['weights-tracer1'] = \
+            f"{corr_dir.parent / 'deltas_lyb/Log/delta_attributes.fits.gz'}"
+        correlations['lybxqso']['weights-tracer2'] = f"{qso_cat}"
+        correlations['lybxqso']['r-min'] = rmin_cross
+        correlations['lybxqso']['r-max'] = rmax
+        correlations['lybxqso']['fast_metals'] = f'{fast_metals}'
+        if dist_path is not None:
+            correlations['lybxqso']['distortion-file'] = f"{dist_path / 'xdmat_lyb_qso_0_10.fits'}"
 
     return correlations
 
