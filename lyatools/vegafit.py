@@ -172,7 +172,7 @@ def get_correlations_dict(corr_dict, config, corr_dir, qso_cat):
         if dist_path is not None:
             correlations['lyaxlyb']['distortion-file'] = f"{dist_path / 'dmat_lya_lyb_0_10.fits'}"
 
-    if 'cf_lya_qso' in corr_dict:
+    if 'xcf_lya_qso' in corr_dict:
         correlations['lyaxqso'] = {}
         correlations['lyaxqso']['corr_path'] = str(corr_dict['xcf_lya_qso'][1])
         correlations['lyaxqso']['weights-tracer1'] = \
@@ -184,7 +184,7 @@ def get_correlations_dict(corr_dict, config, corr_dir, qso_cat):
         if dist_path is not None:
             correlations['lyaxqso']['distortion-file'] = f"{dist_path / 'xdmat_lya_qso_0_10.fits'}"
 
-    if 'cf_lyb_qso' in corr_dict:
+    if 'xcf_lyb_qso' in corr_dict:
         correlations['lybxqso'] = {}
         correlations['lybxqso']['corr_path'] = str(corr_dict['xcf_lyb_qso'][1])
         correlations['lybxqso']['weights-tracer1'] = \
