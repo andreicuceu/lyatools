@@ -39,12 +39,15 @@ def make_vega_config(
                 ' wait for them to finish and re-run lyatools to create the vega configs.'
             )
             run_config_builder = False
-        if not Path(corr['distortion-file']).exists():
-            print(
-                f'Distortion not found: {corr["distortion-file"]}. If the dmat jobs are queued up,'
-                ' wait for them to finish and re-run lyatools to create the vega configs.'
-            )
-            run_config_builder = False
+
+        if 'distortion-file' in corr:
+            if not Path(corr['distortion-file']).exists():
+                print(
+                    f'Distortion not found: {corr["distortion-file"]}. '
+                    'If the dmat jobs are queued up, wait for them to finish '
+                    'and re-run lyatools to create the vega configs.'
+                )
+                run_config_builder = False
 
     vega_command = None
     if run_config_builder:
@@ -131,9 +134,11 @@ def run_vega_mpi(vega_commands, analysis_tree, config, job, export_job_ids=None)
 def get_correlations_dict(corr_dict, config, corr_dir, qso_cat):
     correlations = {'lyaxlya': {}, 'lyaxqso': {}, 'lyaxlyb': {}, 'lybxqso': {}}
 
-    dist_path = Path(config['distortion_path'])
-    if not dist_path.exists():
-        raise ValueError(f'Distortion path does not exist: {dist_path}')
+    dist_path = None
+    if 'distortion_path' in config:
+        dist_path = Path(config['distortion_path'])
+        if not dist_path.exists():
+            raise ValueError(f'Distortion path does not exist: {dist_path}')
 
     rmin = config.getfloat('rmin')
     rmax = config.getfloat('rmax')
@@ -142,7 +147,6 @@ def get_correlations_dict(corr_dict, config, corr_dir, qso_cat):
     fast_metals = config.getboolean('fast-metals')
 
     correlations['lyaxlya']['corr_path'] = str(corr_dict['cf_lya_lya'][1])
-    correlations['lyaxlya']['distortion-file'] = f"{dist_path / 'dmat_lya_lya_0_10.fits'}"
     # correlations['lyaxlya']['metal_path'] = f"{dist_path / 'metal_dmat_lya_lya_0_10.fits.gz'}"
     correlations['lyaxlya']['weights-tracer1'] = \
         f"{corr_dir.parent / 'deltas_lya/Log/delta_attributes.fits.gz'}"
@@ -153,7 +157,6 @@ def get_correlations_dict(corr_dict, config, corr_dir, qso_cat):
     correlations['lyaxlya']['fast_metals'] = f'{fast_metals}'
 
     correlations['lyaxlyb']['corr_path'] = str(corr_dict['cf_lya_lyb'][1])
-    correlations['lyaxlyb']['distortion-file'] = f"{dist_path / 'dmat_lya_lyb_0_10.fits'}"
     # correlations['lyaxlyb']['metal_path'] = f"{dist_path / 'metal_dmat_lya_lyb_0_10.fits.gz'}"
     correlations['lyaxlyb']['weights-tracer1'] = \
         f"{corr_dir.parent / 'deltas_lya/Log/delta_attributes.fits.gz'}"
@@ -164,7 +167,6 @@ def get_correlations_dict(corr_dict, config, corr_dir, qso_cat):
     correlations['lyaxlyb']['fast_metals'] = f'{fast_metals}'
 
     correlations['lyaxqso']['corr_path'] = str(corr_dict['xcf_lya_qso'][1])
-    correlations['lyaxqso']['distortion-file'] = f"{dist_path / 'xdmat_lya_qso_0_10.fits'}"
     # correlations['lyaxqso']['metal_path'] = f"{dist_path / 'metal_xdmat_lya_qso_0_10.fits.gz'}"
     correlations['lyaxqso']['weights-tracer1'] = \
         f"{corr_dir.parent / 'deltas_lya/Log/delta_attributes.fits.gz'}"
@@ -174,7 +176,6 @@ def get_correlations_dict(corr_dict, config, corr_dir, qso_cat):
     correlations['lyaxqso']['fast_metals'] = f'{fast_metals}'
 
     correlations['lybxqso']['corr_path'] = str(corr_dict['xcf_lyb_qso'][1])
-    correlations['lybxqso']['distortion-file'] = f"{dist_path / 'xdmat_lyb_qso_0_10.fits'}"
     # correlations['lybxqso']['metal_path'] = f"{dist_path / 'metal_xdmat_lyb_qso_0_10.fits.gz'}"
     correlations['lybxqso']['weights-tracer1'] = \
         f"{corr_dir.parent / 'deltas_lyb/Log/delta_attributes.fits.gz'}"
@@ -182,6 +183,12 @@ def get_correlations_dict(corr_dict, config, corr_dir, qso_cat):
     correlations['lybxqso']['r-min'] = rmin_cross
     correlations['lybxqso']['r-max'] = rmax
     correlations['lybxqso']['fast_metals'] = f'{fast_metals}'
+
+    if dist_path is not None:
+        correlations['lyaxlya']['distortion-file'] = f"{dist_path / 'dmat_lya_lya_0_10.fits'}"
+        correlations['lyaxlyb']['distortion-file'] = f"{dist_path / 'dmat_lya_lyb_0_10.fits'}"
+        correlations['lyaxqso']['distortion-file'] = f"{dist_path / 'xdmat_lya_qso_0_10.fits'}"
+        correlations['lybxqso']['distortion-file'] = f"{dist_path / 'xdmat_lyb_qso_0_10.fits'}"
 
     return correlations
 
