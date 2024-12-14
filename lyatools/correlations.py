@@ -106,6 +106,8 @@ def run_correlation(
     dmat_rejection = config.getfloat('dmat_rejection')
     coeff_binning = config.getint('coeff_binning', None)
     rebin_factor = config.getint('rebin_factor', None)
+    zerr_cut_deg = config.getfloat('zerr_cut_deg', None)
+    zerr_cut_kms = config.getfloat('zerr_cut_kms', None)
 
     # Create the script
     text = header
@@ -157,6 +159,12 @@ def run_correlation(
 
     if rebin_factor is not None:
         text += f'--rebin-factor {rebin_factor} '
+        
+    if zerr_cut_deg is not None:
+        text += f'--zerr-cut-deg {zerr_cut_deg} '
+        
+    if zerr_cut_kms is not None:
+        text += f'--zerr-cut-kms {zerr_cut_kms} '
 
     text += '\n\n'
 
