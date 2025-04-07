@@ -67,7 +67,7 @@ def run_correlation(
 
     # Make the header
     header = submit_utils.make_header(job.get('nersc_machine'), job.get('slurm_queue'),
-                                      time=slurm_hours, omp_threads=256, job_name=name,
+                                      time=slurm_hours, omp_threads=2, job_name=name,
                                       err_file=analysis_struct.logs_dir/f'{name}-%j.err',
                                       out_file=analysis_struct.logs_dir/f'{name}-%j.out')
 
@@ -109,7 +109,8 @@ def run_correlation(
     # Create the script
     text = header
     text += f'{env_command}\n\n'
-    text += f'srun -n 1 -c {256} picca_{script_type}.py '
+    # text += f'srun -n 1 -c {256} picca_{script_type}.py '
+    text += f'picca_{script_type}.py '
     text += f'--out {output_path} '
 
     if from_qsonic:
@@ -141,7 +142,7 @@ def run_correlation(
     else:
         text += f'--np {num_bins_rp} '
 
-    text += f'--z-cut-min {zmin} --z-cut-max {zmax} --fid-Om {fid_Om} --nproc {256} '
+    text += f'--z-cut-min {zmin} --z-cut-max {zmax} --fid-Om {fid_Om} --nproc {128} '
     text += f'--fid-Or {fid_Or} --nside {nside} '
 
     if metal_dmat:
