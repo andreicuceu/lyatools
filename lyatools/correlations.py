@@ -108,6 +108,7 @@ def run_correlation(
     rebin_factor = config.getint('rebin_factor', None)
     zerr_cut_deg = config.getfloat('zerr_cut_deg', None)
     zerr_cut_kms = config.getfloat('zerr_cut_kms', None)
+    nproc = config.getint('nproc', 128)
 
     # Create the script
     text = header
@@ -137,7 +138,7 @@ def run_correlation(
     else:
         text += f'--np {num_bins_rp} '
 
-    text += f'--z-cut-min {zmin} --z-cut-max {zmax} --fid-Om {fid_Om} --nproc {256} '
+    text += f'--z-cut-min {zmin} --z-cut-max {zmax} --fid-Om {fid_Om} --nproc {nproc} '
     text += f'--fid-Or {fid_Or} --nside {nside} '
 
     if metal_dmat:
