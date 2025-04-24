@@ -113,7 +113,7 @@ def run_correlation(
     # Create the script
     text = header
     text += f'{env_command}\n\n'
-    text += f'srun -n 1 -c {256} picca_{script_type}.py '
+    text += f'picca_{script_type}.py '
     text += f'--out {output_path} '
 
     if cross and lyb:

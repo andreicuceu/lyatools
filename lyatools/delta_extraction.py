@@ -170,7 +170,7 @@ def create_config(
         out_config['masks'] = {'num masks': '0'}
 
     force_stack_delta_to_zero = config.getboolean('force_stack_delta_to_zero', True)
-    recompute_var_lss = config.getboolean('recompute_var_lss', True)
+    recompute_var_lss = config.getboolean('recompute_var_lss', False)
     if true_continuum:
         out_config['expected flux'] = {
             'type': 'TrueContinuum',
