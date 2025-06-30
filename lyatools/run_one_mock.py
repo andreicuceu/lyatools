@@ -62,6 +62,7 @@ class MockRun:
         qq_run_type = config['mock_setup'].get('qq_run_type')
         spectra_dirname = self.qq_config.get('spectra_dirname', 'spectra-16')
         analysis_name = config['mock_setup'].get('analysis_name')
+        newoutputdir = config['mock_setup'].get('new_output_dir', None)
 
         # Initialize the analysis name
         if self.mock_analysis_type == 'raw' or self.mock_analysis_type == 'raw_master':
@@ -106,6 +107,9 @@ class MockRun:
                 analysis_start_path, skewers_version, mock_seed, survey_name,
                 qq_version, qq_run_type, qq_seeds, name
             )
+
+            if newoutputdir is not None:
+                self.analysis_tree.newOutputDirs(newoutputdir)
 
         # Figure out the seeds
         self.qq_cat_seed = mock_seed

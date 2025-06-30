@@ -126,6 +126,42 @@ class AnalysisTree:
     scripts_dir: Path = field(init=False)
     full_mock_seed: str = field(init=False)
 
+    def _init_indirs_from_base(self, base):
+        analysis_dir = base / self.survey_name
+        check_dir(analysis_dir)
+        analysis_dir = analysis_dir / f'{self.skewers_version}.{self.qq_version}'
+        check_dir(analysis_dir)
+        analysis_dir = analysis_dir / f'analysis-{self.full_mock_seed}'
+        check_dir(analysis_dir)
+        analysis_dir = analysis_dir / self.qq_run_name
+        check_dir(analysis_dir)
+        analysis_dir = analysis_dir / self.analysis_name
+        check_dir(analysis_dir)
+        return analysis_dir
+
+    def _init_outdirs_from_base(
+            self, base, corr=True, deltas=True, fits=True,
+            logs=True, scripts=True
+    ):
+        # These are the directories needed for the analysis
+        if corr:
+            self.corr_dir = base / 'correlations'
+            check_dir(self.corr_dir)
+        if deltas:
+            self.deltas_lya_dir = base / 'deltas_lya'
+            check_dir(self.deltas_lya_dir)
+            self.deltas_lyb_dir = base / 'deltas_lyb'
+            check_dir(self.deltas_lyb_dir)
+        if fits:
+            self.fits_dir = base / 'fits'
+            check_dir(self.fits_dir)
+        if logs:
+            self.logs_dir = base / 'logs'
+            check_dir(self.logs_dir)
+        if scripts:
+            self.scripts_dir = base / 'scripts'
+            check_dir(self.scripts_dir)
+
     def __post_init__(self):
         # This is the start point for the analysis tree
         # E.g. desi/science/lya/mock_analysis/london
@@ -139,30 +175,16 @@ class AnalysisTree:
         if self.qq_seeds is not None:
             self.full_mock_seed = f'{self.mock_seed}.{self.qq_seeds}'
 
-        self.analysis_dir = analysis_start_path / self.survey_name
-        check_dir(self.analysis_dir)
-        self.analysis_dir = self.analysis_dir / f'{self.skewers_version}.{self.qq_version}'
-        check_dir(self.analysis_dir)
-        self.analysis_dir = self.analysis_dir / f'analysis-{self.full_mock_seed}'
-        check_dir(self.analysis_dir)
-        self.analysis_dir = self.analysis_dir / self.qq_run_name
-        check_dir(self.analysis_dir)
-        self.analysis_dir = self.analysis_dir / self.analysis_name
-        check_dir(self.analysis_dir)
+        self.analysis_dir = self._init_indirs_from_base(analysis_start_path)
+        self._init_outdirs_from_base(self.analysis_dir)
 
-        # These are the directories needed for the analysis
-        self.corr_dir = self.analysis_dir / 'correlations'
-        check_dir(self.corr_dir)
-        self.deltas_lya_dir = self.analysis_dir / 'deltas_lya'
-        check_dir(self.deltas_lya_dir)
-        self.deltas_lyb_dir = self.analysis_dir / 'deltas_lyb'
-        check_dir(self.deltas_lyb_dir)
-        self.fits_dir = self.analysis_dir / 'fits'
-        check_dir(self.fits_dir)
-        self.logs_dir = self.analysis_dir / 'logs'
-        check_dir(self.logs_dir)
-        self.scripts_dir = self.analysis_dir / 'scripts'
-        check_dir(self.scripts_dir)
+    def newOutputDirs(
+            self, newbase, corr=True, deltas=False, fits=True,
+            logs=True, scripts=True
+    ):
+        newbase = self._init_indirs_from_base(Path(newbase))
+        self._init_outdirs_from_base(
+            newbase, corr, deltas, fits, logs, scripts)
 
     @classmethod
     def stack_from_other(cls, other, stack_name: str = 'stack'):
