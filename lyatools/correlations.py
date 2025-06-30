@@ -68,7 +68,7 @@ def run_correlation(
     # Make the header
     header = submit_utils.make_header(
         job.get('nersc_machine'), job.get('slurm_queue'),
-        time=slurm_hours, omp_threads=256, job_name=name,
+        time=slurm_hours, omp_threads=2, job_name=name,
         err_file=analysis_tree.logs_dir/f'{name}-%j.err',
         out_file=analysis_tree.logs_dir/f'{name}-%j.out'
     )
@@ -80,9 +80,12 @@ def run_correlation(
         script_type = 'metal_' + name.split('_')[1]
 
     name_string = config.get('name_string', None)
+    rmu_binning = config.getboolean("r_mu_binning", False)
     if shuffled:
         assert not dmat and not metal_dmat
         name_string = 'shuffled' if name_string is None else f'{name_string}_shuffled'
+    if rmu_binning:
+        name_string = 'rmu' if name_string is None else f'{name_string}_rmu'
     gzed = '' if (dmat or metal_dmat) else '.gz'
     if name_string is None:
         output_path = analysis_tree.corr_dir / f'{name}_{zmin}_{zmax}.fits{gzed}'
@@ -166,6 +169,9 @@ def run_correlation(
         
     if zerr_cut_kms is not None:
         text += f'--zerr-cut-kms {zerr_cut_kms} '
+
+    if rmu_binning:
+        text += '--rmu-binning '
 
     text += '\n\n'
 
