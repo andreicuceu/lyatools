@@ -232,6 +232,6 @@ def find_path(path, enforce=True):
 
 
 def append_string_to_correlation_path(path, string):
-    corr_name_split = path.name.split('.')
-    corr_name_split[0] += string
-    return path.parents[0] / '.'.join(corr_name_split)
+    # This assumes that correlations are .fits.gz files, which should be the case by construction
+    corr_name_replace = path.name.replace('.fits.gz',f'{string}.fits.gz')
+    return path.parents[0] / corr_name_replace

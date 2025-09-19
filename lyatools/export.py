@@ -213,8 +213,12 @@ def stack_correlations(
 
             shuffled_files = ' '.join(shuffled_list)
 
-        name_ext = '' if name_string is None else '_' + name_string
-        exp_out_file = stack_tree.corr_dir / f'{cf_name}{name_ext}-exp.fits.gz'
+        # Infer name from first correlation. Automatically inherits name_string in correlations
+        # Avoids different redshift ranges having the same stack filename
+        corr_filename = cf_list[0].name
+        exp_out_file = stack_tree.corr_dir / f'{corr_filename}'
+        name_ext = '-exp' if name_string is None else f'_{name_string}-exp'
+        exp_out_file = submit_utils.append_string_to_correlation_path(exp_out_file, name_ext)
 
         if shuffled_files is not None:
             exp_out_file = submit_utils.append_string_to_correlation_path(exp_out_file, '-shuff')
