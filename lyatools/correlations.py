@@ -90,9 +90,9 @@ def run_correlation(
         name_string = 'rmu' if name_string is None else f'{name_string}_rmu'
     gzed = '' if (dmat or metal_dmat) else '.gz'
     if name_string is None:
-        output_path = analysis_tree.corr_dir / f'{name}_{zmin:.2f}_{zmax:.2f}.fits{gzed}'
+        output_path = analysis_tree.corr_dir / f'{name}_{zmin}_{zmax}.fits{gzed}'
     else:
-        output_path = analysis_tree.corr_dir / f'{name}_{zmin:.2f}_{zmax:.2f}_{name_string}.fits{gzed}'
+        output_path = analysis_tree.corr_dir / f'{name}_{zmin}_{zmax}_{name_string}.fits{gzed}'
 
     if output_path.is_file():
         print(f'Correlation already exists, skipping: {output_path}.')

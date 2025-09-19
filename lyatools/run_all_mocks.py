@@ -1,4 +1,5 @@
 import configparser
+import copy
 
 from . import submit_utils, dir_handlers
 from lyatools.run_one_mock import MockRun
@@ -19,7 +20,6 @@ class MockBatchRun:
         mock_seeds_str = self.config['mock_setup'].get('mock_seeds')
         cat_seeds_str = self.config['mock_setup'].get('cat_seeds')
         qq_seeds_str = self.config['mock_setup'].get('qq_seeds')
-        dmat_on_first_mock_only = self.config['picca_corr'].getboolean('dmat_on_first_mock_only', False)
 
         self.mock_seeds = submit_utils.get_seed_list(mock_seeds_str)
 
@@ -47,13 +47,15 @@ class MockBatchRun:
 
         # Initialize the mock objects
         self.run_mock_objects = []
+        dmat_on_first_mock_only = self.config['picca_corr'].getboolean('dmat_on_first_mock_only', False)
         for ii, (mock_seed, qq_seed) in enumerate(zip(self.mock_seeds, self.qq_seeds)):
+            this_mock_config = copy.deepcopy(self.config)
             if ii>0 and dmat_on_first_mock_only:
-                self.config['picca_corr']['compute_dmat'] = 'False'
+                this_mock_config['picca_corr']['compute_dmat'] = 'False'
 
             self.run_mock_objects.append(
                 MockRun(
-                    self.config, mock_start_path, analysis_start_path, mock_seed,
+                    this_mock_config, mock_start_path, analysis_start_path, mock_seed,
                     skewers_start_path=skewers_start_path, qq_seeds=qq_seed
                 )
             )
