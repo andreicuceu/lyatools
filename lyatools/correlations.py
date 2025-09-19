@@ -90,9 +90,9 @@ def run_correlation(
         name_string = 'rmu' if name_string is None else f'{name_string}_rmu'
     gzed = '' if (dmat or metal_dmat) else '.gz'
     if name_string is None:
-        output_path = analysis_tree.corr_dir / f'{name}_{zmin}_{zmax}.fits{gzed}'
+        output_path = analysis_tree.corr_dir / f'{name}_{zmin:.2f}_{zmax:.2f}.fits{gzed}'
     else:
-        output_path = analysis_tree.corr_dir / f'{name}_{zmin}_{zmax}_{name_string}.fits{gzed}'
+        output_path = analysis_tree.corr_dir / f'{name}_{zmin:.2f}_{zmax:.2f}_{name_string}.fits{gzed}'
 
     if output_path.is_file():
         print(f'Correlation already exists, skipping: {output_path}.')
@@ -109,6 +109,8 @@ def run_correlation(
     fid_Om = config.getfloat('fid_Om')
     fid_Or = config.getfloat('fid_Or', 7.97505418919554e-05)
     dmat_rejection = config.getfloat('dmat_rejection')
+    dmat_num_bins_rp = config.getint('dmat_num_bins_rp', num_bins_rp)
+    dmat_rp_max = config.getfloat('dmat_rp_max', rp_max)
     coeff_binning = config.getint('coeff_binning', None)
     rebin_factor = config.getint('rebin_factor', None)
     zerr_cut_deg = config.getfloat('zerr_cut_deg', None)
@@ -137,11 +139,12 @@ def run_correlation(
     else:
         text += f'--rp-min {rp_min} '
 
-    text += f'--rp-max {rp_max} --rt-max {rt_max} --nt {num_bins_rt} '
+    text += f'--rp-max {rp_max} ' if not dmat else f'--rp-max {dmat_rp_max} '
+    text += f'--rt-max {rt_max} --nt {num_bins_rt} '
     if cross:
-        text += f'--np {2*num_bins_rp} '
+        text += f'--np {2*num_bins_rp} ' if not dmat else f'--np {2*dmat_num_bins_rp} '
     else:
-        text += f'--np {num_bins_rp} '
+        text += f'--np {num_bins_rp} ' if not dmat else f'--np {dmat_num_bins_rp} '
 
     if zmin != z_min_default:
         text += f'--z-min-pairs {zmin} '
