@@ -74,7 +74,9 @@ def run_correlation(
     )
 
     # TODO implement other options for redshift bins
-    zmin, zmax = 0, 10
+    z_min_default, z_max_default = 0, 10
+    zmin = config.getfloat('z_min', z_min_default)
+    zmax = config.getfloat('z_max', z_max_default)
     script_type = name.split('_')[0]
     if metal_dmat:
         script_type = 'metal_' + name.split('_')[1]
@@ -141,7 +143,11 @@ def run_correlation(
     else:
         text += f'--np {num_bins_rp} '
 
-    text += f'--z-cut-min {zmin} --z-cut-max {zmax} --fid-Om {fid_Om} --nproc {nproc} '
+    if zmin != z_min_default:
+        text += f'--z-min-pairs {zmin} '
+    if zmax != z_max_default:
+        text += f'--z-max-pairs {zmax} '
+    text += f'--fid-Om {fid_Om} --nproc {nproc} '
     text += f'--fid-Or {fid_Or} --nside {nside} '
 
     if metal_dmat:
