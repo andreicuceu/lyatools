@@ -64,6 +64,13 @@ class MockRun:
         analysis_name = config['mock_setup'].get('analysis_name')
         newoutputdir = config['mock_setup'].get('new_output_dir', None)
 
+        # Get the paths from pre-existing runs
+        preexisting_analysis_start_path = config['picca_corr'].get('preexisting_analysis_start_path', None)
+        if preexisting_analysis_start_path is None:
+            # Assume same as analysis start path
+            preexisting_analysis_start_path = analysis_start_path
+        use_preexisting_analysis_deltas = config['picca_corr'].get('use_preexisting_analysis_deltas', None)
+
         # Initialize the analysis name
         if self.mock_analysis_type == 'raw' or self.mock_analysis_type == 'raw_master':
             name = 'raw'
@@ -111,6 +118,17 @@ class MockRun:
             if newoutputdir is not None:
                 self.analysis_tree.newOutputDirs(newoutputdir)
 
+        if not self.run_deltas_flag and use_preexisting_analysis_deltas is not None:
+            preexisting_tree = dir_handlers.AnalysisTree(
+                preexisting_analysis_start_path, skewers_version, mock_seed, survey_name,
+                qq_version, qq_run_type, qq_seeds, use_preexisting_analysis_deltas
+            )
+            dir_handlers.make_symlink(preexisting_tree.deltas_lya_dir/'Delta',self.analysis_tree.deltas_lya_dir/'Delta')
+            dir_handlers.make_symlink(preexisting_tree.deltas_lyb_dir/'Delta',self.analysis_tree.deltas_lyb_dir/'Delta')
+            dir_handlers.make_symlink(preexisting_tree.deltas_lya_dir/'Log',self.analysis_tree.deltas_lya_dir/'Log')
+            dir_handlers.make_symlink(preexisting_tree.deltas_lyb_dir/'Log',self.analysis_tree.deltas_lyb_dir/'Log')
+            del preexisting_tree
+        
         # Figure out the seeds
         self.qq_cat_seed = mock_seed
         self.qq_seed = mock_seed

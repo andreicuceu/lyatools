@@ -3,6 +3,19 @@ from pathlib import Path
 from subprocess import call
 from dataclasses import dataclass, field
 
+def make_symlink(target, link_name):
+    """ Make a symbolic link named link_name pointing to target.
+    Args:
+        target: str or Path
+            Target of the symbolic link.
+        link_name: str or Path
+            Name of the symbolic link to create.
+    """
+    link_name = Path(link_name)
+    if link_name.exists() or link_name.is_symlink():
+        link_name.unlink()
+    link_name.symlink_to(target)
+
 
 def make_permission_group_desi(dir: Path):
     """
