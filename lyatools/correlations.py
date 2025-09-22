@@ -150,7 +150,11 @@ def run_correlation(
         text += f'--z-min-pairs {zmin} '
     if zmax != z_max_default:
         text += f'--z-max-pairs {zmax} '
-    text += f'--fid-Om {fid_Om} --nproc {nproc} '
+
+    if cross and dmat:
+        text += f'--fid-Om {fid_Om} --nproc {nproc//2} '
+    else:
+        text += f'--fid-Om {fid_Om} --nproc {nproc} '
     text += f'--fid-Or {fid_Or} --nside {nside} '
 
     if metal_dmat:
