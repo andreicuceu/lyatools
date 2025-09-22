@@ -1,4 +1,5 @@
 import configparser
+import copy
 
 from . import submit_utils, dir_handlers
 from lyatools.run_one_mock import MockRun
@@ -46,10 +47,15 @@ class MockBatchRun:
 
         # Initialize the mock objects
         self.run_mock_objects = []
-        for mock_seed, qq_seed in zip(self.mock_seeds, self.qq_seeds):
+        dmat_on_first_mock_only = self.config['picca_corr'].getboolean('dmat_on_first_mock_only', False)
+        for ii, (mock_seed, qq_seed) in enumerate(zip(self.mock_seeds, self.qq_seeds)):
+            this_mock_config = copy.deepcopy(self.config)
+            if ii>0 and dmat_on_first_mock_only:
+                this_mock_config['picca_corr']['compute_dmat'] = 'False'
+
             self.run_mock_objects.append(
                 MockRun(
-                    self.config, mock_start_path, analysis_start_path, mock_seed,
+                    this_mock_config, mock_start_path, analysis_start_path, mock_seed,
                     skewers_start_path=skewers_start_path, qq_seeds=qq_seed
                 )
             )
@@ -98,7 +104,7 @@ class MockBatchRun:
         # Stack mocks
         if self.stack_correlations:
             submit_utils.print_spacer_line()
-            name_string = self.config['picca_corr'].get('name_string', None)
+            name_string = self.config['picca_export'].get('exp_string', None)
             subtract_shuffled = self.config['picca_export'].getboolean('subtract_shuffled')
             _ = stack_correlations(
                     corr_dict, self.stack_tree, self.job_config, shuffled=subtract_shuffled,

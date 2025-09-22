@@ -52,7 +52,7 @@ def make_correlation_runs(qso_cat, analysis_tree, config, job, corr_types, delta
 
     cf_paths = [out[0] for out in cf_out]
     job_ids = [out[1] for out in cf_out] + [out[1] for out in cf_shuffled_out]
-    job_ids += [out[1] for out in dmat_out] + [out[1] for out in metal_out]
+    #job_ids += [out[1] for out in dmat_out] + [out[1] for out in metal_out]
     return cf_paths, job_ids
 
 
@@ -74,7 +74,9 @@ def run_correlation(
     )
 
     # TODO implement other options for redshift bins
-    zmin, zmax = 0, 10
+    z_min_default, z_max_default = 0, 10
+    zmin = config.getfloat('z_min', z_min_default)
+    zmax = config.getfloat('z_max', z_max_default)
     script_type = name.split('_')[0]
     if metal_dmat:
         script_type = 'metal_' + name.split('_')[1]
@@ -107,6 +109,8 @@ def run_correlation(
     fid_Om = config.getfloat('fid_Om')
     fid_Or = config.getfloat('fid_Or', 7.97505418919554e-05)
     dmat_rejection = config.getfloat('dmat_rejection')
+    dmat_num_bins_rp = config.getint('dmat_num_bins_rp', num_bins_rp)
+    dmat_rp_max = config.getfloat('dmat_rp_max', rp_max)
     coeff_binning = config.getint('coeff_binning', None)
     rebin_factor = config.getint('rebin_factor', None)
     zerr_cut_deg = config.getfloat('zerr_cut_deg', None)
@@ -135,13 +139,22 @@ def run_correlation(
     else:
         text += f'--rp-min {rp_min} '
 
-    text += f'--rp-max {rp_max} --rt-max {rt_max} --nt {num_bins_rt} '
+    text += f'--rp-max {rp_max} ' if not dmat else f'--rp-max {dmat_rp_max} '
+    text += f'--rt-max {rt_max} --nt {num_bins_rt} '
     if cross:
-        text += f'--np {2*num_bins_rp} '
+        text += f'--np {2*num_bins_rp} ' if not dmat else f'--np {2*dmat_num_bins_rp} '
     else:
-        text += f'--np {num_bins_rp} '
+        text += f'--np {num_bins_rp} ' if not dmat else f'--np {dmat_num_bins_rp} '
 
-    text += f'--z-cut-min {zmin} --z-cut-max {zmax} --fid-Om {fid_Om} --nproc {nproc} '
+    if zmin != z_min_default:
+        text += f'--z-min-pairs {zmin} '
+    if zmax != z_max_default:
+        text += f'--z-max-pairs {zmax} '
+
+    if cross and dmat:
+        text += f'--fid-Om {fid_Om} --nproc {nproc//2} '
+    else:
+        text += f'--fid-Om {fid_Om} --nproc {nproc} '
     text += f'--fid-Or {fid_Or} --nside {nside} '
 
     if metal_dmat:

@@ -111,7 +111,10 @@ def export_full_cov(corr_paths, analysis_tree, config, job, corr_job_ids=None, r
                     ordered_cf_paths[key + '-shuff'] = shuffled_path
 
     exp_string = config.get('exp_string')
-    name = 'full_cov' if exp_string is None else f'full_cov_{exp_string}'
+    cov_string = config.get('cov_string')
+    if cov_string is None and exp_string is not None:
+        cov_string = exp_string
+    name = 'full_cov' if cov_string is None else f'full_cov_{cov_string}'
     output_path = corr_paths[0].parent / f'{name}.fits'
     output_path_smoothed = corr_paths[0].parent / f'{name}_smooth.fits'
     block_types_str = ' '.join(block_types)
@@ -210,8 +213,12 @@ def stack_correlations(
 
             shuffled_files = ' '.join(shuffled_list)
 
-        name_ext = '' if name_string is None else '_' + name_string
-        exp_out_file = stack_tree.corr_dir / f'{cf_name}{name_ext}-exp.fits.gz'
+        # Infer name from first correlation. Automatically inherits name_string in correlations
+        # Avoids different redshift ranges having the same stack filename
+        corr_filename = cf_list[0].name
+        exp_out_file = stack_tree.corr_dir / f'{corr_filename}'
+        name_ext = '-exp' if name_string is None else f'_{name_string}-exp'
+        exp_out_file = submit_utils.append_string_to_correlation_path(exp_out_file, name_ext)
 
         if shuffled_files is not None:
             exp_out_file = submit_utils.append_string_to_correlation_path(exp_out_file, '-shuff')
