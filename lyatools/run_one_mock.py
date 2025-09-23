@@ -7,6 +7,7 @@ from lyatools.quickquasars import run_qq, create_qq_catalog, make_catalogs
 from lyatools.delta_extraction import make_picca_delta_runs
 from lyatools.qsonic import make_qsonic_runs
 from lyatools.correlations import make_correlation_runs
+from lyatools.pk1d import make_pk1d_runs
 from lyatools.export import make_export_runs, export_full_cov
 from lyatools.vegafit import make_vega_config
 from lyatools import qq_run_args
@@ -33,6 +34,7 @@ class MockRun:
         self.deltas_config = config['delta_extraction']
         self.qsonic_config = config['qsonic']
         self.corr_config = config['picca_corr']
+        self.pk1d_config = config['picca_Pk1D']
         self.export_config = config['picca_export']
         self.vega_config = {key: config[key] for key in config.keys() if key.startswith('vega')}
 
@@ -43,6 +45,7 @@ class MockRun:
         self.run_deltas_flag = config['control'].getboolean('run_deltas')
         self.run_qsonic_flag = config['control'].getboolean('run_qsonic')
         self.run_corr_flag = config['control'].getboolean('run_corr')
+        self.run_pk1d_flag = config['control'].getboolean('run_pk1d')
         self.run_export_flag = config['control'].getboolean('run_export')
         self.run_vega_flag = config['control'].getboolean('run_vega')
         self.only_qso_targets_flag = config['quickquasars'].getboolean('only_qso_targets')
@@ -169,12 +172,16 @@ class MockRun:
 
         submit_utils.print_spacer_line()
         if self.run_deltas_flag or self.run_qsonic_flag:
-            job_id = self.run_deltas(lya_job_id, job_id)
+            job_id_deltas = self.run_deltas(job_id)
+
+        submit_utils.print_spacer_line()
+        if self.run_pk1d_flag:
+            job_id = self.run_pk1d(job_id_deltas)
 
         submit_utils.print_spacer_line()
         corr_paths = None
         if self.run_corr_flag:
-            corr_paths, job_id = self.run_correlations(job_id)
+            corr_paths, job_id = self.run_correlations(job_id_deltas)
 
         corr_dict = {}
         submit_utils.print_spacer_line()
@@ -326,7 +333,14 @@ class MockRun:
             )
 
             return job_id
-
+        
+    def run_pk1d(self, delta_job_ids):
+        job_id = make_pk1d_runs(
+            self.analysis_tree, self.pk1d_config, self.job_config,
+            delta_job_ids=delta_job_ids
+        )
+        return job_id
+    
     def run_correlations(self, delta_job_ids):
         qso_cat = self.get_analysis_qso_cat()
 

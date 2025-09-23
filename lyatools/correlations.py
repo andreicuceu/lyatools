@@ -52,7 +52,6 @@ def make_correlation_runs(qso_cat, analysis_tree, config, job, corr_types, delta
 
     cf_paths = [out[0] for out in cf_out]
     job_ids = [out[1] for out in cf_out] + [out[1] for out in cf_shuffled_out]
-    #job_ids += [out[1] for out in dmat_out] + [out[1] for out in metal_out]
     return cf_paths, job_ids
 
 
@@ -73,7 +72,6 @@ def run_correlation(
         out_file=analysis_tree.logs_dir/f'{name}-%j.out'
     )
 
-    # TODO implement other options for redshift bins
     z_min_default, z_max_default = 0, 10
     zmin = config.getfloat('z_min', z_min_default)
     zmax = config.getfloat('z_max', z_max_default)

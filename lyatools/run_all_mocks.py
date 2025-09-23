@@ -140,12 +140,16 @@ class MockBatchRun:
 
             submit_utils.print_spacer_line()
             if mock_obj.run_deltas_flag or mock_obj.run_qsonic_flag:
-                job_id = mock_obj.run_deltas(job_id)
+                job_id_deltas = mock_obj.run_deltas(job_id)
+
+            submit_utils.print_spacer_line()
+            if mock_obj.run_pk1d_flag:
+                job_id = mock_obj.run_pk1d(job_id, delta_job_ids=job_id_deltas)
 
             submit_utils.print_spacer_line()
             corr_paths = None
             if mock_obj.run_corr_flag:
-                corr_paths, job_id = mock_obj.run_correlations(job_id)
+                corr_paths, job_id = mock_obj.run_correlations(job_id_deltas)
 
             submit_utils.print_spacer_line()
             mock_corr_dict = {}

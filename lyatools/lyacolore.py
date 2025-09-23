@@ -1,23 +1,12 @@
 import os
 import subprocess
 from pathlib import Path
+from . import submit_utils
 
 __DIR__ = os.path.dirname(os.path.realpath(__file__))
 
-def create_sbatch_script(colore_out_loc, lyacolore_out_loc, lyacolore_path, config_file, output_file, conda_environment, nnodes=8, job_dependency=None):
-    dependency_str = f'#SBATCH --dependency=afterok:{job_dependency}\n' if job_dependency else ''
-
-    script_content = f"""#!/bin/bash -l
-
-#SBATCH --qos regular
-#SBATCH --job-name=lyacolore          # Job name
-#SBATCH --output={lyacolore_out_loc}/lyacolore_job.out    # Standard output and error log
-#SBATCH --error={lyacolore_out_loc}/lyacolore_job.err     # Error log
-#SBATCH --time=00:15:00               # Time limit hrs:min:sec
-#SBATCH --nodes=8              # Number of nodes
-#SBATCH -C cpu                        # Constraint to specify CPU nodes
-#SBATCH -A desi                       # Account
-{dependency_str}
+def create_lyacolore_script(colore_out_loc, lyacolore_out_loc, lyacolore_path, config_file, conda_environment):
+    script_content = f"""
 ################################################################################
 ## USER DEFINED PARAMS.
 
@@ -128,76 +117,37 @@ echo "Done!"
 echo " "
 echo "################################################################################"
 """
+    return script_content
 
-    with open(output_file, 'w') as f:
-        f.write(script_content)
-#            self.skewers_path = raw_path / skewers_name / skewers_version / f'skewers-{mock_seed}'
+def run_lyacolore(lyacolore_config, skewers_path, seed, job, dependency_ids=None):
+    submit_utils.set_umask()
 
-def run_sbatch_script(box, mock_setup, lyacolore_setup, job, output_file, nnodes=8, job_dependency=None):
-    print(f'Starting lyacolore skewers for box {box}.')
-    no_submit=job.getboolean('no_submit')
-    #defining the inputs of the slurm file
-    mock_type = lyacolore_setup.get('mock_box_type')
-    skewers_name = mock_setup.get('skewers_name')
-    skewers_version = mock_setup.get('skewers_version')
-    lyacolore_path=lyacolore_setup.get('lyacolore_env')
-    colore_out_loc = Path(lyacolore_setup.get('boxes_dir')) / mock_type / f'box-{box}' / 'results'
-    lyacolore_out_loc = Path(lyacolore_setup.get('lyacolore_dir')) / skewers_name / skewers_version / f'skewers-{box}'
-    conda_environment = job.get('env_command')
+    output_dir = skewers_path
     config_file = os.path.join(__DIR__, "input_files/lyacolore/config_v9.0.ini")
-    output_file=Path(lyacolore_setup.get('lyacolore_dir'))  / skewers_name / skewers_version / f'skewers-{box}'/'scripts'/'lyacolore_script.sh'
-    scripts_dir=Path(lyacolore_setup.get('lyacolore_dir'))  / skewers_name / skewers_version / f'skewers-{box}'/'scripts'
-    # Ensure the lyacolore output directory exists
-    if not os.path.exists(lyacolore_out_loc):
-        os.makedirs(Path(lyacolore_out_loc))   
-    if not os.path.exists(scripts_dir):
-        os.makedirs(scripts_dir)    
-
-    # Call the function to create the sbatch script
-    create_sbatch_script(colore_out_loc, lyacolore_out_loc, lyacolore_path, config_file, output_file, conda_environment, nnodes=8, job_dependency=job_dependency)
-
-    # Print the dependency information
-    if job_dependency:
-        print(f"Job {box} depends on job {job_dependency}")
-
-    if no_submit is False:    
-    # Submit the sbatch script and return the job ID
-        result = subprocess.run(['sbatch', output_file], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        if result.returncode != 0:
-            print(f"Error submitting sbatch script: {result.stderr}")
-            return None
-
-        job_id = result.stdout.strip().split()[-1]
-        print(f"Submitted batch job {job_id}")
-    else:
-        job_id=None
-        print("Skipping LyaCoLoRe")
-    return job_id
-
-def run_lyacolore(mock_setup, lyacolore_setup, job, dependency_ids=None):
-    #Get box list
+    lyacolore_install_path = lyacolore_config.get('lyacolore_install_path')
+    input_box_dir = Path(lyacolore_config.get('input_box_dir'))
+    mock_box_type = lyacolore_config.get('mock_box_type', 'colore')
+    input_box_path = input_box_dir / mock_box_type / f'box-{seed}' / 'results'
+    env_command = job.get('env_command')
+    lyacolore_script = create_lyacolore_script(input_box_path, output_dir, lyacolore_install_path, 
+                                               config_file, env_command)
     
-    no_submit=job.getboolean('no_submit')
-    boxes=mock_setup.get('mock_seeds')
-    boxes_str = mock_setup.get('mock_seeds')
-    if '-' in boxes_str:
-        start, end = map(int, boxes_str.split('-', 1))
-        # usa fin INCLUSIVO; si quieres exclusivo, quita el +1
-        box_list = list(range(start, end + 1))
-    else:
-        box_list = [int(boxes_str)]
-        
-    jobids = []
-    for box in box_list:
-        #Create job dependency on the CoLoRe run with the same seed 
-        job_dependency = dependency_ids.get(box) if dependency_ids else None
-        #Call function to submit the scripts and return jobids 
-        jobid = run_sbatch_script(box, mock_setup, lyacolore_setup, job, nnodes=8, output_file=f'lyacolore_script_{box}.sbatch', job_dependency=job_dependency)
-        if no_submit is False:
-            jobids.append(int(jobid))
-        else:
-            jobids = ""
-    return jobids
+    # Write the script to file and submit it.
+    num_nodes = lyacolore_config.getint('num_nodes', 8)
+    slurm_hours = lyacolore_config.getfloat('slurm_hours', 0.25)
+    header = submit_utils.make_header(
+        job.get('nersc_machine'), 'regular', nodes=num_nodes, time=slurm_hours,
+        omp_threads=2, job_name=f'lyacolore_{seed}', 
+        err_file=output_dir/'logs/run-%j.err', 
+        out_file=output_dir/'logs/run-%j.out'
+        )
+    header += f'{env_command}\n\n'
+    full_script = header + lyacolore_script
+    script_path = output_dir/ 'scripts' / f'run_lyacolore.sh'
+    submit_utils.write_script(script_path, full_script)
+    job_id = submit_utils.run_job(script_path, dependency_ids=dependency_ids,
+                                   no_submit=job.getboolean('no_submit'))
+    return job_id
 
 
 
