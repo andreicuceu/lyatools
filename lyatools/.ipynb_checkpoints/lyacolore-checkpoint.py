@@ -68,7 +68,11 @@ echo " "
 echo " 1. Make master file"
 echo " "
 source $(conda info --base)/etc/profile.d/conda.sh
+<<<<<<< HEAD
 {conda_environment}
+=======
+conda activate {conda_environment}
+>>>>>>> 277b2c1 (1st version of adding lyacolore option for raw mocks)
 {lyacolore_path}/scripts/make_master.py -c {config_file} -i {colore_out_loc} -o {lyacolore_out_loc} --nproc 128
 
 ################################################################################
@@ -140,10 +144,17 @@ def run_sbatch_script(box, mock_setup, lyacolore_setup, job, output_file, nnodes
     mock_type = lyacolore_setup.get('mock_box_type')
     skewers_name = mock_setup.get('skewers_name')
     skewers_version = mock_setup.get('skewers_version')
+<<<<<<< HEAD
     lyacolore_path=lyacolore_setup.get('lyacolore_env')
     colore_out_loc = Path(lyacolore_setup.get('boxes_dir')) / mock_type / f'box-{box}' / 'results'
     lyacolore_out_loc = Path(lyacolore_setup.get('lyacolore_dir')) / skewers_name / skewers_version / f'skewers-{box}'
     conda_environment = job.get('env_command')
+=======
+    lyacolore_path=lyacolore_setup.get('lyacolore_path')
+    colore_out_loc = Path(lyacolore_setup.get('boxes_dir')) / mock_type / f'box-{box}' / 'results'
+    lyacolore_out_loc = Path(lyacolore_setup.get('lyacolore_dir')) / skewers_name / skewers_version / f'skewers-{box}'
+    conda_environment = job.get('env_lyacolore')
+>>>>>>> 277b2c1 (1st version of adding lyacolore option for raw mocks)
     config_file = os.path.join(__DIR__, "input_files/lyacolore/config_v9.0.ini")
     output_file=Path(lyacolore_setup.get('lyacolore_dir'))  / skewers_name / skewers_version / f'skewers-{box}'/'scripts'/'lyacolore_script.sh'
     scripts_dir=Path(lyacolore_setup.get('lyacolore_dir'))  / skewers_name / skewers_version / f'skewers-{box}'/'scripts'
