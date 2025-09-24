@@ -3,7 +3,7 @@ import copy
 
 from . import submit_utils, dir_handlers
 from lyatools.run_one_mock import MockRun
-from lyatools.export import stack_correlations, mpi_export
+from lyatools.export import stack_correlations,stack_full_covariance, mpi_export
 from lyatools.vegafit import run_vega_mpi
 
 
@@ -110,6 +110,16 @@ class MockBatchRun:
                     corr_dict, self.stack_tree, self.job_config, shuffled=subtract_shuffled,
                     name_string=name_string, corr_job_ids=job_ids
                 )
+            
+            no_smooth_covariance_flag = self.config['picca_export'].getboolean('no_smooth_covariance', False)
+            cov_string = self.config['picca_export'].get('cov_string', None)
+            if cov_string is None and name_string is not None:
+                cov_string = name_string
+            _ = stack_full_covariance(
+                    corr_dict, self.stack_tree, self.job_config, smooth_covariance_flag=not no_smooth_covariance_flag,
+                    corr_config=self.run_mock_objects[0].corr_config,
+                    name_string=cov_string, corr_job_ids=job_ids
+                )
 
         submit_utils.print_spacer_line()
         print('All mocks submitted. Done!')
@@ -139,6 +149,7 @@ class MockBatchRun:
                 job_id = mock_obj.make_zerr_cat(job_id, run_local=True)
 
             submit_utils.print_spacer_line()
+            job_id_deltas = None
             if mock_obj.run_deltas_flag or mock_obj.run_qsonic_flag:
                 job_id_deltas = mock_obj.run_deltas(job_id)
 
