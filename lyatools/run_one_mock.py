@@ -163,10 +163,12 @@ class MockRun:
             submit_utils.print_spacer_line()
             job_id = self.run_lyacolore(job_id)
 
+        if self.mock_analysis_type == 'raw' or self.run_qq_flag:
+            job_id = self.create_qq_catalog(job_id)
+
         if self.run_qq_flag:
             submit_utils.print_spacer_line()
             job_id = self.run_qq(job_id)
-
 
         if self.run_zerr_flag:
             submit_utils.print_spacer_line()
@@ -206,21 +208,22 @@ class MockRun:
         
         return lyacolore_job_id
         
-
-
-    def run_qq(self, job_id):
+    def create_qq_catalog(self):
         seed_cat_path = self.qq_tree.qq_dir / "seed_zcat.fits"
         assert self.qq_special_args is not None
 
         # Make QQ input catalog
         if seed_cat_path.is_file():
-            print(f'Found QQ input catalog: {seed_cat_path}. Skipping gen_qso_catalog.')
+            print(f'Found previously generated input seed catalog: {seed_cat_path}. Skipping gen_qso_catalog.')
         else:
             job_id = create_qq_catalog(
                 self.qq_tree, seed_cat_path, self.qq_config, self.job_config,
                 self.qq_cat_seed, run_local=True
             )
+        return job_id
+        
 
+    def run_qq(self, job_id):
         # TODO Figure out a way to check if QQ run already exists
         # Run quickquasars
         submit_utils.print_spacer_line()
