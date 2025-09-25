@@ -138,19 +138,21 @@ class MockBatchRun:
             print('Running mock:', mock_obj.analysis_tree.full_mock_seed)
 
             job_id = None
-            submit_utils.print_spacer_line()
             if mock_obj.run_qq_flag:
+                submit_utils.print_spacer_line()
+
                 # TODO unpack and parallelize catalog creation
                 job_id = mock_obj.run_qq(job_id)
 
-            submit_utils.print_spacer_line()
             if mock_obj.run_zerr_flag:
+                submit_utils.print_spacer_line()
+
                 # TODO parallelize this
                 job_id = mock_obj.make_zerr_cat(job_id, run_local=True)
 
-            submit_utils.print_spacer_line()
             job_id_deltas = None
             if mock_obj.run_deltas_flag or mock_obj.run_qsonic_flag:
+                submit_utils.print_spacer_line()
                 job_id_deltas = mock_obj.run_deltas(job_id)
 
             submit_utils.print_spacer_line()
