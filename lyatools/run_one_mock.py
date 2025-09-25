@@ -160,36 +160,38 @@ class MockRun:
         job_id = None
 
         if self.run_lyacolore_flag:
-            lya_job_id = self.run_lyacolore(job_id)
+            submit_utils.print_spacer_line()
+            job_id = self.run_lyacolore(job_id)
 
-        submit_utils.print_spacer_line()
         if self.run_qq_flag:
+            submit_utils.print_spacer_line()
             job_id = self.run_qq(job_id)
 
-        submit_utils.print_spacer_line()
+
         if self.run_zerr_flag:
+            submit_utils.print_spacer_line()
             job_id = self.make_zerr_cat(job_id)
 
-        submit_utils.print_spacer_line()
         if self.run_deltas_flag or self.run_qsonic_flag:
+            submit_utils.print_spacer_line()
             job_id_deltas = self.run_deltas(job_id)
 
-        submit_utils.print_spacer_line()
         if self.run_pk1d_flag:
+            submit_utils.print_spacer_line()
             job_id = self.run_pk1d(job_id_deltas)
 
-        submit_utils.print_spacer_line()
         corr_paths = None
         if self.run_corr_flag:
+            submit_utils.print_spacer_line()
             corr_paths, job_id = self.run_correlations(job_id_deltas)
 
         corr_dict = {}
-        submit_utils.print_spacer_line()
         if self.run_export_flag:
+            submit_utils.print_spacer_line()
             corr_dict, _, __, ___ = self.run_export(corr_paths, job_id)
 
-        submit_utils.print_spacer_line()
         if self.run_vega_flag:
+            submit_utils.print_spacer_line()
             job_id, _ = self.run_vega(corr_dict, job_id)
 
         return corr_dict, job_id
