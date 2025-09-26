@@ -138,15 +138,21 @@ class MockBatchRun:
             print('Running mock:', mock_obj.analysis_tree.full_mock_seed)
 
             job_id = None
+            if mock_obj.run_lyacolore_flag:
+                submit_utils.print_spacer_line()
+                job_id = mock_obj.run_lyacolore(job_id)
+
+            if mock_obj.mock_analysis_type == 'raw' or mock_obj.run_qq_flag:
+                submit_utils.print_spacer_line()
+                # TODO parallelize this
+                job_id = mock_obj.create_qq_catalog(job_id, run_local=True)
+
             if mock_obj.run_qq_flag:
                 submit_utils.print_spacer_line()
-
-                # TODO unpack and parallelize catalog creation
                 job_id = mock_obj.run_qq(job_id)
 
             if mock_obj.run_zerr_flag:
                 submit_utils.print_spacer_line()
-
                 # TODO parallelize this
                 job_id = mock_obj.make_zerr_cat(job_id, run_local=True)
 
@@ -155,18 +161,17 @@ class MockBatchRun:
                 submit_utils.print_spacer_line()
                 job_id_deltas = mock_obj.run_deltas(job_id)
 
-            submit_utils.print_spacer_line()
             if mock_obj.run_pk1d_flag:
+                submit_utils.print_spacer_line()
                 job_id = mock_obj.run_pk1d(job_id, delta_job_ids=job_id_deltas)
 
-            submit_utils.print_spacer_line()
             corr_paths = None
             if mock_obj.run_corr_flag:
+                submit_utils.print_spacer_line()
                 corr_paths, job_id = mock_obj.run_correlations(job_id_deltas)
-
-            submit_utils.print_spacer_line()
             mock_corr_dict = {}
             if mock_obj.run_export_flag:
+                submit_utils.print_spacer_line()
                 if corr_paths is None:
                     raise ValueError(
                         'Export runs must include correlation runs as well. '
@@ -188,6 +193,7 @@ class MockBatchRun:
                     all_export_cov_commands += export_cov_commands
 
             if mock_obj.run_vega_flag:
+                submit_utils.print_spacer_line()
                 if not mock_corr_dict:
                     raise ValueError(
                         'Vega runs must include correlation and export runs as well. '

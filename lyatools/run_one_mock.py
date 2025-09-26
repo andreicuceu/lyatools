@@ -28,7 +28,7 @@ class MockRun:
     ):
         # Get individual configs
         self.job_config = config['job_info']
-        self.lyacolore= config['lyacolore']
+        self.lyacolore_config= config['lyacolore']
         self.inject_zerr_config = config['inject_zerr']
         self.qq_config = config['quickquasars']
         self.deltas_config = config['delta_extraction']
@@ -101,9 +101,7 @@ class MockRun:
                 'raw_master', '0', 'raw_master', None, name
             )
 
-            if self.run_lyacolore_flag:
-                raw_path = Path(self.lyacolore.get('lyacolore_dir'))
-            elif skewers_start_path is None:
+            if skewers_start_path is None:
                 raw_path = Path(mock_start_path)
             else:
                 raw_path = Path(skewers_start_path)
@@ -198,17 +196,17 @@ class MockRun:
 
         return corr_dict, job_id
 
-
     def run_lyacolore(self, job_id):
-        if self.run_lyacolore_flag: 
-            lyacolore_job_id = run_lyacolore(self.mock_setup, self.lyacolore, self.job_config)
-        else:
-            lyacolore_job_id = None
         submit_utils.print_spacer_line()
+        check_transmission_files = list(self.skewers_path.glob("*/*/transmission-*.fits*"))
+        if len(check_transmission_files) < 1:
+            job_id = run_lyacolore(self.lyacolore_config, self.skewers_path, self.qq_seed, 
+                                   self.job_config, job_id)
+        else:
+            print(f'Found transmission files in {self.skewers_path}. Skipping lyacolore.')
+        return job_id
         
-        return lyacolore_job_id
-        
-    def create_qq_catalog(self):
+    def create_qq_catalog(self, job_id=None, run_local=True):
         seed_cat_path = self.qq_tree.qq_dir / "seed_zcat.fits"
         assert self.qq_special_args is not None
 
@@ -218,7 +216,7 @@ class MockRun:
         else:
             job_id = create_qq_catalog(
                 self.qq_tree, seed_cat_path, self.qq_config, self.job_config,
-                self.qq_cat_seed, run_local=True
+                self.qq_cat_seed, prev_job_id=job_id, run_local=run_local
             )
         return job_id
         
