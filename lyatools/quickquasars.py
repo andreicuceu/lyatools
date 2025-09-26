@@ -2,7 +2,7 @@ from . import submit_utils
 from lyatools import qq_run_args
 
 
-def create_qq_catalog(qq_tree, seed_cat_path, config, job, seed, run_local=True):
+def create_qq_catalog(qq_tree, seed_cat_path, config, job, seed, prev_job_id=None, run_local=True):
     submit_utils.set_umask()
 
     release = config.get('release', 'jura')
@@ -42,7 +42,7 @@ def create_qq_catalog(qq_tree, seed_cat_path, config, job, seed, run_local=True)
     job_id = None
     if not seed_cat_path.is_file():
         submit_utils.write_script(script_path, full_text)
-        job_id = submit_utils.run_job(script_path, no_submit=job.getboolean('no_submit'))
+        job_id = submit_utils.run_job(script_path, dependency_ids=prev_job_id, no_submit=job.getboolean('no_submit'))
 
     return job_id
 
