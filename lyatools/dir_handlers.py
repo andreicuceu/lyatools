@@ -87,7 +87,12 @@ class QQTree:
         self.skewers_path = self.skewers_path / self.skewers_name / self.skewers_version
         self.skewers_path = self.skewers_path / f'skewers-{self.mock_seed}'
         if not self.skewers_path.is_dir():
-            raise RuntimeError(f'The skewers path does not exist: {self.skewers_path}')
+            print(f'WARNING: The skewers path does not exist: {self.skewers_path}. Creating folder.')
+            check_dir(self.skewers_path)
+            check_dir(self.skewers_path / 'scripts')
+            check_dir(self.skewers_path / 'logs')
+            
+
 
         # This is the path to the quickquasars run for this mock
         # E.g. desi/mocks/lya_forest/london/qq_desi_y3/v5.9.4/mock-0/jura-124
