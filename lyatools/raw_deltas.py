@@ -6,11 +6,11 @@ LYA_TRANSMISSION_HDUNAME = {
 }
 
 
-def make_raw_deltas(qso_cat, skewers_path, analysis_tree, config, mock_type, job, lyacolore_job_id=None, qq_job_id=None):
+def make_raw_deltas(qso_cat, skewers_path, analysis_tree, config, mock_type, job, qq_job_id=None):
     job_ids = []
     if config.getboolean('run_lya_region'):
         id = run_raw_deltas(
-            qso_cat, skewers_path, analysis_tree, config, mock_type, job, lyacolore_job_id=lyacolore_job_id,
+            qso_cat, skewers_path, analysis_tree, config, mock_type, job,
             qq_job_id=qq_job_id, region_name='lya',
             lambda_rest_min=config.getfloat('lambda_rest_lya_min'),
             lambda_rest_max=config.getfloat('lambda_rest_lya_max'),
@@ -19,7 +19,8 @@ def make_raw_deltas(qso_cat, skewers_path, analysis_tree, config, mock_type, job
 
     if config.getboolean('run_lyb_region'):
         id = run_raw_deltas(
-            qso_cat, skewers_path, analysis_tree, config, mock_type, job, lyacolore_job_id=lyacolore_job_id, qq_job_id=qq_job_id, region_name='lyb',
+            qso_cat, skewers_path, analysis_tree, config, mock_type, job,
+            qq_job_id=qq_job_id, region_name='lyb',
             lambda_rest_min=config.getfloat('lambda_rest_lyb_min'),
             lambda_rest_max=config.getfloat('lambda_rest_lyb_max'),
         )
@@ -32,7 +33,7 @@ def make_raw_deltas(qso_cat, skewers_path, analysis_tree, config, mock_type, job
 
 
 def run_raw_deltas(
-        qso_cat, skewers_path, analysis_tree, config, mock_type, job, lyacolore_job_id=None, qq_job_id=None,
+        qso_cat, skewers_path, analysis_tree, config, mock_type, job, qq_job_id=None,
         region_name='lya', lambda_rest_min=1040, lambda_rest_max=1200,
 ):
     if region_name == 'lya':
@@ -40,7 +41,7 @@ def run_raw_deltas(
     elif region_name == 'lyb':
         deltas_dir = analysis_tree.deltas_lyb_dir
     else:
-        raise ValueError('Unknown region name. Choose from ["lya", "lyb"].')
+        raise ValueError('Unkown region name. Choose from ["lya", "lyb"].')
 
     deltas_output_dir = deltas_dir / 'Delta'
     dir_handlers.check_dir(deltas_output_dir)
@@ -94,12 +95,8 @@ def run_raw_deltas(
     sh_text += f'srun -n 1 -c 128 {pyscript_path}\n'
 
     submit_utils.write_script(slurm_script_path, sh_text)
-    
-    if qq_job_id is None and lyacolore_job_id is not None:
-        job_id = submit_utils.run_job(slurm_script_path, dependency_ids=lyacolore_job_id,
-                                  no_submit=job.getboolean('no_submit'))
-    else:
-        job_id = submit_utils.run_job(
+
+    job_id = submit_utils.run_job(
         slurm_script_path, dependency_ids=qq_job_id, no_submit=job.getboolean('no_submit'))
 
     return job_id
