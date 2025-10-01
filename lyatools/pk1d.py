@@ -52,10 +52,7 @@ def run_picca_pk1d(analysis_tree, config, job, region_name='lya',delta_job_ids=N
     weight_method = job.get('weight_method', 'no_weights')
     rebin_factor = job.getint('rebin_factor', 3)
     num_bootstrap = job.getint('num_bootstrap', 50)
-<<<<<<< HEAD
     compute_covariance = job.getboolean('compute_covariance', False)
-=======
->>>>>>> 8359591 (Included picca_Pk1D option in the analysis pipeline)
 
     text = header
     text += f'{env_command}\n\n'
