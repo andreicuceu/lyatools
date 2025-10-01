@@ -233,7 +233,9 @@ class MockRun:
         # Run quickquasars
         submit_utils.print_spacer_line()
         check_spectra_files = list(self.qq_tree.spectra_dir.glob("*/*/spectra-*.fits*"))
+        seed_cat_path = self.qq_tree.qq_dir / "seed_zcat.fits"
         if len(check_spectra_files) < 1:
+            seed_cat_path = self.qq_tree.qq_dir / "seed_zcat.fits"
             job_id = run_qq(
                 self.qq_tree, self.qq_config, self.job_config, seed_cat_path,
                 self.qq_seed, self.qq_special_args, prev_job_id=job_id
