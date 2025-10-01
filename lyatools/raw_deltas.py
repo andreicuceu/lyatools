@@ -6,12 +6,12 @@ LYA_TRANSMISSION_HDUNAME = {
 }
 
 
-def make_raw_deltas(qso_cat, skewers_path, analysis_tree, config, mock_type, job, qq_job_id=None):
+def make_raw_deltas(qso_cat, skewers_path, analysis_tree, config, mock_type, job, prev_job_id=None):
     job_ids = []
     if config.getboolean('run_lya_region'):
         id = run_raw_deltas(
             qso_cat, skewers_path, analysis_tree, config, mock_type, job,
-            qq_job_id=qq_job_id, region_name='lya',
+            prev_job_id=prev_job_id, region_name='lya',
             lambda_rest_min=config.getfloat('lambda_rest_lya_min'),
             lambda_rest_max=config.getfloat('lambda_rest_lya_max'),
         )
@@ -20,7 +20,7 @@ def make_raw_deltas(qso_cat, skewers_path, analysis_tree, config, mock_type, job
     if config.getboolean('run_lyb_region'):
         id = run_raw_deltas(
             qso_cat, skewers_path, analysis_tree, config, mock_type, job,
-            qq_job_id=qq_job_id, region_name='lyb',
+            prev_job_id=prev_job_id, region_name='lyb',
             lambda_rest_min=config.getfloat('lambda_rest_lyb_min'),
             lambda_rest_max=config.getfloat('lambda_rest_lyb_max'),
         )
@@ -33,7 +33,7 @@ def make_raw_deltas(qso_cat, skewers_path, analysis_tree, config, mock_type, job
 
 
 def run_raw_deltas(
-        qso_cat, skewers_path, analysis_tree, config, mock_type, job, qq_job_id=None,
+        qso_cat, skewers_path, analysis_tree, config, mock_type, job, prev_job_id=None,
         region_name='lya', lambda_rest_min=1040, lambda_rest_max=1200,
 ):
     if region_name == 'lya':
@@ -97,6 +97,6 @@ def run_raw_deltas(
     submit_utils.write_script(slurm_script_path, sh_text)
 
     job_id = submit_utils.run_job(
-        slurm_script_path, dependency_ids=qq_job_id, no_submit=job.getboolean('no_submit'))
+        slurm_script_path, dependency_ids=prev_job_id, no_submit=job.getboolean('no_submit'))
 
     return job_id

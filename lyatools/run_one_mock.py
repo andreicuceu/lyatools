@@ -91,6 +91,13 @@ class MockRun:
             name = 'baseline' if analysis_name is None else analysis_name
 
         # Initialize the directory structure
+        if self.run_lyacolore_flag:
+            # Initialize the QQ tree as well since lyacolore needs it
+            self.qq_tree = dir_handlers.QQTree(
+                mock_start_path, skewers_name, skewers_version, mock_seed, survey_name,
+                qq_version, qq_run_type, skewers_start_path, qq_seeds, spectra_dirname
+            )
+
         if self.mock_analysis_type == 'raw_master':
             assert not self.run_qq_flag
             assert not self.run_zerr_flag
@@ -198,9 +205,9 @@ class MockRun:
 
     def run_lyacolore(self, job_id):
         submit_utils.print_spacer_line()
-        check_transmission_files = list(self.skewers_path.glob("*/*/transmission-*.fits*"))
+        check_transmission_files = list(self.qq_tree.skewers_path.glob("*/*/transmission-*.fits*"))
         if len(check_transmission_files) < 1:
-            job_id = run_lyacolore(self.lyacolore_config, self.skewers_path, self.qq_seed, 
+            job_id = run_lyacolore(self.lyacolore_config, self.qq_tree.skewers_path, self.qq_seed, 
                                    self.job_config, job_id)
         else:
             print(f'Found transmission files in {self.skewers_path}. Skipping lyacolore.')
@@ -280,7 +287,7 @@ class MockRun:
 
         return zerr_job_id
 
-    def run_deltas(self, lyacolore_job_id, qq_job_id):
+    def run_deltas(self, job_id):
         no_zerr = not self.inject_zerr_config.getboolean('zerr_in_deltas', False)
         qso_cat = self.get_analysis_qso_cat(no_zerr=no_zerr)
 
@@ -293,7 +300,7 @@ class MockRun:
 
             job_id = make_raw_deltas(
                 qso_cat, skewers_path, self.analysis_tree, self.deltas_config, self.mock_type,
-                self.job_config, lyacolore_job_id=lyacolore_job_id, qq_job_id=qq_job_id
+                self.job_config, prev_job_id=job_id
             )
             return job_id
 
