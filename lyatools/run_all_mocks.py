@@ -163,7 +163,7 @@ class MockBatchRun:
 
             if mock_obj.run_pk1d_flag:
                 submit_utils.print_spacer_line()
-                job_id = mock_obj.run_pk1d(job_id, delta_job_ids=job_id_deltas)
+                job_id = mock_obj.run_pk1d(delta_job_ids=job_id_deltas)
 
             corr_paths = None
             if mock_obj.run_corr_flag:
