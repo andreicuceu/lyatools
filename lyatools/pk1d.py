@@ -52,6 +52,7 @@ def run_picca_pk1d(analysis_tree, config, job, region_name='lya',delta_job_ids=N
     weight_method = job.get('weight_method', 'no_weights')
     rebin_factor = job.getint('rebin_factor', 3)
     num_bootstrap = job.getint('num_bootstrap', 50)
+    compute_covariance = job.getboolean('compute_covariance', False)
 
     text = header
     text += f'{env_command}\n\n'
@@ -71,7 +72,10 @@ def run_picca_pk1d(analysis_tree, config, job, region_name='lya',delta_job_ids=N
     text += f'srun picca_Pk1D_postprocess.py --in-dir {out_dir} '
     text += f'--weight-method {weight_method} '
     text += f'--rebinfac {rebin_factor} '
-    text += f'--covariance --bootstrap --nbootstrap {num_bootstrap} '
+    if compute_covariance:
+        text += f'--covariance '
+        if num_bootstrap > 0:
+            text += f'--bootstrap --nbootstrap {num_bootstrap} '
     text += f'--ncpu {nproc} '
 
     script_path = analysis_tree.scripts_dir / f'Pk1D_{region_name}.sh'
