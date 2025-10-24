@@ -330,7 +330,7 @@ class MockRun:
         if self.run_deltas_flag:
             job_id = make_picca_delta_runs(
                 qso_cat, self.qq_tree, self.analysis_tree,
-                self.deltas_config, self.job_config, lyacolore_job_id=lyacolore_job_id, qq_job_id=qq_job_id,
+                self.deltas_config, self.job_config, job_id=job_id,
                 mask_dla_cat=mask_dla_cat, mask_bal_cat=mask_bal_cat, true_continuum=true_continuum,
             )
 
@@ -340,7 +340,7 @@ class MockRun:
         if self.run_qsonic_flag:
             job_id = make_qsonic_runs(
                 qso_cat, self.qq_tree, self.analysis_tree,
-                self.qsonic_config, self.job_config, qq_job_id=qq_job_id,
+                self.qsonic_config, self.job_config, qq_job_id=job_id,
                 mask_dla_cat=mask_dla_cat, mask_bal_cat=mask_bal_cat, true_continuum=true_continuum,
             )
 
