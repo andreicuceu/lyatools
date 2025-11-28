@@ -52,6 +52,7 @@ def make_correlation_runs(qso_cat, analysis_tree, config, job, corr_types, delta
 
     cf_paths = [out[0] for out in cf_out]
     job_ids = [out[1] for out in cf_out] + [out[1] for out in cf_shuffled_out]
+    #job_ids += [out[1] for out in dmat_out] + [out[1] for out in metal_out]
     return cf_paths, job_ids
 
 
