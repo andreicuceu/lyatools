@@ -212,7 +212,7 @@ def get_builder(builder_config):
         'fullshape_smoothing': 'gauss', 'fullshape_smoothing_metals': True,
         'velocity_dispersion': 'gauss', 'hcd_model': 'Rogers2018',
         'metals': ['SiII(1260)', 'SiIII(1207)', 'SiII(1193)', 'SiII(1190)'],
-        'new_metals': True,
+        'new_metals': True, 'zmin': 0.0, 'zmax': 10.0,
     }
     for key in builder_config:
         if builder_config[key] == 'None' and key in options:
