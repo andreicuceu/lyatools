@@ -35,7 +35,7 @@ def run_picca_pk1d(analysis_tree, config, job, region_name='lya',delta_job_ids=N
     else:
         raise ValueError('Unkown region name. Choose from ["lya", "lyb"].')
     
-    check_file_indir = list(in_dir.glob("mean_Pk1d_*.fits.gz"))
+    check_file_indir = list(out_dir.glob("mean_Pk1d_*.fits.gz"))
     if len(check_file_indir) > 0:
         print(f'Pk1D output files already exist in {out_dir}, skipping Pk1D computation.')
         return None
