@@ -124,7 +124,10 @@ def run_vega_mpi(vega_commands, analysis_tree, config, job, export_job_ids=None)
     text += f'-l {logs}\n'
 
     # Write the script.
-    script_path = analysis_tree.scripts_dir / 'mpi_vegafit.sh'
+    z_min = config['vega.correlations'].getfloat('z_min',0)
+    z_max = config['vega.correlations'].getfloat('z_max',10)
+    name_ext = f'_{z_min}_{z_max}'
+    script_path = analysis_tree.scripts_dir / f'mpi_vegafit{name_ext}.sh'
     submit_utils.write_script(script_path, text)
 
     _ = submit_utils.run_job(
@@ -139,7 +142,9 @@ def get_correlations_dict(corr_dict, config, corr_dir, qso_cat):
         dist_path = Path(config['distortion_path'])
         if not dist_path.exists():
             raise ValueError(f'Distortion path does not exist: {dist_path}')
-
+        
+    zmin = config.getfloat('z_min')
+    zmax = config.getfloat('z_max')
     rmin = config.getfloat('rmin')
     rmax = config.getfloat('rmax')
     rmin_auto = config.getfloat('rmin-auto', rmin)
@@ -157,7 +162,7 @@ def get_correlations_dict(corr_dict, config, corr_dir, qso_cat):
         correlations['lyaxlya']['r-max'] = rmax
         correlations['lyaxlya']['fast_metals'] = f'{fast_metals}'
         if dist_path is not None:
-            correlations['lyaxlya']['distortion-file'] = f"{dist_path / 'dmat_lya_lya_0_10.fits'}"
+            correlations['lyaxlya']['distortion-file'] = f"{dist_path / f'dmat_lya_lya_{zmin}_{zmax}.fits'}"
 
     if 'cf_lya_lyb' in corr_dict:
         correlations['lyaxlyb'] = {}
@@ -170,7 +175,7 @@ def get_correlations_dict(corr_dict, config, corr_dir, qso_cat):
         correlations['lyaxlyb']['r-max'] = rmax
         correlations['lyaxlyb']['fast_metals'] = f'{fast_metals}'
         if dist_path is not None:
-            correlations['lyaxlyb']['distortion-file'] = f"{dist_path / 'dmat_lya_lyb_0_10.fits'}"
+            correlations['lyaxlyb']['distortion-file'] = f"{dist_path / f'dmat_lya_lyb_{zmin}_{zmax}.fits'}"
 
     if 'xcf_lya_qso' in corr_dict:
         correlations['lyaxqso'] = {}
@@ -182,7 +187,7 @@ def get_correlations_dict(corr_dict, config, corr_dir, qso_cat):
         correlations['lyaxqso']['r-max'] = rmax
         correlations['lyaxqso']['fast_metals'] = f'{fast_metals}'
         if dist_path is not None:
-            correlations['lyaxqso']['distortion-file'] = f"{dist_path / 'xdmat_lya_qso_0_10.fits'}"
+            correlations['lyaxqso']['distortion-file'] = f"{dist_path / f'xdmat_lya_qso_{zmin}_{zmax}.fits'}"
 
     if 'xcf_lyb_qso' in corr_dict:
         correlations['lybxqso'] = {}
@@ -194,7 +199,7 @@ def get_correlations_dict(corr_dict, config, corr_dir, qso_cat):
         correlations['lybxqso']['r-max'] = rmax
         correlations['lybxqso']['fast_metals'] = f'{fast_metals}'
         if dist_path is not None:
-            correlations['lybxqso']['distortion-file'] = f"{dist_path / 'xdmat_lyb_qso_0_10.fits'}"
+            correlations['lybxqso']['distortion-file'] = f"{dist_path / f'xdmat_lyb_qso_{zmin}_{zmax}.fits'}"
 
     return correlations
 
@@ -207,7 +212,7 @@ def get_builder(builder_config):
         'fullshape_smoothing': 'gauss', 'fullshape_smoothing_metals': True,
         'velocity_dispersion': 'gauss', 'hcd_model': 'Rogers2018',
         'metals': ['SiII(1260)', 'SiIII(1207)', 'SiII(1193)', 'SiII(1190)'],
-        'new_metals': True,
+        'new_metals': True, 'zmin': 0.0, 'zmax': 10.0,
     }
     for key in builder_config:
         if builder_config[key] == 'None' and key in options:

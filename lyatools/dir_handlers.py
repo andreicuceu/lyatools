@@ -87,7 +87,12 @@ class QQTree:
         self.skewers_path = self.skewers_path / self.skewers_name / self.skewers_version
         self.skewers_path = self.skewers_path / f'skewers-{self.mock_seed}'
         if not self.skewers_path.is_dir():
-            raise RuntimeError(f'The skewers path does not exist: {self.skewers_path}')
+            print(f'WARNING: The skewers path does not exist: {self.skewers_path}. Creating folder.')
+            check_dir(self.skewers_path)
+            check_dir(self.skewers_path / 'scripts')
+            check_dir(self.skewers_path / 'logs')
+            
+
 
         # This is the path to the quickquasars run for this mock
         # E.g. desi/mocks/lya_forest/london/qq_desi_y3/v5.9.4/mock-0/jura-124
@@ -132,6 +137,7 @@ class AnalysisTree:
 
     analysis_dir: Path = field(init=False)
     corr_dir: Path = field(init=False)
+    pk1d_dir: Path = field(init=False)
     deltas_lya_dir: Path = field(init=False)
     deltas_lyb_dir: Path = field(init=False)
     fits_dir: Path = field(init=False)
@@ -153,7 +159,7 @@ class AnalysisTree:
         return analysis_dir
 
     def _init_outdirs_from_base(
-            self, base, corr=True, deltas=True, fits=True,
+            self, base, corr=True, pk1d=True, deltas=True, fits=True,
             logs=True, scripts=True
     ):
         # These are the directories needed for the analysis
@@ -165,6 +171,11 @@ class AnalysisTree:
             check_dir(self.deltas_lya_dir)
             self.deltas_lyb_dir = base / 'deltas_lyb'
             check_dir(self.deltas_lyb_dir)
+        if pk1d:
+            self.pk1d_lya_dir = base / 'Pk1D/lya'
+            check_dir(self.pk1d_lya_dir)
+            self.pk1d_lyb_dir = base / 'Pk1D/lyb'
+            check_dir(self.pk1d_lyb_dir)
         if fits:
             self.fits_dir = base / 'fits'
             check_dir(self.fits_dir)

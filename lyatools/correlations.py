@@ -73,7 +73,6 @@ def run_correlation(
         out_file=analysis_tree.logs_dir/f'{name}-%j.out'
     )
 
-    # TODO implement other options for redshift bins
     z_min_default, z_max_default = 0, 10
     zmin = config.getfloat('z_min', z_min_default)
     zmax = config.getfloat('z_max', z_max_default)
@@ -135,7 +134,8 @@ def run_correlation(
         text += f'--in-dir2 {in_dir2} '
 
     if cross:
-        text += f'--drq {qso_cat} --mode desi_mocks --z-evol-obj 1.44 --rp-min -{rp_max} '
+        text += f'--drq {qso_cat} --mode desi_mocks --z-evol-obj 1.44 '
+        text += f'--rp-min {-rp_max} ' if not dmat else f'--rp-min {-dmat_rp_max} '
     else:
         text += f'--rp-min {rp_min} '
 

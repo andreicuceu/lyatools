@@ -3,7 +3,7 @@ import copy
 
 from . import submit_utils, dir_handlers
 from lyatools.run_one_mock import MockRun
-from lyatools.export import stack_correlations, mpi_export
+from lyatools.export import stack_correlations,stack_full_covariance, mpi_export
 from lyatools.vegafit import run_vega_mpi
 
 
@@ -110,6 +110,16 @@ class MockBatchRun:
                     corr_dict, self.stack_tree, self.job_config, shuffled=subtract_shuffled,
                     name_string=name_string, corr_job_ids=job_ids
                 )
+            
+            no_smooth_covariance_flag = self.config['picca_export'].getboolean('no_smooth_covariance', False)
+            cov_string = self.config['picca_export'].get('cov_string', None)
+            if cov_string is None and name_string is not None:
+                cov_string = name_string
+            _ = stack_full_covariance(
+                    corr_dict, self.stack_tree, self.job_config, smooth_covariance_flag=not no_smooth_covariance_flag,
+                    corr_config=self.run_mock_objects[0].corr_config,
+                    name_string=cov_string, corr_job_ids=job_ids
+                )
 
         submit_utils.print_spacer_line()
         print('All mocks submitted. Done!')
@@ -128,28 +138,40 @@ class MockBatchRun:
             print('Running mock:', mock_obj.analysis_tree.full_mock_seed)
 
             job_id = None
-            submit_utils.print_spacer_line()
+            if mock_obj.run_lyacolore_flag:
+                submit_utils.print_spacer_line()
+                job_id = mock_obj.run_lyacolore(job_id)
+
+            if mock_obj.mock_analysis_type == 'raw' or mock_obj.run_qq_flag:
+                submit_utils.print_spacer_line()
+                # TODO parallelize this
+                job_id = mock_obj.create_qq_catalog(job_id, run_local=True)
+
             if mock_obj.run_qq_flag:
-                # TODO unpack and parallelize catalog creation
+                submit_utils.print_spacer_line()
                 job_id = mock_obj.run_qq(job_id)
 
-            submit_utils.print_spacer_line()
             if mock_obj.run_zerr_flag:
+                submit_utils.print_spacer_line()
                 # TODO parallelize this
                 job_id = mock_obj.make_zerr_cat(job_id, run_local=True)
 
-            submit_utils.print_spacer_line()
+            job_id_deltas = None
             if mock_obj.run_deltas_flag or mock_obj.run_qsonic_flag:
-                job_id = mock_obj.run_deltas(job_id)
+                submit_utils.print_spacer_line()
+                job_id_deltas = mock_obj.run_deltas(job_id)
 
-            submit_utils.print_spacer_line()
+            if mock_obj.run_pk1d_flag:
+                submit_utils.print_spacer_line()
+                job_id = mock_obj.run_pk1d(delta_job_ids=job_id_deltas)
+
             corr_paths = None
             if mock_obj.run_corr_flag:
-                corr_paths, job_id = mock_obj.run_correlations(job_id)
-
-            submit_utils.print_spacer_line()
+                submit_utils.print_spacer_line()
+                corr_paths, job_id = mock_obj.run_correlations(job_id_deltas)
             mock_corr_dict = {}
             if mock_obj.run_export_flag:
+                submit_utils.print_spacer_line()
                 if corr_paths is None:
                     raise ValueError(
                         'Export runs must include correlation runs as well. '
@@ -171,6 +193,7 @@ class MockBatchRun:
                     all_export_cov_commands += export_cov_commands
 
             if mock_obj.run_vega_flag:
+                submit_utils.print_spacer_line()
                 if not mock_corr_dict:
                     raise ValueError(
                         'Vega runs must include correlation and export runs as well. '

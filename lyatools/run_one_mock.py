@@ -1,11 +1,13 @@
 from pathlib import Path
 
 from . import submit_utils, dir_handlers
+from lyatools.lyacolore import run_lyacolore
 from lyatools.raw_deltas import make_raw_deltas
 from lyatools.quickquasars import run_qq, create_qq_catalog, make_catalogs
 from lyatools.delta_extraction import make_picca_delta_runs
 from lyatools.qsonic import make_qsonic_runs
 from lyatools.correlations import make_correlation_runs
+from lyatools.pk1d import make_pk1d_runs
 from lyatools.export import make_export_runs, export_full_cov
 from lyatools.vegafit import make_vega_config
 from lyatools import qq_run_args
@@ -26,20 +28,24 @@ class MockRun:
     ):
         # Get individual configs
         self.job_config = config['job_info']
+        self.lyacolore_config= config['lyacolore']
         self.inject_zerr_config = config['inject_zerr']
         self.qq_config = config['quickquasars']
         self.deltas_config = config['delta_extraction']
         self.qsonic_config = config['qsonic']
         self.corr_config = config['picca_corr']
+        self.pk1d_config = config['picca_Pk1D']
         self.export_config = config['picca_export']
         self.vega_config = {key: config[key] for key in config.keys() if key.startswith('vega')}
 
         # Get control flags
+        self.run_lyacolore_flag = config['control'].getboolean('run_lyacolore')
         self.run_qq_flag = config['control'].getboolean('run_qq')
         self.run_zerr_flag = config['control'].getboolean('run_zerr')
         self.run_deltas_flag = config['control'].getboolean('run_deltas')
         self.run_qsonic_flag = config['control'].getboolean('run_qsonic')
         self.run_corr_flag = config['control'].getboolean('run_corr')
+        self.run_pk1d_flag = config['control'].getboolean('run_pk1d')
         self.run_export_flag = config['control'].getboolean('run_export')
         self.run_vega_flag = config['control'].getboolean('run_vega')
         self.only_qso_targets_flag = config['quickquasars'].getboolean('only_qso_targets')
@@ -55,6 +61,7 @@ class MockRun:
 
         # Get the mock info we need to build the tree
         self.mock_type = config['mock_setup'].get('mock_type')
+        self.mock_setup = config['mock_setup']
         skewers_name = config['mock_setup'].get('skewers_name')
         skewers_version = config['mock_setup'].get('skewers_version')
         survey_name = config['mock_setup'].get('survey_name')
@@ -84,6 +91,13 @@ class MockRun:
             name = 'baseline' if analysis_name is None else analysis_name
 
         # Initialize the directory structure
+        if self.run_lyacolore_flag:
+            # Initialize the QQ tree as well since lyacolore needs it
+            self.qq_tree = dir_handlers.QQTree(
+                mock_start_path, skewers_name, skewers_version, mock_seed, survey_name,
+                qq_version, qq_run_type, skewers_start_path, qq_seeds, spectra_dirname
+            )
+
         if self.mock_analysis_type == 'raw_master':
             assert not self.run_qq_flag
             assert not self.run_zerr_flag
@@ -150,51 +164,76 @@ class MockRun:
     def run_mock(self):
         job_id = None
 
-        submit_utils.print_spacer_line()
+        if self.run_lyacolore_flag:
+            submit_utils.print_spacer_line()
+            job_id = self.run_lyacolore(job_id)
+
+        if self.mock_analysis_type == 'raw' or self.run_qq_flag:
+            job_id = self.create_qq_catalog(job_id)
+
         if self.run_qq_flag:
+            submit_utils.print_spacer_line()
             job_id = self.run_qq(job_id)
 
-        submit_utils.print_spacer_line()
         if self.run_zerr_flag:
+            submit_utils.print_spacer_line()
             job_id = self.make_zerr_cat(job_id)
 
-        submit_utils.print_spacer_line()
         if self.run_deltas_flag or self.run_qsonic_flag:
-            job_id = self.run_deltas(job_id)
+            submit_utils.print_spacer_line()
+            job_id_deltas = self.run_deltas(job_id)
 
-        submit_utils.print_spacer_line()
+        if self.run_pk1d_flag:
+            submit_utils.print_spacer_line()
+            job_id = self.run_pk1d(job_id_deltas)
+
         corr_paths = None
         if self.run_corr_flag:
-            corr_paths, job_id = self.run_correlations(job_id)
+            submit_utils.print_spacer_line()
+            corr_paths, job_id = self.run_correlations(job_id_deltas)
 
         corr_dict = {}
-        submit_utils.print_spacer_line()
         if self.run_export_flag:
+            submit_utils.print_spacer_line()
             corr_dict, _, __, ___ = self.run_export(corr_paths, job_id)
 
-        submit_utils.print_spacer_line()
         if self.run_vega_flag:
+            submit_utils.print_spacer_line()
             job_id, _ = self.run_vega(corr_dict, job_id)
 
         return corr_dict, job_id
 
-    def run_qq(self, job_id):
+    def run_lyacolore(self, job_id):
+        submit_utils.print_spacer_line()
+        check_transmission_files = list(self.qq_tree.skewers_path.glob("*/*/transmission-*.fits*"))
+        if len(check_transmission_files) < 1:
+            job_id = run_lyacolore(self.lyacolore_config, self.qq_tree.skewers_path, self.qq_seed, 
+                                   self.job_config, job_id)
+        else:
+            print(f'Found transmission files in {self.qq_tree.skewers_path}. Skipping lyacolore.')
+        return job_id
+        
+    def create_qq_catalog(self, job_id=None, run_local=True):
         seed_cat_path = self.qq_tree.qq_dir / "seed_zcat.fits"
         assert self.qq_special_args is not None
 
         # Make QQ input catalog
         if seed_cat_path.is_file():
-            print(f'Found QQ input catalog: {seed_cat_path}. Skipping gen_qso_catalog.')
+            print(f'Found previously generated input seed catalog: {seed_cat_path}. Skipping gen_qso_catalog.')
         else:
             job_id = create_qq_catalog(
                 self.qq_tree, seed_cat_path, self.qq_config, self.job_config,
-                self.qq_cat_seed, run_local=True
+                self.qq_cat_seed, prev_job_id=job_id, run_local=run_local
             )
+        return job_id
+        
 
+    def run_qq(self, job_id):
         # TODO Figure out a way to check if QQ run already exists
         # Run quickquasars
         submit_utils.print_spacer_line()
         check_spectra_files = list(self.qq_tree.spectra_dir.glob("*/*/spectra-*.fits*"))
+        seed_cat_path = self.qq_tree.qq_dir / "seed_zcat.fits"
         if len(check_spectra_files) < 1:
             job_id = run_qq(
                 self.qq_tree, self.qq_config, self.job_config, seed_cat_path,
@@ -249,12 +288,12 @@ class MockRun:
 
         return zerr_job_id
 
-    def run_deltas(self, qq_job_id):
+    def run_deltas(self, job_id):
         no_zerr = not self.inject_zerr_config.getboolean('zerr_in_deltas', False)
         qso_cat = self.get_analysis_qso_cat(no_zerr=no_zerr)
 
         # Run raw deltas
-        if 'raw' in self.mock_analysis_type:
+        if 'raw' in self.mock_analysis_type: 
             if 'master' in self.mock_analysis_type:
                 skewers_path = self.skewers_path
             else:
@@ -262,7 +301,7 @@ class MockRun:
 
             job_id = make_raw_deltas(
                 qso_cat, skewers_path, self.analysis_tree, self.deltas_config, self.mock_type,
-                self.job_config, qq_job_id=qq_job_id
+                self.job_config, prev_job_id=job_id
             )
             return job_id
 
@@ -290,7 +329,7 @@ class MockRun:
         if self.run_deltas_flag:
             job_id = make_picca_delta_runs(
                 qso_cat, self.qq_tree, self.analysis_tree,
-                self.deltas_config, self.job_config, qq_job_id=qq_job_id,
+                self.deltas_config, self.job_config, job_id=job_id,
                 mask_dla_cat=mask_dla_cat, mask_bal_cat=mask_bal_cat, true_continuum=true_continuum,
             )
 
@@ -300,12 +339,19 @@ class MockRun:
         if self.run_qsonic_flag:
             job_id = make_qsonic_runs(
                 qso_cat, self.qq_tree, self.analysis_tree,
-                self.qsonic_config, self.job_config, qq_job_id=qq_job_id,
+                self.qsonic_config, self.job_config, qq_job_id=job_id,
                 mask_dla_cat=mask_dla_cat, mask_bal_cat=mask_bal_cat, true_continuum=true_continuum,
             )
 
             return job_id
-
+        
+    def run_pk1d(self, delta_job_ids):
+        job_id = make_pk1d_runs(
+            self.analysis_tree, self.pk1d_config, self.job_config,
+            delta_job_ids=delta_job_ids
+        )
+        return job_id
+    
     def run_correlations(self, delta_job_ids):
         qso_cat = self.get_analysis_qso_cat()
 

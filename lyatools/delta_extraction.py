@@ -4,13 +4,13 @@ from . import submit_utils
 
 
 def make_picca_delta_runs(
-    qso_cat, qq_tree, analysis_tree, config, job, qq_job_id=None,
+    qso_cat, qq_tree, analysis_tree, config, job, job_id=None,
     mask_dla_cat=None, mask_bal_cat=None, true_continuum=False,
 ):
     job_ids = []
     if config.getboolean('run_lya_region'):
         id = run_delta_extraction(
-            qso_cat, qq_tree, analysis_tree, config, job, qq_job_id=qq_job_id, region_name='lya',
+            qso_cat, qq_tree, analysis_tree, config, job, job_id=job_id, region_name='lya',
             mask_dla_cat=mask_dla_cat, mask_bal_cat=mask_bal_cat, true_continuum=true_continuum,
             lambda_rest_min=config.getfloat('lambda_rest_lya_min'),
             lambda_rest_max=config.getfloat('lambda_rest_lya_max'),
@@ -19,7 +19,7 @@ def make_picca_delta_runs(
 
     if config.getboolean('run_lyb_region'):
         id = run_delta_extraction(
-            qso_cat, qq_tree, analysis_tree, config, job, qq_job_id=qq_job_id, region_name='lyb',
+            qso_cat, qq_tree, analysis_tree, config, job, job_id=job_id, region_name='lyb',
             mask_dla_cat=mask_dla_cat, mask_bal_cat=mask_bal_cat, true_continuum=true_continuum,
             lambda_rest_min=config.getfloat('lambda_rest_lyb_min'),
             lambda_rest_max=config.getfloat('lambda_rest_lyb_max'),
@@ -33,7 +33,7 @@ def make_picca_delta_runs(
 
 
 def run_delta_extraction(
-    qso_cat, qq_tree, analysis_tree, config, job, qq_job_id=None, region_name='lya',
+    qso_cat, qq_tree, analysis_tree, config, job, job_id=None, region_name='lya',
     mask_dla_cat=None, mask_bal_cat=None, true_continuum=False,
     lambda_rest_min=1040., lambda_rest_max=1205.,
 ):
@@ -84,7 +84,7 @@ def run_delta_extraction(
     submit_utils.write_script(script_path, text)
 
     job_id = submit_utils.run_job(
-        script_path, dependency_ids=qq_job_id, no_submit=job.getboolean('no_submit'))
+        script_path, dependency_ids=job_id, no_submit=job.getboolean('no_submit'))
 
     return job_id
 
