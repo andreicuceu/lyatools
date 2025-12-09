@@ -49,10 +49,10 @@ def run_picca_pk1d(analysis_tree, config, job, region_name='lya',delta_job_ids=N
     noise_estimate = config.get('noise_estimate', 'pipeline')
     nproc = config.getint('nproc', 128)
     num_noise_exp = config.getint('num_noise_exp', 2500)
-    weight_method = job.get('weight_method', 'no_weights')
-    rebin_factor = job.getint('rebin_factor', 3)
-    num_bootstrap = job.getint('num_bootstrap', 50)
-    compute_covariance = job.getboolean('compute_covariance', False)
+    weight_method = config.get('weight_method', 'no_weights')
+    rebin_factor = config.getint('rebin_factor', 3)
+    num_bootstrap = config.getint('num_bootstrap', 50)
+    compute_covariance = config.getboolean('compute_covariance', False)
 
     text = header
     text += f'{env_command}\n\n'
@@ -83,13 +83,3 @@ def run_picca_pk1d(analysis_tree, config, job, region_name='lya',delta_job_ids=N
     job_id = submit_utils.run_job(
         script_path, dependency_ids=delta_job_ids, no_submit=job.getboolean('no_submit'))
     return job_id
-
-
-
-    
-
-
-    
-
-
-    
