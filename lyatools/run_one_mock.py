@@ -210,7 +210,7 @@ class MockRun:
             job_id = run_lyacolore(self.lyacolore_config, self.qq_tree.skewers_path, self.qq_seed, 
                                    self.job_config, job_id)
         else:
-            print(f'Found transmission files in {self.skewers_path}. Skipping lyacolore.')
+            print(f'Found transmission files in {self.qq_tree.skewers_path}. Skipping lyacolore.')
         return job_id
         
     def create_qq_catalog(self, job_id=None, run_local=True):
