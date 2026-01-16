@@ -163,6 +163,7 @@ class MockRun:
 
     def run_mock(self):
         job_id = None
+        job_id_deltas = None
 
         if self.run_lyacolore_flag:
             submit_utils.print_spacer_line()

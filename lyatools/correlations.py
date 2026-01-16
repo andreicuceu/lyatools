@@ -107,6 +107,7 @@ def run_correlation(
     num_bins_rt = config.getint('num_bins_rt')
     fid_Om = config.getfloat('fid_Om')
     fid_Or = config.getfloat('fid_Or', 7.97505418919554e-05)
+    fid_wl = config.getfloat('fid_wl', -1)
     dmat_rejection = config.getfloat('dmat_rejection')
     dmat_num_bins_rp = config.getint('dmat_num_bins_rp', num_bins_rp)
     dmat_rp_max = config.getfloat('dmat_rp_max', rp_max)
@@ -152,9 +153,9 @@ def run_correlation(
         text += f'--z-max-pairs {zmax} '
 
     if cross and dmat:
-        text += f'--fid-Om {fid_Om} --nproc {nproc//2} '
+        text += f'--fid-Om {fid_Om} --fid-wl {fid_wl} --nproc {nproc//2} '
     else:
-        text += f'--fid-Om {fid_Om} --nproc {nproc} '
+        text += f'--fid-Om {fid_Om} --fid-wl {fid_wl} --nproc {nproc} '
     text += f'--fid-Or {fid_Or} --nside {nside} '
 
     if metal_dmat:
