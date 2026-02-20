@@ -209,15 +209,33 @@ def get_correlations_dict(corr_dict, config, corr_dir, qso_cat):
 
 
 def get_builder(builder_config):
-    options = {
-        'scale_params': 'ap_at', 'template': 'PlanckDR12/PlanckDR12.fits',
-        'full_shape': False, 'smooth_scaling': False,
-        'small_scale_nl': False, 'bao_broadening': False, 'use_metal_autos': True,
-        'fullshape_smoothing': 'gauss', 'fullshape_smoothing_metals': True,
-        'velocity_dispersion': 'gauss', 'hcd_model': 'Rogers2018',
-        'metals': ['SiII(1260)', 'SiIII(1207)', 'SiII(1193)', 'SiII(1190)'],
-        'new_metals': True, 'zmin': 0.0, 'zmax': 10.0,
-    }
+    analysis_type = builder_config.get('analysis_type', 'bao')
+    if analysis_type == 'bao':
+        options = {
+            'scale_params': 'ap_at', 'template': 'PlanckDR12/PlanckDR12.fits',
+            'full_shape': False, 'smooth_scaling': False,
+            'small_scale_nl': False, 'bao_broadening': True, 'use_metal_autos': True,
+            'fullshape_smoothing': 'gauss', 'fullshape_smoothing_metals': True,
+            'velocity_dispersion': 'gauss', 'hcd_model': 'Rogers2018',
+            'metals': ['SiII(1260)', 'SiIII(1207)', 'SiII(1193)', 'SiII(1190)'],
+            'new_metals': True, 'zmin': 0.0, 'zmax': 10.0,
+        }
+    elif analysis_type == 'fullshape':
+        options = {
+            'scale_params': 'phi_alpha',
+            'template': '/global/cfs/projectdirs/desi/users/acuceu/notebooks_perl/vega/template/mock_templates/Abacus-Colore-2LPT.fits',
+            'full_shape': False, 'smooth_scaling': True, 'full_shape_alpha': False,
+            'small_scale_nl': True, 'bao_broadening': True, 'use_metal_autos': True,
+            'skip-nl-model-in-peak': True,
+            'fullshape_smoothing': 'gauss', 'fullshape_smoothing_metals': True,
+            'velocity_dispersion': 'gauss', 'hcd_model': 'Rogers2018',
+            'marginalize-below-rtmax': 16, 'marginalize-below-rpmax': 4,
+            'metals': ['SiII(1260)', 'SiIII(1207)', 'SiII(1193)', 'SiII(1190)'],
+            'new_metals': True, 'zmin': 0.0, 'zmax': 10.0,
+        }
+    else:
+        raise ValueError(f'Unknown builder type: {analysis_type}')
+
     for key in builder_config:
         if builder_config[key] == 'None' and key in options:
             del options[key]
