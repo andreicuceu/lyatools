@@ -52,7 +52,7 @@ def make_correlation_runs(qso_cat, analysis_tree, config, job, corr_types, delta
 
     cf_paths = [out[0] for out in cf_out]
     job_ids = [out[1] for out in cf_out] + [out[1] for out in cf_shuffled_out]
-    #job_ids += [out[1] for out in dmat_out] + [out[1] for out in metal_out]
+    # job_ids += [out[1] for out in dmat_out] + [out[1] for out in metal_out]
     return cf_paths, job_ids
 
 
@@ -176,10 +176,10 @@ def run_correlation(
 
     if rebin_factor is not None:
         text += f'--rebin-factor {rebin_factor} '
-        
+
     if zerr_cut_deg is not None:
         text += f'--zerr-cut-deg {zerr_cut_deg} '
-        
+
     if zerr_cut_kms is not None:
         text += f'--zerr-cut-kms {zerr_cut_kms} '
 

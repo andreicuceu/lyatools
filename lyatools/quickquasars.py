@@ -42,7 +42,8 @@ def create_qq_catalog(qq_tree, seed_cat_path, config, job, seed, prev_job_id=Non
     job_id = None
     if not seed_cat_path.is_file():
         submit_utils.write_script(script_path, full_text)
-        job_id = submit_utils.run_job(script_path, dependency_ids=prev_job_id, no_submit=job.getboolean('no_submit'))
+        job_id = submit_utils.run_job(
+            script_path, dependency_ids=prev_job_id, no_submit=job.getboolean('no_submit'))
 
     return job_id
 

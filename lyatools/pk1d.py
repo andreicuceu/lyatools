@@ -1,5 +1,6 @@
 from . import submit_utils
 
+
 def make_pk1d_runs(analysis_tree, config, job, delta_job_ids=None):
     submit_utils.set_umask()
     job_ids = []
@@ -15,12 +16,13 @@ def make_pk1d_runs(analysis_tree, config, job, delta_job_ids=None):
         job_ids += [id]
     return job_ids
 
-def run_picca_pk1d(analysis_tree, config, job, region_name='lya',delta_job_ids=None):
+
+def run_picca_pk1d(analysis_tree, config, job, region_name='lya', delta_job_ids=None):
     slurm_hours = config.getfloat(f'pk1d_{region_name}_slurm_hours', 0.5)
 
     # Make the header
     header = submit_utils.make_header(
-        job.get('nersc_machine'), job.get('slurm_queue'), 
+        job.get('nersc_machine'), job.get('slurm_queue'),
         time=slurm_hours, omp_threads=2, job_name=f'picca_pk1d_{region_name}',
         err_file=analysis_tree.logs_dir/f'picca_pk1d_{region_name}-%j.err',
         out_file=analysis_tree.logs_dir/f'picca_pk1d_{region_name}-%j.out'
@@ -34,12 +36,11 @@ def run_picca_pk1d(analysis_tree, config, job, region_name='lya',delta_job_ids=N
         out_dir = analysis_tree.pk1d_lyb_dir
     else:
         raise ValueError('Unkown region name. Choose from ["lya", "lyb"].')
-    
+
     check_file_indir = list(out_dir.glob("mean_Pk1d_*.fits.gz"))
     if len(check_file_indir) > 0:
         print(f'Pk1D output files already exist in {out_dir}, skipping Pk1D computation.')
         return None
-
 
     env_command = job.get('env_command')
     snr_min = config.getfloat('SNR_min', 1)
@@ -67,13 +68,13 @@ def run_picca_pk1d(analysis_tree, config, job, region_name='lya',delta_job_ids=N
     text += f'--num-noise-exp {num_noise_exp} '
     text += f'--num-processors {nproc} '
     text += '\n\n'
-    text += f'echo "Starting post-processing"\n'
+    text += 'echo "Starting post-processing"\n'
 
     text += f'srun picca_Pk1D_postprocess.py --in-dir {out_dir} '
     text += f'--weight-method {weight_method} '
     text += f'--rebinfac {rebin_factor} '
     if compute_covariance:
-        text += f'--covariance '
+        text += '--covariance '
         if num_bootstrap > 0:
             text += f'--bootstrap --nbootstrap {num_bootstrap} '
     text += f'--ncpu {nproc} '

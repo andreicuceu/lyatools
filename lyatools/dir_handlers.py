@@ -3,6 +3,7 @@ from pathlib import Path
 from subprocess import call
 from dataclasses import dataclass, field
 
+
 def make_symlink(target, link_name):
     """ Make a symbolic link named link_name pointing to target.
     Args:
@@ -87,12 +88,11 @@ class QQTree:
         self.skewers_path = self.skewers_path / self.skewers_name / self.skewers_version
         self.skewers_path = self.skewers_path / f'skewers-{self.mock_seed}'
         if not self.skewers_path.is_dir():
-            print(f'WARNING: The skewers path does not exist: {self.skewers_path}. Creating folder.')
+            print(
+                f'WARNING: The skewers path does not exist: {self.skewers_path}. Creating folder.')
             check_dir(self.skewers_path)
             check_dir(self.skewers_path / 'scripts')
             check_dir(self.skewers_path / 'logs')
-            
-
 
         # This is the path to the quickquasars run for this mock
         # E.g. desi/mocks/lya_forest/london/qq_desi_y3/v5.9.4/mock-0/jura-124

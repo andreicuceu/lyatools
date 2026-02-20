@@ -3,7 +3,7 @@ import copy
 
 from . import submit_utils, dir_handlers
 from lyatools.run_one_mock import MockRun
-from lyatools.export import stack_correlations,stack_full_covariance, mpi_export
+from lyatools.export import stack_correlations, stack_full_covariance, mpi_export
 from lyatools.vegafit import run_vega_mpi
 
 
@@ -47,10 +47,11 @@ class MockBatchRun:
 
         # Initialize the mock objects
         self.run_mock_objects = []
-        dmat_on_first_mock_only = self.config['picca_corr'].getboolean('dmat_on_first_mock_only', False)
+        dmat_on_first_mock_only = self.config['picca_corr'].getboolean(
+            'dmat_on_first_mock_only', False)
         for ii, (mock_seed, qq_seed) in enumerate(zip(self.mock_seeds, self.qq_seeds)):
             this_mock_config = copy.deepcopy(self.config)
-            if ii>0 and dmat_on_first_mock_only:
+            if ii > 0 and dmat_on_first_mock_only:
                 this_mock_config['picca_corr']['compute_dmat'] = 'False'
 
             self.run_mock_objects.append(
@@ -110,13 +111,15 @@ class MockBatchRun:
                     corr_dict, self.stack_tree, self.job_config, shuffled=subtract_shuffled,
                     name_string=name_string, corr_job_ids=job_ids
                 )
-            
-            no_smooth_covariance_flag = self.config['picca_export'].getboolean('no_smooth_covariance', False)
+
+            no_smooth_covariance_flag = self.config['picca_export'].getboolean(
+                'no_smooth_covariance', False)
             cov_string = self.config['picca_export'].get('cov_string', None)
             if cov_string is None and name_string is not None:
                 cov_string = name_string
             _ = stack_full_covariance(
-                    corr_dict, self.stack_tree, self.job_config, smooth_covariance_flag=not no_smooth_covariance_flag,
+                    corr_dict, self.stack_tree, self.job_config,
+                    smooth_covariance_flag=not no_smooth_covariance_flag,
                     corr_config=self.run_mock_objects[0].corr_config,
                     name_string=cov_string, corr_job_ids=job_ids
                 )

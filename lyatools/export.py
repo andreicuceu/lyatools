@@ -257,6 +257,7 @@ def stack_correlations(
 
     return job_id
 
+
 def stack_full_covariance(corr_dict, stack_tree, job, smooth_covariance_flag,
                           corr_config, name_string=None, corr_job_ids=None):
     # Make correlation file lists
@@ -265,7 +266,7 @@ def stack_full_covariance(corr_dict, stack_tree, job, smooth_covariance_flag,
     lyaxqso_files = []
     lybxqso_files = []
     correlation_types = []
-    
+
     for cf_name, (cf_list, _) in corr_dict.items():
         if len(cf_list) < 1:
             continue
@@ -295,7 +296,7 @@ def stack_full_covariance(corr_dict, stack_tree, job, smooth_covariance_flag,
 
     header = submit_utils.make_header(
         job.get('nersc_machine'), time=0.25,
-        omp_threads=64, job_name=f'stack_full_cov',
+        omp_threads=64, job_name='stack_full_cov',
         err_file=stack_tree.logs_dir/'stack_full_cov-%j.err',
         out_file=stack_tree.logs_dir/'stack_full_cov-%j.out'
     )
@@ -305,11 +306,14 @@ def stack_full_covariance(corr_dict, stack_tree, job, smooth_covariance_flag,
     text += f'{env_command}\n\n'
 
     if out_file.is_file() and out_file_smoothed.is_file():
-        print(f'Full covariance and smoothed full covariance already exist: {out_file}, {out_file_smoothed}. Skipping.')
+        print(
+            'Full covariance and smoothed full covariance already exist:'
+            f' {out_file}, {out_file_smoothed}. Skipping.'
+        )
         return None
 
     if not out_file.is_file():
-        text += f'lyatools-stack-fullcov '
+        text += 'lyatools-stack-fullcov '
         if len(lyaxlya_files) > 0:
             text += '--lyaxlya ' + ' '.join(lyaxlya_files) + ' '
         if len(lyaxlyb_files) > 0:
@@ -329,13 +333,13 @@ def stack_full_covariance(corr_dict, stack_tree, job, smooth_covariance_flag,
             num_bins_rp = corr_config.getint('num_bins_rp', 50)
             num_bins_rt = corr_config.getint('num_bins_rt', 50)
 
-            text += f'picca_write_smooth_covariance.py --input-cov {out_file} --output-cov {out_file_smoothed} '
+            text += f'picca_write_smooth_covariance.py --input-cov {out_file} '
+            text += f'--output-cov {out_file_smoothed} '
             text += f'--rp-min-auto {rp_min} --rp-max-auto {rp_max} --np-auto {num_bins_rp} '
             text += f'--rt-min-auto {rt_min} --rt-max-auto {rt_max} --nt-auto {num_bins_rt} '
             text += f'--rp-min-cross {-rp_max} --rp-max-cross {rp_max} --np-cross {2*num_bins_rp} '
             text += f'--rt-min-cross {rt_min} --rt-max-cross {rt_max} --nt-cross {num_bins_rt} '
             text += f'--correlation-types {" ".join(correlation_types)}\n'
-
 
     # Write the script.
     script_path = stack_tree.scripts_dir / f'stack_full_cov{name_ext}.sh'

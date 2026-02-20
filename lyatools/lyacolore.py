@@ -4,7 +4,10 @@ from . import submit_utils
 
 __DIR__ = os.path.dirname(os.path.realpath(__file__))
 
-def create_lyacolore_script(colore_out_loc, lyacolore_out_loc, lyacolore_path, config_file, conda_environment):
+
+def create_lyacolore_script(
+    colore_out_loc, lyacolore_out_loc, lyacolore_path, config_file, conda_environment
+):
     script_content = f"""
 ################################################################################
 ## USER DEFINED PARAMS.
@@ -118,6 +121,7 @@ echo "##########################################################################
 """
     return script_content
 
+
 def run_lyacolore(lyacolore_config, skewers_path, seed, job, dependency_ids=None):
     submit_utils.set_umask()
 
@@ -130,7 +134,7 @@ def run_lyacolore(lyacolore_config, skewers_path, seed, job, dependency_ids=None
     env_command = job.get('env_command')
     lyacolore_script = create_lyacolore_script(input_box_path, output_dir, lyacolore_install_path, 
                                                config_file, env_command)
-    
+
     # Write the script to file and submit it.
     num_nodes = lyacolore_config.getint('num_nodes', 8)
     slurm_hours = lyacolore_config.getfloat('slurm_hours', 0.25)
@@ -142,11 +146,10 @@ def run_lyacolore(lyacolore_config, skewers_path, seed, job, dependency_ids=None
         )
     header += f'{env_command}\n\n'
     full_script = header + lyacolore_script
-    script_path = output_dir/ 'scripts' / f'run_lyacolore.sh'
+    script_path = output_dir / 'scripts' / 'run_lyacolore.sh'
     submit_utils.write_script(script_path, full_script)
-    job_id = submit_utils.run_job(script_path, dependency_ids=dependency_ids,
-                                   no_submit=job.getboolean('no_submit'))
+    job_id = submit_utils.run_job(
+        script_path, dependency_ids=dependency_ids,
+        no_submit=job.getboolean('no_submit')
+    )
     return job_id
-
-
-

@@ -28,7 +28,7 @@ class MockRun:
     ):
         # Get individual configs
         self.job_config = config['job_info']
-        self.lyacolore_config= config['lyacolore']
+        self.lyacolore_config = config['lyacolore']
         self.inject_zerr_config = config['inject_zerr']
         self.qq_config = config['quickquasars']
         self.deltas_config = config['delta_extraction']
@@ -49,7 +49,6 @@ class MockRun:
         self.run_export_flag = config['control'].getboolean('run_export')
         self.run_vega_flag = config['control'].getboolean('run_vega')
         self.only_qso_targets_flag = config['quickquasars'].getboolean('only_qso_targets')
-
 
         if self.run_deltas_flag and self.run_qsonic_flag:
             raise ValueError('Cannot run deltas and qsonic at the same time.')
@@ -72,11 +71,13 @@ class MockRun:
         newoutputdir = config['mock_setup'].get('new_output_dir', None)
 
         # Get the paths from pre-existing runs
-        preexisting_analysis_start_path = config['picca_corr'].get('preexisting_analysis_start_path', None)
+        preexisting_analysis_start_path = config['picca_corr'].get(
+            'preexisting_analysis_start_path', None)
         if preexisting_analysis_start_path is None:
             # Assume same as analysis start path
             preexisting_analysis_start_path = analysis_start_path
-        use_preexisting_analysis_deltas = config['picca_corr'].get('use_preexisting_analysis_deltas', None)
+        use_preexisting_analysis_deltas = config['picca_corr'].get(
+            'use_preexisting_analysis_deltas', None)
 
         # Initialize the analysis name
         if self.mock_analysis_type == 'raw' or self.mock_analysis_type == 'raw_master':
@@ -137,12 +138,20 @@ class MockRun:
                 preexisting_analysis_start_path, skewers_version, mock_seed, survey_name,
                 qq_version, qq_run_type, qq_seeds, use_preexisting_analysis_deltas
             )
-            dir_handlers.make_symlink(preexisting_tree.deltas_lya_dir/'Delta',self.analysis_tree.deltas_lya_dir/'Delta')
-            dir_handlers.make_symlink(preexisting_tree.deltas_lyb_dir/'Delta',self.analysis_tree.deltas_lyb_dir/'Delta')
-            dir_handlers.make_symlink(preexisting_tree.deltas_lya_dir/'Log',self.analysis_tree.deltas_lya_dir/'Log')
-            dir_handlers.make_symlink(preexisting_tree.deltas_lyb_dir/'Log',self.analysis_tree.deltas_lyb_dir/'Log')
+            dir_handlers.make_symlink(
+                preexisting_tree.deltas_lya_dir / 'Delta',
+                self.analysis_tree.deltas_lya_dir / 'Delta'
+            )
+            dir_handlers.make_symlink(
+                preexisting_tree.deltas_lyb_dir / 'Delta',
+                self.analysis_tree.deltas_lyb_dir / 'Delta'
+            )
+            dir_handlers.make_symlink(
+                preexisting_tree.deltas_lya_dir / 'Log', self.analysis_tree.deltas_lya_dir / 'Log')
+            dir_handlers.make_symlink(
+                preexisting_tree.deltas_lyb_dir / 'Log', self.analysis_tree.deltas_lyb_dir / 'Log')
             del preexisting_tree
-        
+
         # Figure out the seeds
         self.qq_cat_seed = mock_seed
         self.qq_seed = mock_seed
@@ -207,26 +216,28 @@ class MockRun:
         submit_utils.print_spacer_line()
         check_transmission_files = list(self.qq_tree.skewers_path.glob("*/*/transmission-*.fits*"))
         if len(check_transmission_files) < 1:
-            job_id = run_lyacolore(self.lyacolore_config, self.qq_tree.skewers_path, self.qq_seed, 
+            job_id = run_lyacolore(self.lyacolore_config, self.qq_tree.skewers_path, self.qq_seed,
                                    self.job_config, job_id)
         else:
             print(f'Found transmission files in {self.qq_tree.skewers_path}. Skipping lyacolore.')
         return job_id
-        
+
     def create_qq_catalog(self, job_id=None, run_local=True):
         seed_cat_path = self.qq_tree.qq_dir / "seed_zcat.fits"
         assert self.qq_special_args is not None
 
         # Make QQ input catalog
         if seed_cat_path.is_file():
-            print(f'Found previously generated input seed catalog: {seed_cat_path}. Skipping gen_qso_catalog.')
+            print(
+                f'Found previously generated input seed catalog: {seed_cat_path}.'
+                ' Skipping gen_qso_catalog.'
+            )
         else:
             job_id = create_qq_catalog(
                 self.qq_tree, seed_cat_path, self.qq_config, self.job_config,
                 self.qq_cat_seed, prev_job_id=job_id, run_local=run_local
             )
         return job_id
-        
 
     def run_qq(self, job_id):
         # TODO Figure out a way to check if QQ run already exists
@@ -293,7 +304,7 @@ class MockRun:
         qso_cat = self.get_analysis_qso_cat(no_zerr=no_zerr)
 
         # Run raw deltas
-        if 'raw' in self.mock_analysis_type: 
+        if 'raw' in self.mock_analysis_type:
             if 'master' in self.mock_analysis_type:
                 skewers_path = self.skewers_path
             else:
@@ -344,14 +355,14 @@ class MockRun:
             )
 
             return job_id
-        
+
     def run_pk1d(self, delta_job_ids):
         job_id = make_pk1d_runs(
             self.analysis_tree, self.pk1d_config, self.job_config,
             delta_job_ids=delta_job_ids
         )
         return job_id
-    
+
     def run_correlations(self, delta_job_ids):
         qso_cat = self.get_analysis_qso_cat()
 
@@ -427,7 +438,7 @@ class MockRun:
 
         return qso_cat
 
-    def get_zcat_path(self, no_bal_mask=False, no_zerr=False):                        
+    def get_zcat_path(self, no_bal_mask=False, no_zerr=False):
         zcat_name = 'zcat'
         if self.only_qso_targets_flag:
             zcat_name = 'zcat_only_qso_targets'
