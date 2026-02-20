@@ -143,8 +143,8 @@ def get_correlations_dict(corr_dict, config, corr_dir, qso_cat):
         if not dist_path.exists():
             raise ValueError(f'Distortion path does not exist: {dist_path}')
 
-    zmin = config.getfloat('z_min')
-    zmax = config.getfloat('z_max')
+    zmin = config.getfloat('z_min', 0)
+    zmax = config.getfloat('z_max', 10)
     rmin = config.getfloat('rmin')
     rmax = config.getfloat('rmax')
     rmin_auto = config.getfloat('rmin-auto', rmin)
