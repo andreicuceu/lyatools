@@ -2,8 +2,8 @@ from . import submit_utils
 
 JOB_CONFIGS = {'cf_lya_lya': 1.5, 'dmat_lya_lya': 2.0, 'metal_dmat_lya_lya': 2.0,
                'cf_lya_lyb': 1.0, 'dmat_lya_lyb': 1.0, 'metal_dmat_lya_lyb': 1.0,
-               'xcf_lya_qso': 0.5, 'xdmat_lya_qso': 0.5, 'metal_xdmat_lya_qso': 0.5,
-               'xcf_lyb_qso': 0.25, 'xdmat_lyb_qso': 0.25, 'metal_xdmat_lyb_qso': 0.25}
+               'xcf_lya_qso': 0.5, 'xdmat_lya_qso': 0.5, 'xmetal_dmat_lya_qso': 0.5,
+               'xcf_lyb_qso': 0.25, 'xdmat_lyb_qso': 0.25, 'xmetal_dmat_lyb_qso': 0.25}
 
 CORR_TYPES = ['lya_lya', 'lya_lyb', 'lya_qso', 'lyb_qso']
 
@@ -107,6 +107,7 @@ def run_correlation(
     num_bins_rt = config.getint('num_bins_rt')
     fid_Om = config.getfloat('fid_Om')
     fid_Or = config.getfloat('fid_Or', 7.97505418919554e-05)
+    fid_wl = config.getfloat('fid_wl', -1)
     dmat_rejection = config.getfloat('dmat_rejection')
     dmat_num_bins_rp = config.getint('dmat_num_bins_rp', num_bins_rp)
     dmat_rp_max = config.getfloat('dmat_rp_max', rp_max)
@@ -152,9 +153,9 @@ def run_correlation(
         text += f'--z-max-pairs {zmax} '
 
     if cross and dmat:
-        text += f'--fid-Om {fid_Om} --nproc {nproc//2} '
+        text += f'--fid-Om {fid_Om} --fid-wl {fid_wl} --nproc {nproc//2} '
     else:
-        text += f'--fid-Om {fid_Om} --nproc {nproc} '
+        text += f'--fid-Om {fid_Om} --fid-wl {fid_wl} --nproc {nproc} '
     text += f'--fid-Or {fid_Or} --nside {nside} '
 
     if metal_dmat:
