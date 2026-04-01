@@ -211,6 +211,7 @@ def get_correlations_dict(corr_dict, config, corr_dir, qso_cat):
 def get_builder(builder_config):
     analysis_type = builder_config.get('analysis_type', 'bao')
     if analysis_type == 'bao':
+        print('Using BAO builder config.')
         options = {
             'scale_params': 'ap_at', 'template': 'PlanckDR12/PlanckDR12.fits',
             'full_shape': False, 'smooth_scaling': False,
@@ -221,6 +222,7 @@ def get_builder(builder_config):
             'new_metals': True, 'zmin': 0.0, 'zmax': 10.0,
         }
     elif analysis_type == 'fullshape':
+        print('Using fullshape builder config.')
         options = {
             'scale_params': 'phi_alpha',
             'template': '/global/cfs/projectdirs/desi/users/acuceu/notebooks_perl/vega/template/mock_templates/Abacus-Colore-2LPT.fits',
