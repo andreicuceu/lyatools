@@ -50,7 +50,6 @@ def make_vega_config(
                 run_config_builder = False
 
     vega_command = None
-    print(fit_info)
     if run_config_builder:
         main_path = config_builder.build(
             correlations, fit_type, fit_info, analysis_tree.fits_dir,
@@ -254,8 +253,6 @@ def get_builder(builder_config):
                     options[key] = builder_config.getboolean(key)
                 except ValueError:
                     options[key] = builder_config[key]
-
-    print(options)
 
     return BuildConfig(options, overwrite=True)
 
