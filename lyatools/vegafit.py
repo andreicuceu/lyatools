@@ -226,8 +226,8 @@ def get_builder(builder_config):
             'template': '/global/cfs/projectdirs/desi/users/acuceu/notebooks_perl/vega/template/mock_templates/Abacus-Colore-2LPT.fits',
             'full_shape': False, 'smooth_scaling': True, 'full_shape_alpha': False,
             'small_scale_nl': True, 'bao_broadening': True, 'use_metal_autos': True,
+
             'skip-nl-model-in-peak': True,
-            # 'fullshape_smoothing': 'gauss', 'fullshape_smoothing_metals': True,
             'velocity_dispersion': 'gauss', 'hcd_model': 'Rogers2018',
             'marginalize-all-rmin-cuts': True,
             'fit-marginalized-scales': True,
