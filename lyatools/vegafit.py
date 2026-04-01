@@ -260,7 +260,7 @@ def get_fit_info(fit_info_config):
         'run_sampler': True, 'zeff': None, 'zeff_rmin': -300., 'zeff_rmax': 300.,
         'bias_beta_config': {'LYA': 'bias_beta', 'QSO': 'bias_bias_eta'},
         'Polychord': {'num_live': '192', 'boost_posterior': '0'},
-        'priors': {'beta_hcd': 'gaussian 0.5 0.09'},
+        'priors': {},
         'use_template_growth_rate': 'False',
     }
 
