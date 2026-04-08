@@ -108,6 +108,7 @@ def run_correlation(
     fid_Om = config.getfloat('fid_Om')
     fid_Or = config.getfloat('fid_Or', 7.97505418919554e-05)
     fid_wl = config.getfloat('fid_wl', -1)
+    distance_template = config.get('distance-template', None)
     dmat_rejection = config.getfloat('dmat_rejection')
     dmat_num_bins_rp = config.getint('dmat_num_bins_rp', num_bins_rp)
     dmat_rp_max = config.getfloat('dmat_rp_max', rp_max)
@@ -186,6 +187,9 @@ def run_correlation(
 
     if rmu_binning:
         text += '--rmu-binning '
+
+    if distance_template is not None:
+        text += f'--distance-template {distance_template} '
 
     text += '\n\n'
 
