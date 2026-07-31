@@ -8,6 +8,32 @@ CORR_TYPES = {
 
 
 def make_export_runs(corr_paths, analysis_tree, config, job, corr_job_ids=None, run_local=True):
+    """Build and optionally submit picca_export jobs for a set of correlation files.
+
+    Parameters
+    ----------
+    corr_paths : list of Path
+        Paths to the input correlation FITS files.
+    analysis_tree : AnalysisTree
+        Directory tree for analysis outputs.
+    config : SectionProxy
+        Export configuration section.
+    job : SectionProxy
+        Job configuration section.
+    corr_job_ids : list of int, optional
+        SLURM job IDs of correlation jobs to depend on.
+    run_local : bool, optional
+        If True, submit a SLURM job; if False, return commands for MPI export.
+
+    Returns
+    -------
+    corr_dict : dict
+        Mapping from correlation type key to (cf_path, exp_path) tuples.
+    job_id : int or None
+        SLURM job ID, or None if no job was submitted.
+    export_commands : list of str or None
+        Export commands when run_local is False; None otherwise.
+    """
     subtract_shuffled = config.getboolean('subtract_shuffled')
 
     corr_dict = {}
@@ -88,6 +114,30 @@ def make_export_runs(corr_paths, analysis_tree, config, job, corr_job_ids=None, 
 
 
 def export_full_cov(corr_paths, analysis_tree, config, job, corr_job_ids=None, run_local=True):
+    """Build and optionally submit jobs to compute the full and smoothed covariance matrices.
+
+    Parameters
+    ----------
+    corr_paths : list of Path
+        Paths to the input correlation FITS files.
+    analysis_tree : AnalysisTree
+        Directory tree for analysis outputs.
+    config : SectionProxy
+        Export configuration section.
+    job : SectionProxy
+        Job configuration section.
+    corr_job_ids : list of int, optional
+        SLURM job IDs of correlation jobs to depend on.
+    run_local : bool, optional
+        If True, submit a SLURM job; if False, return commands for MPI export.
+
+    Returns
+    -------
+    job_id : int or None
+        SLURM job ID, or None if already complete or run_local is False.
+    export_cov_commands : list of str or None
+        Covariance commands when run_local is False; None otherwise.
+    """
     subtract_shuffled = config.getboolean('subtract_shuffled')
     ordered_cf_paths = {}
     block_types = []
@@ -188,6 +238,28 @@ def export_full_cov(corr_paths, analysis_tree, config, job, corr_job_ids=None, r
 def stack_correlations(
     corr_dict, stack_tree, job, shuffled=False, name_string=None, corr_job_ids=None
 ):
+    """Stack and export correlations from multiple mocks using lyatools-stack-export.
+
+    Parameters
+    ----------
+    corr_dict : dict
+        Mapping from correlation type key to ([cf_paths], [exp_paths]) lists.
+    stack_tree : AnalysisTree
+        Directory tree for the stacked output.
+    job : SectionProxy
+        Job configuration section.
+    shuffled : bool, optional
+        Whether to subtract shuffled cross-correlations.
+    name_string : str, optional
+        Optional suffix appended to output filenames.
+    corr_job_ids : list of int, optional
+        SLURM job IDs to depend on.
+
+    Returns
+    -------
+    int or None
+        SLURM job ID for the stack export job.
+    """
     # Stack correlations from different seeds
     export_commands = []
     for cf_name, (cf_list, _) in corr_dict.items():
@@ -260,6 +332,30 @@ def stack_correlations(
 
 def stack_full_covariance(corr_dict, stack_tree, job, smooth_covariance_flag,
                           corr_config, name_string=None, corr_job_ids=None):
+    """Stack the full covariance matrix across multiple mocks using lyatools-stack-fullcov.
+
+    Parameters
+    ----------
+    corr_dict : dict
+        Mapping from correlation type key to ([cf_paths], [exp_paths]) lists.
+    stack_tree : AnalysisTree
+        Directory tree for the stacked output.
+    job : SectionProxy
+        Job configuration section.
+    smooth_covariance_flag : bool
+        Whether to also compute the smoothed covariance matrix.
+    corr_config : SectionProxy
+        Correlation configuration section (for binning parameters).
+    name_string : str, optional
+        Optional suffix appended to output filenames.
+    corr_job_ids : list of int, optional
+        SLURM job IDs to depend on.
+
+    Returns
+    -------
+    int or None
+        SLURM job ID, or None if output already exists or no files provided.
+    """
     # Make correlation file lists
     lyaxlya_files = []
     lyaxlyb_files = []
@@ -350,7 +446,28 @@ def stack_full_covariance(corr_dict, stack_tree, job, smooth_covariance_flag,
 
 
 def mpi_export(export_commands, export_cov_commands, analysis_tree, job, corr_job_ids=None):
+    """Submit MPI jobs to run export and covariance commands across all mocks in parallel.
 
+    Parameters
+    ----------
+    export_commands : list of str
+        picca_export commands collected from all mocks.
+    export_cov_commands : list of str
+        Covariance computation commands collected from all mocks.
+    analysis_tree : AnalysisTree
+        Directory tree used for script and log paths (typically the stack tree).
+    job : SectionProxy
+        Job configuration section.
+    corr_job_ids : list of int, optional
+        SLURM job IDs of correlation jobs to depend on.
+
+    Returns
+    -------
+    export_job_id : int or None
+        SLURM job ID for the MPI export job.
+    cov_smooth_job_id : int or None
+        SLURM job ID for the MPI smooth covariance job.
+    """
     # Filter Nones
     # export_commands = [command for mock_commands in export_commands for command in mock_commands]
     export_commands = [command for command in export_commands if command is not None]
@@ -395,6 +512,24 @@ def mpi_export(export_commands, export_cov_commands, analysis_tree, job, corr_jo
 
 
 def mpi_export_correlations(export_commands, analysis_tree, job, corr_job_ids=None):
+    """Submit an MPI SLURM job to run multiple picca_export commands in parallel.
+
+    Parameters
+    ----------
+    export_commands : list of str
+        picca_export commands to distribute across MPI ranks.
+    analysis_tree : AnalysisTree
+        Directory tree for script and log paths.
+    job : SectionProxy
+        Job configuration section.
+    corr_job_ids : list of int, optional
+        SLURM job IDs to depend on.
+
+    Returns
+    -------
+    int or None
+        SLURM job ID for the MPI export job.
+    """
     # Make the header
     header = submit_utils.make_header(
         job.get('nersc_machine'), time=1.0,
@@ -430,6 +565,30 @@ def mpi_export_covariances(
         commands, analysis_tree, job, script_name,
         num_nodes=1, ntasks_per_node=64, corr_job_ids=None
 ):
+    """Submit an MPI SLURM job to run multiple covariance commands in parallel.
+
+    Parameters
+    ----------
+    commands : list of str
+        Covariance shell commands to distribute across MPI ranks.
+    analysis_tree : AnalysisTree
+        Directory tree for script and log paths.
+    job : SectionProxy
+        Job configuration section.
+    script_name : str
+        Label used in the script filename and SLURM job name.
+    num_nodes : int, optional
+        Number of compute nodes to request.
+    ntasks_per_node : int, optional
+        Number of MPI tasks per node.
+    corr_job_ids : list of int, optional
+        SLURM job IDs to depend on.
+
+    Returns
+    -------
+    int or None
+        SLURM job ID for the MPI covariance job.
+    """
     # Make the header
     header = submit_utils.make_header(
         job.get('nersc_machine'), time=job.getfloat('mpi-export-time', 4.0),

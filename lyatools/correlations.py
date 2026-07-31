@@ -9,6 +9,30 @@ CORR_TYPES = ['lya_lya', 'lya_lyb', 'lya_qso', 'lyb_qso']
 
 
 def make_correlation_runs(qso_cat, analysis_tree, config, job, corr_types, delta_job_ids=None):
+    """Submit all correlation, distortion matrix, and metal matrix jobs for the given types.
+
+    Parameters
+    ----------
+    qso_cat : Path
+        Path to the QSO catalog.
+    analysis_tree : AnalysisTree
+        Directory tree for analysis outputs.
+    config : SectionProxy
+        Configuration section for picca correlations.
+    job : SectionProxy
+        Job configuration section.
+    corr_types : list of str
+        Correlation types to run (subset of CORR_TYPES).
+    delta_job_ids : list of int, optional
+        SLURM job IDs of delta extraction jobs to depend on.
+
+    Returns
+    -------
+    cf_paths : list of Path
+        Paths to the output correlation files.
+    job_ids : list of int
+        SLURM job IDs for the submitted correlation jobs.
+    """
     submit_utils.set_umask()
     cf_out = []
     cf_shuffled_out = []
@@ -61,6 +85,40 @@ def run_correlation(
     dmat=False, metal_dmat=False, name='cf_lya_lya', shuffled=False,
     delta_job_ids=None,
 ):
+    """Build and submit a single picca correlation or distortion matrix job.
+
+    Parameters
+    ----------
+    config : SectionProxy
+        Correlation configuration section.
+    job : SectionProxy
+        Job configuration section.
+    analysis_tree : AnalysisTree
+        Directory tree for analysis outputs.
+    qso_cat : Path, optional
+        Path to the QSO catalog (required for cross-correlations).
+    cross : bool, optional
+        Whether to run a cross-correlation with QSOs.
+    lyb : bool, optional
+        Whether to use the Ly-beta forest region.
+    dmat : bool, optional
+        Whether to compute the distortion matrix instead of the correlation.
+    metal_dmat : bool, optional
+        Whether to compute the metal distortion matrix.
+    name : str, optional
+        Name identifier for this correlation type.
+    shuffled : bool, optional
+        Whether to run with shuffled QSO positions (cross only).
+    delta_job_ids : list of int, optional
+        SLURM job IDs of delta extraction jobs to depend on.
+
+    Returns
+    -------
+    output_path : Path
+        Path to the output correlation file.
+    job_id : int or None
+        SLURM job ID, or None if the output already exists.
+    """
     slurm_hours = config.getfloat(f'{name}_slurm_hours', None)
     if slurm_hours is None:
         slurm_hours = JOB_CONFIGS[name]

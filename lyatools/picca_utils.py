@@ -5,23 +5,22 @@ from scipy.constants import speed_of_light
 
 def desi_from_ztarget_to_drq(in_path, out_path, spec_type='QSO', downsampling_z_cut=None,
                              downsampling_num=None, gauss_redshift_error=None):
-    """Transforms a catalog of object in desi format to a catalog in DRQ format
-    Args:
-        in_path: string
-            Full path filename containing the catalogue of objects
-        out_path: string
-            Full path filename where the fits DLA catalogue will be written to
-        spec_type: string
-            Spectral type of the objects to include in the catalogue
-        downsampling_z_cut: float or None - default: None
-            Minimum redshift to downsample the data. 'None' for no downsampling
-        downsampling_num: int
-            Target number of object above redshift downsampling-z-cut.
-            'None' for no downsampling
-        gauss_redshift_error: int
-            Gaussian random error to be added to redshift (in km/s)
-            Mimics uncertainties in estimation of z in classifiers
-            'None' for no error
+    """Convert a DESI-format object catalog to DRQ format for use with picca.
+
+    Parameters
+    ----------
+    in_path : str
+        Path to the input DESI catalog FITS file.
+    out_path : str
+        Path for the output DRQ-format FITS catalog.
+    spec_type : str, optional
+        Spectral type to select (default 'QSO').
+    downsampling_z_cut : float, optional
+        Minimum redshift above which to apply downsampling; None for no downsampling.
+    downsampling_num : int, optional
+        Target number of objects above downsampling_z_cut; None for no downsampling.
+    gauss_redshift_error : float, optional
+        Standard deviation of Gaussian redshift noise to add in km/s; None for no error.
     """
     # Info of the primary observation
     hdul = fitsio.FITS(in_path)

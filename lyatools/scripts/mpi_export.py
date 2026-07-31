@@ -8,6 +8,7 @@ from lyatools import submit_utils
 
 
 def main():
+    """Entry point for the lyatools-mpi-export CLI command."""
     submit_utils.set_umask()
     parser = argparse.ArgumentParser()
 

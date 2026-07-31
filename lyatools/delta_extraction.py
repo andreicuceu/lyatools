@@ -7,6 +7,34 @@ def make_picca_delta_runs(
     qso_cat, qq_tree, analysis_tree, config, job, job_id=None,
     mask_dla_cat=None, mask_bal_cat=None, true_continuum=False,
 ):
+    """Submit picca delta extraction jobs for the Lya and/or Lyb regions.
+
+    Parameters
+    ----------
+    qso_cat : Path
+        Path to the QSO catalog.
+    qq_tree : QQTree
+        Directory tree for the QuickQuasars run.
+    analysis_tree : AnalysisTree
+        Directory tree for analysis outputs.
+    config : SectionProxy
+        Delta extraction configuration section.
+    job : SectionProxy
+        Job configuration section.
+    job_id : int or list of int, optional
+        SLURM job IDs to depend on.
+    mask_dla_cat : Path, optional
+        Path to the DLA mask catalog.
+    mask_bal_cat : Path, optional
+        Path to the BAL mask catalog.
+    true_continuum : bool, optional
+        Whether to use the true continuum instead of fitting it.
+
+    Returns
+    -------
+    list of int
+        SLURM job IDs for the submitted delta extraction jobs.
+    """
     job_ids = []
     if config.getboolean('run_lya_region'):
         id = run_delta_extraction(
@@ -37,6 +65,40 @@ def run_delta_extraction(
     mask_dla_cat=None, mask_bal_cat=None, true_continuum=False,
     lambda_rest_min=1040., lambda_rest_max=1205.,
 ):
+    """Build and submit a single picca_delta_extraction job for one spectral region.
+
+    Parameters
+    ----------
+    qso_cat : Path
+        Path to the QSO catalog.
+    qq_tree : QQTree
+        Directory tree for the QuickQuasars run.
+    analysis_tree : AnalysisTree
+        Directory tree for analysis outputs.
+    config : SectionProxy
+        Delta extraction configuration section.
+    job : SectionProxy
+        Job configuration section.
+    job_id : int or list of int, optional
+        SLURM job IDs to depend on.
+    region_name : {'lya', 'lyb'}, optional
+        Spectral region to process.
+    mask_dla_cat : Path, optional
+        Path to the DLA mask catalog.
+    mask_bal_cat : Path, optional
+        Path to the BAL mask catalog.
+    true_continuum : bool, optional
+        Whether to use the true continuum instead of fitting it.
+    lambda_rest_min : float, optional
+        Minimum rest-frame wavelength in Angstroms.
+    lambda_rest_max : float, optional
+        Maximum rest-frame wavelength in Angstroms.
+
+    Returns
+    -------
+    int or None
+        SLURM job ID, or None if no_submit is True.
+    """
     print(f'Submitting job to run delta extraction on {region_name} region')
     submit_utils.set_umask()
 
@@ -93,9 +155,32 @@ def create_config(
     config, config_path, qq_dir, qso_cat, mask_dla_cat, mask_bal_cat, deltas_dir,
     lambda_rest_min, lambda_rest_max, true_continuum, nproc
 ):
-    """Create picca_delta_extraction config file.
-    See https://github.com/igmhub/picca/blob/master/tutorials/
-    /delta_extraction/picca_delta_extraction_configuration_tutorial.ipynb
+    """Create and write the picca_delta_extraction INI configuration file.
+
+    Parameters
+    ----------
+    config : SectionProxy
+        Delta extraction configuration section with wavelength and fitting options.
+    config_path : Path
+        Output path for the generated INI file.
+    qq_dir : Path
+        Directory of the QuickQuasars run (parent of spectra-16/).
+    qso_cat : Path
+        Path to the QSO catalog.
+    mask_dla_cat : Path or None
+        Path to the DLA mask catalog, or None if not masking DLAs.
+    mask_bal_cat : Path or None
+        Path to the BAL mask catalog, or None if not masking BALs.
+    deltas_dir : Path
+        Output directory for the extracted deltas.
+    lambda_rest_min : float
+        Minimum rest-frame wavelength in Angstroms.
+    lambda_rest_max : float
+        Maximum rest-frame wavelength in Angstroms.
+    true_continuum : bool
+        Whether to use the true continuum (TrueContinuum) or fit it.
+    nproc : int
+        Number of parallel processors to request.
     """
     spectra_dir = qq_dir / 'spectra-16'
 

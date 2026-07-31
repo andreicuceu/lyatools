@@ -8,6 +8,14 @@ from lyatools.vegafit import run_vega_mpi
 
 
 class MockBatchRun:
+    """Orchestrates the full pipeline across a batch of mock realizations.
+
+    Parameters
+    ----------
+    config_path : str or Path
+        Path to the user INI configuration file; merged on top of the default desi_y5.ini.
+    """
+
     def __init__(self, config_path):
         # Read default config and overwrite with input config
         self.config = configparser.ConfigParser()
@@ -80,6 +88,7 @@ class MockBatchRun:
             )
 
     def run(self):
+        """Run the full pipeline for all mock seeds, then optionally stack results."""
         corr_dict = {}
         job_ids = []
         if self.run_mocks_individually:
@@ -129,6 +138,15 @@ class MockBatchRun:
         submit_utils.print_spacer_line()
 
     def run_parallel(self):
+        """Run heavy pipeline stages (deltas, correlations, export, vega) in parallel MPI jobs.
+
+        Returns
+        -------
+        corr_dict : dict
+            Mapping from correlation type key to ([cf_paths], [exp_paths]) lists.
+        job_ids : list of int
+            SLURM job IDs from all submitted jobs.
+        """
         assert not self.run_mocks_individually
 
         corr_dict = {}

@@ -2,6 +2,24 @@ from . import submit_utils
 
 
 def make_pk1d_runs(analysis_tree, config, job, delta_job_ids=None):
+    """Submit Pk1D computation jobs for the Lya (and optionally Lyb) region.
+
+    Parameters
+    ----------
+    analysis_tree : AnalysisTree
+        Directory tree for analysis outputs.
+    config : SectionProxy
+        Pk1D configuration section.
+    job : SectionProxy
+        Job configuration section.
+    delta_job_ids : list of int, optional
+        SLURM job IDs of delta extraction jobs to depend on.
+
+    Returns
+    -------
+    list of int
+        SLURM job IDs for the submitted Pk1D jobs.
+    """
     submit_utils.set_umask()
     job_ids = []
     id = run_picca_pk1d(
@@ -18,6 +36,26 @@ def make_pk1d_runs(analysis_tree, config, job, delta_job_ids=None):
 
 
 def run_picca_pk1d(analysis_tree, config, job, region_name='lya', delta_job_ids=None):
+    """Build and submit a single picca Pk1D job for one spectral region.
+
+    Parameters
+    ----------
+    analysis_tree : AnalysisTree
+        Directory tree for analysis outputs.
+    config : SectionProxy
+        Pk1D configuration section.
+    job : SectionProxy
+        Job configuration section.
+    region_name : {'lya', 'lyb'}, optional
+        Spectral region to process.
+    delta_job_ids : list of int, optional
+        SLURM job IDs of delta extraction jobs to depend on.
+
+    Returns
+    -------
+    int or None
+        SLURM job ID, or None if output already exists.
+    """
     slurm_hours = config.getfloat(f'pk1d_{region_name}_slurm_hours', 0.5)
 
     # Make the header

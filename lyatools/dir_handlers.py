@@ -5,12 +5,14 @@ from dataclasses import dataclass, field
 
 
 def make_symlink(target, link_name):
-    """ Make a symbolic link named link_name pointing to target.
-    Args:
-        target: str or Path
-            Target of the symbolic link.
-        link_name: str or Path
-            Name of the symbolic link to create.
+    """Make a symbolic link named link_name pointing to target.
+
+    Parameters
+    ----------
+    target : str or Path
+        Target of the symbolic link.
+    link_name : str or Path
+        Name of the symbolic link to create.
     """
     link_name = Path(link_name)
     if link_name.exists() or link_name.is_symlink():
@@ -19,11 +21,12 @@ def make_symlink(target, link_name):
 
 
 def make_permission_group_desi(dir: Path):
-    """
-    Makes a directory and all its contents have DESI as their permission group.
-    Args:
-        dir: Path
-            Directory to deal with.
+    """Set DESI as the permission group for a directory and all its contents.
+
+    Parameters
+    ----------
+    dir : Path
+        Directory to apply permissions to.
     """
     call(f'chgrp -R desi {dir}', shell=True)
     call(f'chmod -R g+rxw {dir}', shell=True)
@@ -31,11 +34,12 @@ def make_permission_group_desi(dir: Path):
 
 
 def check_dir(dir: Path):
-    """
-    Checks that a directory exists, and that its permission group is DESI.
-    Args:
-        dir: Path
-            Directory to check
+    """Ensure a directory exists with DESI group permissions, creating it if needed.
+
+    Parameters
+    ----------
+    dir : Path
+        Directory to check or create.
     """
     if not dir.is_dir():
         dir.mkdir(parents=True, exist_ok=True)
@@ -44,8 +48,30 @@ def check_dir(dir: Path):
 
 @dataclass
 class QQTree:
-    """
-    An object that contains the directory structure for mock generation and analysis.
+    """Directory structure for a QuickQuasars mock generation run.
+
+    Parameters
+    ----------
+    mock_start_path : str or Path
+        Root directory of the mock tree (e.g. .../london/).
+    skewers_name : str
+        Name of the skewers directory (e.g. 'lyacolore_skewers').
+    skewers_version : str
+        Version string for the skewers (e.g. 'v5.9').
+    mock_seed : str
+        Integer seed identifying this mock realization.
+    survey_name : str
+        Survey identifier (e.g. 'qq_desi_y3').
+    qq_version : str
+        QuickQuasars version string (e.g. '4').
+    qq_run_name : str
+        Name of the QuickQuasars run type (e.g. 'jura-124').
+    skewers_start_path : str or None, optional
+        Alternative root for the skewers tree; defaults to mock_start_path.
+    qq_seeds : str or None, optional
+        Additional QQ seeds in 'cat_seed.qq_seed' format.
+    spectra_dirname : str, optional
+        Name of the spectra subdirectory (default 'spectra-16').
     """
     mock_start_path: Union[str, Path]
 
@@ -123,6 +149,27 @@ class QQTree:
 
 @dataclass
 class AnalysisTree:
+    """Directory structure for the picca analysis of a single mock realization.
+
+    Parameters
+    ----------
+    analysis_start_path : str or Path
+        Root directory of the analysis tree.
+    skewers_version : str
+        Version string for the skewers (e.g. 'v5.9').
+    mock_seed : str
+        Integer seed (or 'stack') identifying this mock realization.
+    survey_name : str
+        Survey identifier (e.g. 'qq_desi_y3').
+    qq_version : str
+        QuickQuasars version string (e.g. '4').
+    qq_run_name : str
+        Name of the QuickQuasars run type (e.g. 'jura-124').
+    qq_seeds : str or None, optional
+        Additional QQ seeds in 'cat_seed.qq_seed' format.
+    analysis_name : str, optional
+        Name of the analysis variant (default 'baseline').
+    """
 
     analysis_start_path: Union[str, Path]
 
@@ -146,6 +193,18 @@ class AnalysisTree:
     full_mock_seed: str = field(init=False)
 
     def _init_indirs_from_base(self, base):
+        """Build the versioned analysis directory path under base and create it.
+
+        Parameters
+        ----------
+        base : Path
+            Root path under which to create the analysis directory tree.
+
+        Returns
+        -------
+        Path
+            The leaf analysis directory.
+        """
         analysis_dir = base / self.survey_name
         check_dir(analysis_dir)
         analysis_dir = analysis_dir / f'{self.skewers_version}.{self.qq_version}'
@@ -162,6 +221,25 @@ class AnalysisTree:
             self, base, corr=True, pk1d=True, deltas=True, fits=True,
             logs=True, scripts=True
     ):
+        """Create the output subdirectories (correlations, deltas, fits, logs, scripts) under base.
+
+        Parameters
+        ----------
+        base : Path
+            Leaf analysis directory returned by _init_indirs_from_base.
+        corr : bool, optional
+            Create the correlations subdirectory.
+        pk1d : bool, optional
+            Create the Pk1D subdirectories.
+        deltas : bool, optional
+            Create the deltas_lya and deltas_lyb subdirectories.
+        fits : bool, optional
+            Create the fits subdirectory.
+        logs : bool, optional
+            Create the logs subdirectory.
+        scripts : bool, optional
+            Create the scripts subdirectory.
+        """
         # These are the directories needed for the analysis
         if corr:
             self.corr_dir = base / 'correlations'
@@ -206,12 +284,43 @@ class AnalysisTree:
             self, newbase, corr=True, deltas=False, fits=True,
             logs=True, scripts=True
     ):
+        """Redirect output directories to a different base path.
+
+        Parameters
+        ----------
+        newbase : str or Path
+            Alternative root path under which to create output directories.
+        corr : bool, optional
+            Create the correlations subdirectory.
+        deltas : bool, optional
+            Create the deltas subdirectories.
+        fits : bool, optional
+            Create the fits subdirectory.
+        logs : bool, optional
+            Create the logs subdirectory.
+        scripts : bool, optional
+            Create the scripts subdirectory.
+        """
         newbase = self._init_indirs_from_base(Path(newbase))
         self._init_outdirs_from_base(
             newbase, corr, deltas, fits, logs, scripts)
 
     @classmethod
     def stack_from_other(cls, other, stack_name: str = 'stack'):
+        """Create a stacked AnalysisTree reusing the structure of an existing tree.
+
+        Parameters
+        ----------
+        other : AnalysisTree
+            Existing analysis tree whose paths to mirror.
+        stack_name : str, optional
+            Mock seed label to use for the stack directory (default 'stack').
+
+        Returns
+        -------
+        AnalysisTree
+            New instance pointing at the stack output directory.
+        """
         return cls(
             other.analysis_start_path, other.skewers_version, stack_name,
             other.survey_name, other.qq_version, other.qq_run_name, None,

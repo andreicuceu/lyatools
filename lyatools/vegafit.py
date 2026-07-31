@@ -6,6 +6,32 @@ from . import submit_utils, dir_handlers
 
 def make_vega_config(
         corr_dict, analysis_tree, qso_cat, config, job, export_job_id=None, run_local=False):
+    """Build the Vega configuration and optionally submit the BAO fit SLURM job.
+
+    Parameters
+    ----------
+    corr_dict : dict
+        Mapping from correlation type key to (cf_path, exp_path) tuples.
+    analysis_tree : AnalysisTree
+        Directory tree for analysis outputs.
+    qso_cat : Path
+        Path to the QSO catalog (used as tracer2 weights for cross-correlations).
+    config : dict of SectionProxy
+        All vega.* configuration sections from the INI file.
+    job : SectionProxy
+        Job configuration section.
+    export_job_id : int or None, optional
+        SLURM job ID to depend on.
+    run_local : bool, optional
+        If True, submit a SLURM job; if False, return the vega command string only.
+
+    Returns
+    -------
+    job_id : int or None
+        SLURM job ID, or export_job_id if the config could not be built.
+    vega_command : str or None
+        run_vega.py command string; None if correlations are not yet available.
+    """
     correlations = get_correlations_dict(
         corr_dict, config['vega.correlations'], analysis_tree.corr_dir, qso_cat)
     config_builder = get_builder(config['vega.builder'])
@@ -88,6 +114,21 @@ def make_vega_config(
 
 
 def run_vega_mpi(vega_commands, analysis_tree, config, job, export_job_ids=None):
+    """Submit an MPI SLURM job to run multiple Vega BAO fits in parallel.
+
+    Parameters
+    ----------
+    vega_commands : list of str
+        run_vega.py commands, one per mock realization.
+    analysis_tree : AnalysisTree
+        Directory tree for script and log paths (typically the stack tree).
+    config : dict of SectionProxy
+        All vega.* configuration sections from the INI file.
+    job : SectionProxy
+        Job configuration section.
+    export_job_ids : int or list of int, optional
+        SLURM job IDs to depend on.
+    """
     # Make the header
     time = config['vega.fit_info'].getfloat('slurm_hours', 1.0)
     num_cores_per_node = config['vega.fit_info'].getint('num_cores_per_node')
@@ -135,6 +176,24 @@ def run_vega_mpi(vega_commands, analysis_tree, config, job, export_job_ids=None)
 
 
 def get_correlations_dict(corr_dict, config, corr_dir, qso_cat):
+    """Build the correlations dictionary expected by Vega's BuildConfig.
+
+    Parameters
+    ----------
+    corr_dict : dict
+        Mapping from correlation type key to (cf_path, exp_path) tuples.
+    config : SectionProxy
+        vega.correlations configuration section.
+    corr_dir : Path
+        Directory containing the exported correlation files.
+    qso_cat : Path
+        Path to the QSO catalog used as tracer2 weights for cross-correlations.
+
+    Returns
+    -------
+    dict
+        Correlation configuration dictionary keyed by Vega tracer pair names.
+    """
     correlations = {}
 
     dist_path = None
@@ -209,6 +268,18 @@ def get_correlations_dict(corr_dict, config, corr_dir, qso_cat):
 
 
 def get_builder(builder_config):
+    """Construct a Vega BuildConfig instance from the vega.builder configuration section.
+
+    Parameters
+    ----------
+    builder_config : SectionProxy
+        vega.builder configuration section; analysis_type selects 'bao' or 'fullshape'.
+
+    Returns
+    -------
+    BuildConfig
+        Configured Vega BuildConfig instance.
+    """
     analysis_type = builder_config.get('analysis_type', 'bao')
     if analysis_type == 'bao':
         print('Using BAO builder config.')
@@ -258,6 +329,18 @@ def get_builder(builder_config):
 
 
 def get_fit_info(fit_info_config):
+    """Build the fit_info dictionary for Vega's BuildConfig from the vega.fit_info section.
+
+    Parameters
+    ----------
+    fit_info_config : SectionProxy
+        vega.fit_info configuration section.
+
+    Returns
+    -------
+    dict
+        Fit info dictionary with sampler settings, priors, and bias/beta config.
+    """
     fit_info = {
         'run_sampler': True, 'zeff': None, 'zeff_rmin': -300., 'zeff_rmax': 300.,
         'bias_beta_config': {'LYA': 'bias_beta', 'QSO': 'bias_bias_eta'},

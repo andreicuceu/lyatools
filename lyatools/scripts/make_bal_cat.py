@@ -9,6 +9,18 @@ from lyatools import submit_utils
 
 
 def read_bals_from_truth(truth_file):
+    """Read BAL metadata from a single QuickQuasars truth FITS file.
+
+    Parameters
+    ----------
+    truth_file : Path or str
+        Path to a truth-*.fits file containing the BAL_META extension.
+
+    Returns
+    -------
+    ndarray or None
+        Structured array of BAL entries, or None if the file contains no BALs.
+    """
     with fitsio.FITS(truth_file) as hdul:
         data = hdul['BAL_META'].read()
 
@@ -19,6 +31,21 @@ def read_bals_from_truth(truth_file):
 
 
 def make_bal_catalog(input_dir, output_dir, ai_cut=None, bi_cut=None, nproc=1):
+    """Build BAL catalogs from QuickQuasars truth files, with optional AI/BI cuts.
+
+    Parameters
+    ----------
+    input_dir : str or Path
+        Path to the spectra-16 directory containing truth files.
+    output_dir : str or Path
+        Output directory for the BAL catalog files.
+    ai_cut : int, optional
+        AI_CIV threshold; BALs above this are excluded from the cut catalog.
+    bi_cut : int, optional
+        BI_CIV threshold; BALs above this are excluded from the cut catalog.
+    nproc : int, optional
+        Number of parallel worker processes.
+    """
     spec_dir = submit_utils.find_path(input_dir)
     truth_files = spec_dir.glob("*/*/truth-*.fits*")
 
@@ -92,6 +119,7 @@ def make_bal_catalog(input_dir, output_dir, ai_cut=None, bi_cut=None, nproc=1):
 
 
 def main():
+    """Entry point for the lyatools-make-bal-cat CLI command."""
     submit_utils.set_umask()
     parser = argparse.ArgumentParser()
 

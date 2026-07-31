@@ -8,6 +8,26 @@ __DIR__ = os.path.dirname(os.path.realpath(__file__))
 def create_lyacolore_script(
     colore_out_loc, lyacolore_out_loc, lyacolore_path, config_file, conda_environment
 ):
+    """Generate the bash script content for running LyaCoLoRe.
+
+    Parameters
+    ----------
+    colore_out_loc : str or Path
+        Directory containing the CoLoRe output files.
+    lyacolore_out_loc : str or Path
+        Directory where LyaCoLoRe output will be written.
+    lyacolore_path : str or Path
+        Path to the LyaCoLoRe installation.
+    config_file : str or Path
+        Path to the LyaCoLoRe configuration file.
+    conda_environment : str
+        Conda environment activation command.
+
+    Returns
+    -------
+    str
+        Bash script content as a string.
+    """
     script_content = f"""
 ################################################################################
 ## USER DEFINED PARAMS.
@@ -123,6 +143,26 @@ echo "##########################################################################
 
 
 def run_lyacolore(lyacolore_config, skewers_path, seed, job, dependency_ids=None):
+    """Build and submit the LyaCoLoRe SLURM job for a single mock seed.
+
+    Parameters
+    ----------
+    lyacolore_config : SectionProxy
+        LyaCoLoRe configuration section.
+    skewers_path : Path
+        Output directory for the LyaCoLoRe skewers.
+    seed : int or str
+        Mock seed identifier.
+    job : SectionProxy
+        Job configuration section.
+    dependency_ids : list of int, optional
+        SLURM job IDs to depend on.
+
+    Returns
+    -------
+    int or None
+        SLURM job ID, or None if no_submit is True.
+    """
     submit_utils.set_umask()
 
     output_dir = skewers_path

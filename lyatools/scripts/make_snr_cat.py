@@ -45,6 +45,18 @@ bluesnr_max = 1205
 
 
 def parse(options=None):
+    """Parse command-line arguments for the SNR catalog script.
+
+    Parameters
+    ----------
+    options : list of str, optional
+        Argument list to parse; defaults to sys.argv if None.
+
+    Returns
+    -------
+    argparse.Namespace
+        Parsed arguments.
+    """
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                      description="""compute snr values for lya mock data set""")
 
@@ -69,17 +81,19 @@ def parse(options=None):
 
 
 def read_mock_catalog(mockpath, balmask):
-    """
-    read quasar catalog
+    """Read the QSO catalog and optionally join BAL metadata for a mock dataset.
 
-    Arguments
-    ---------
-    mockpath (str) : path to mock data
+    Parameters
+    ----------
+    mockpath : str
+        Path to the mock directory containing zcat.fits and (optionally) bal_cat.fits.
+    balmask : bool
+        Whether to load BAL metadata and add AI_CIV/velocity columns to the catalog.
 
     Returns
     -------
-    table of relevant attributes 
-
+    astropy.table.Table
+        Catalog table with columns TARGETID, RA/DEC, Z, and (if balmask) BAL columns.
     """
     qsocat = os.path.join(mockpath, 'zcat.fits')
     # read the following columns from qsocat
@@ -121,6 +135,20 @@ def read_mock_catalog(mockpath, balmask):
 
 
 def getsnr(specfile, catalog):
+    """Compute per-object SNR in the blue forest and red continuum for one spectra file.
+
+    Parameters
+    ----------
+    specfile : str
+        Path to a spectra-16-*.fits file.
+    catalog : astropy.table.Table
+        QSO catalog with at least TARGETID, Z, and (optionally) BAL columns.
+
+    Returns
+    -------
+    astropy.table.Table or None
+        Table with columns TARGETID, SNR_FOREST, SNR_REDSIDE for objects in this file.
+    """
     if os.path.exists(specfile):
         # open spectra file fibermap only
         fm = desispec.io.read_fibermap(specfile)
@@ -213,10 +241,29 @@ def getsnr(specfile, catalog):
 
 
 def _getsnr(arguments):
+    """Wrapper for getsnr that unpacks a keyword-argument dictionary.
+
+    Parameters
+    ----------
+    arguments : dict
+        Keyword arguments to pass to getsnr.
+
+    Returns
+    -------
+    astropy.table.Table or None
+        Result of getsnr.
+    """
     return getsnr(**arguments)
 
 
 def main(args=None):
+    """Entry point for the lyatools-make-snr-cat CLI command.
+
+    Parameters
+    ----------
+    args : list of str or argparse.Namespace, optional
+        Command-line arguments; if None, parsed from sys.argv.
+    """
     if isinstance(args, (list, tuple, type(None))):
         args = parse(args)
 

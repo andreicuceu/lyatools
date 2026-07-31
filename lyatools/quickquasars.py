@@ -3,6 +3,30 @@ from lyatools import qq_run_args
 
 
 def create_qq_catalog(qq_tree, seed_cat_path, config, job, seed, prev_job_id=None, run_local=True):
+    """Build and submit a job to generate the seeded QSO input catalog for QuickQuasars.
+
+    Parameters
+    ----------
+    qq_tree : QQTree
+        Directory tree for the QuickQuasars run.
+    seed_cat_path : Path
+        Output path for the seed catalog file.
+    config : SectionProxy
+        QuickQuasars configuration section.
+    job : SectionProxy
+        Job configuration section.
+    seed : int
+        Catalog seed used by gen_qso_catalog.
+    prev_job_id : int or list of int, optional
+        SLURM job IDs to depend on.
+    run_local : bool, optional
+        If True, submit a SLURM job; if False, return the command string.
+
+    Returns
+    -------
+    int or str or None
+        SLURM job ID, command string (run_local=False), or None if catalog exists.
+    """
     submit_utils.set_umask()
 
     release = config.get('release', 'jura')
@@ -49,16 +73,29 @@ def create_qq_catalog(qq_tree, seed_cat_path, config, job, seed, prev_job_id=Non
 
 
 def run_qq(qq_tree, config, job, seed_cat_path, qq_seed, qq_special_args, prev_job_id=None):
-    """Create a QQ run and submit it
+    """Build and submit the QuickQuasars SLURM job for a single mock seed.
 
     Parameters
     ----------
     qq_tree : QQTree
-        The QQ directory tree object.
-    config : dict
-        The configuration dictionary.
-    job : dict
-        The job dictionary.
+        Directory tree for the QuickQuasars run.
+    config : SectionProxy
+        QuickQuasars configuration section.
+    job : SectionProxy
+        Job configuration section.
+    seed_cat_path : Path
+        Path to the seeded QSO input catalog.
+    qq_seed : int
+        Random seed passed to quickquasars.
+    qq_special_args : list of str
+        Extra CLI arguments derived from the qq_run_type digit codes.
+    prev_job_id : int or list of int, optional
+        SLURM job IDs to depend on.
+
+    Returns
+    -------
+    int or None
+        SLURM job ID, or None if no_submit is True.
     """
     # Print run config
     print(f'Submitting quickquasars runs with configuration {qq_tree.qq_run_name}')
@@ -81,6 +118,26 @@ def run_qq(qq_tree, config, job, seed_cat_path, qq_seed, qq_special_args, prev_j
 
 
 def create_qq_script(qq_tree, config, job, qq_args, qq_seed):
+    """Write the QuickQuasars SLURM bash script to disk and return its path.
+
+    Parameters
+    ----------
+    qq_tree : QQTree
+        Directory tree for the QuickQuasars run.
+    config : SectionProxy
+        QuickQuasars configuration section.
+    job : SectionProxy
+        Job configuration section.
+    qq_args : str
+        Assembled CLI argument string to pass to quickquasars.
+    qq_seed : int
+        Random seed (used in the job name).
+
+    Returns
+    -------
+    Path
+        Path to the written script file.
+    """
     submit_utils.set_umask()
 
     slurm_queue = job.get('slurm_queue', 'regular')
@@ -156,6 +213,30 @@ def create_qq_script(qq_tree, config, job, qq_args, qq_seed):
 
 
 def make_catalogs(qq_tree, config, job, dla_flag, bal_flag, qq_job_id, only_qso_targets):
+    """Submit jobs to build the QSO, SNR, BAL, and DLA catalogs after a QuickQuasars run.
+
+    Parameters
+    ----------
+    qq_tree : QQTree
+        Directory tree for the QuickQuasars run.
+    config : SectionProxy
+        QuickQuasars configuration section.
+    job : SectionProxy
+        Job configuration section.
+    dla_flag : bool
+        Whether to build the DLA catalog.
+    bal_flag : bool
+        Whether to build the BAL catalog.
+    qq_job_id : int or None
+        SLURM job ID of the QuickQuasars job to depend on.
+    only_qso_targets : bool
+        Whether to restrict the QSO catalog to QSO-targeted objects.
+
+    Returns
+    -------
+    int or None
+        SLURM job ID of the last catalog job submitted.
+    """
     job_id = qq_job_id
 
     # Check which QSO catalog to use
@@ -223,6 +304,26 @@ def make_catalogs(qq_tree, config, job, dla_flag, bal_flag, qq_job_id, only_qso_
 
 
 def run_cat_job(command, name, qq_tree, job, job_id):
+    """Write and submit a catalog-building SLURM job.
+
+    Parameters
+    ----------
+    command : str
+        Shell command to run inside the SLURM script.
+    name : str
+        Label for the job (used in script filename and job name).
+    qq_tree : QQTree
+        Directory tree for the QuickQuasars run.
+    job : SectionProxy
+        Job configuration section.
+    job_id : int or None
+        SLURM job ID to depend on.
+
+    Returns
+    -------
+    int or None
+        SLURM job ID, or None if no_submit is True.
+    """
     header = submit_utils.make_header(
         job.get('nersc_machine'), nodes=1, time=0.5,
         omp_threads=128, job_name=f'{name}_{qq_tree.mock_seed}',
@@ -243,6 +344,26 @@ def run_cat_job(command, name, qq_tree, job, job_id):
 
 
 def snr_cat_job(snr_cat, qq_tree, bal_flag, job, cat_job_id):
+    """Write and submit a SLURM job to build the SNR catalog.
+
+    Parameters
+    ----------
+    snr_cat : Path
+        Output path for the SNR catalog file.
+    qq_tree : QQTree
+        Directory tree for the QuickQuasars run.
+    bal_flag : bool
+        Whether to apply BAL masking when computing SNR.
+    job : SectionProxy
+        Job configuration section.
+    cat_job_id : int or None
+        SLURM job ID to depend on.
+
+    Returns
+    -------
+    int or None
+        SLURM job ID, or None if no_submit is True.
+    """
     script = submit_utils.find_path('lyatools/scripts/make_snr_cat.py', enforce=True)
     command = f'python {script} --path {qq_tree.qq_dir} -o {snr_cat} '
     if bal_flag:

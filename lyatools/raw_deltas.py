@@ -7,6 +7,30 @@ LYA_TRANSMISSION_HDUNAME = {
 
 
 def make_raw_deltas(qso_cat, skewers_path, analysis_tree, config, mock_type, job, prev_job_id=None):
+    """Submit raw delta extraction jobs for the Lya and/or Lyb regions.
+
+    Parameters
+    ----------
+    qso_cat : Path
+        Path to the QSO catalog.
+    skewers_path : Path
+        Path to the LyaCoLoRe skewers directory.
+    analysis_tree : AnalysisTree
+        Directory tree for analysis outputs.
+    config : SectionProxy
+        Delta extraction configuration section.
+    mock_type : str
+        Type of mock ('lyacolore' or 'saclay'), determines the HDU name.
+    job : SectionProxy
+        Job configuration section.
+    prev_job_id : int or list of int, optional
+        SLURM job IDs to depend on.
+
+    Returns
+    -------
+    list of int
+        SLURM job IDs for the submitted raw delta jobs.
+    """
     job_ids = []
     if config.getboolean('run_lya_region'):
         id = run_raw_deltas(
@@ -36,6 +60,36 @@ def run_raw_deltas(
         qso_cat, skewers_path, analysis_tree, config, mock_type, job, prev_job_id=None,
         region_name='lya', lambda_rest_min=1040, lambda_rest_max=1200,
 ):
+    """Build and submit a single raw delta extraction job for one spectral region.
+
+    Parameters
+    ----------
+    qso_cat : Path
+        Path to the QSO catalog.
+    skewers_path : Path
+        Path to the LyaCoLoRe skewers directory.
+    analysis_tree : AnalysisTree
+        Directory tree for analysis outputs.
+    config : SectionProxy
+        Delta extraction configuration section.
+    mock_type : str
+        Type of mock ('lyacolore' or 'saclay'), determines the transmission HDU.
+    job : SectionProxy
+        Job configuration section.
+    prev_job_id : int or list of int, optional
+        SLURM job IDs to depend on.
+    region_name : {'lya', 'lyb'}, optional
+        Spectral region to process.
+    lambda_rest_min : float, optional
+        Minimum rest-frame wavelength in Angstroms.
+    lambda_rest_max : float, optional
+        Maximum rest-frame wavelength in Angstroms.
+
+    Returns
+    -------
+    int or None
+        SLURM job ID, or None if no_submit is True.
+    """
     if region_name == 'lya':
         deltas_dir = analysis_tree.deltas_lya_dir
     elif region_name == 'lyb':

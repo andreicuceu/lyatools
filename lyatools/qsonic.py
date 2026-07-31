@@ -6,6 +6,34 @@ def make_qsonic_runs(
     qso_cat, qq_tree, analysis_tree, config, job, qq_job_id=None,
     mask_dla_cat=None, mask_bal_cat=None, true_continuum=False,
 ):
+    """Submit QSOnic delta extraction jobs for the Lya and/or Lyb regions.
+
+    Parameters
+    ----------
+    qso_cat : Path
+        Path to the QSO catalog.
+    qq_tree : QQTree
+        Directory tree for the QuickQuasars run.
+    analysis_tree : AnalysisTree
+        Directory tree for analysis outputs.
+    config : SectionProxy
+        QSOnic configuration section.
+    job : SectionProxy
+        Job configuration section.
+    qq_job_id : int or list of int, optional
+        SLURM job IDs to depend on.
+    mask_dla_cat : Path, optional
+        Path to the DLA mask catalog.
+    mask_bal_cat : Path, optional
+        Path to the BAL mask catalog (currently unused in QSOnic).
+    true_continuum : bool, optional
+        Whether to use the true continuum instead of fitting it.
+
+    Returns
+    -------
+    list of int
+        SLURM job IDs for the submitted QSOnic jobs.
+    """
     job_ids = []
     if config.getboolean('run_lya_region'):
         id = run_qsonic(
@@ -35,6 +63,40 @@ def run_qsonic(
     mask_dla_cat=None, mask_bal_cat=None, true_continuum=False,
     lambda_rest_min=1040., lambda_rest_max=1205.,
 ):
+    """Build and submit a single QSOnic job for one spectral region.
+
+    Parameters
+    ----------
+    qso_cat : Path
+        Path to the QSO catalog.
+    qq_tree : QQTree
+        Directory tree for the QuickQuasars run.
+    analysis_tree : AnalysisTree
+        Directory tree for analysis outputs.
+    config : SectionProxy
+        QSOnic configuration section.
+    job : SectionProxy
+        Job configuration section.
+    qq_job_id : int or list of int, optional
+        SLURM job IDs to depend on.
+    region_name : {'lya', 'lyb'}, optional
+        Spectral region to process.
+    mask_dla_cat : Path, optional
+        Path to the DLA mask catalog.
+    mask_bal_cat : Path, optional
+        Path to the BAL mask catalog (currently unused).
+    true_continuum : bool, optional
+        Whether to use the true continuum instead of fitting it.
+    lambda_rest_min : float, optional
+        Minimum rest-frame wavelength in Angstroms.
+    lambda_rest_max : float, optional
+        Maximum rest-frame wavelength in Angstroms.
+
+    Returns
+    -------
+    int or None
+        SLURM job ID, or None if no_submit is True.
+    """
     print(f'Submitting job to run QSOnic on {region_name} region')
     submit_utils.set_umask()
 

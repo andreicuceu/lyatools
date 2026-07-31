@@ -19,6 +19,18 @@ FINAL_DTYPE = np.dtype([
 
 
 def one_zcatalog(fzbest):
+    """Read redshift and flux columns from a single zbest FITS file.
+
+    Parameters
+    ----------
+    fzbest : Path or str
+        Path to a zbest-*.fits file with ZBEST and FIBERMAP extensions.
+
+    Returns
+    -------
+    ndarray or None
+        Structured array with FINAL_DTYPE columns, or None if the file is empty.
+    """
     fts = fitsio.FITS(fzbest)
 
     hdr1 = fts['ZBEST'].read_header()
@@ -44,6 +56,21 @@ def one_zcatalog(fzbest):
 
 
 def make_z_catalog(input_dir, output_file, prefix='zbest', nproc=None, only_qso_targets=False):
+    """Build a merged redshift catalog from all zbest files in a spectra-16 directory.
+
+    Parameters
+    ----------
+    input_dir : str or Path
+        Path to the spectra-16 directory containing zbest files.
+    output_file : str or Path
+        Output path for the merged ZCATALOG FITS file.
+    prefix : str, optional
+        Filename prefix for zbest files (default 'zbest').
+    nproc : int, optional
+        Number of parallel worker processes.
+    only_qso_targets : bool, optional
+        If True, restrict to objects flagged as QSO targets in the seed catalog.
+    """
     spec_dir = submit_utils.find_path(input_dir)
     zbest_files = spec_dir.glob(f"*/*/{prefix}-*.fits*")
 
@@ -75,6 +102,7 @@ def make_z_catalog(input_dir, output_file, prefix='zbest', nproc=None, only_qso_
 
 
 def main():
+    """Entry point for the lyatools-make-zcat CLI command."""
     submit_utils.set_umask()
     parser = argparse.ArgumentParser()
 

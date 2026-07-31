@@ -10,6 +10,24 @@ from lyatools import submit_utils
 
 
 def gen_lorentzian(loc, scale, size, cut):
+    """Draw samples from a truncated Lorentzian (Cauchy) distribution.
+
+    Parameters
+    ----------
+    loc : float
+        Center of the distribution.
+    scale : float
+        Scale parameter (half-width at half-maximum).
+    size : int
+        Number of samples to return.
+    cut : float
+        Absolute value threshold; samples with |x| >= cut are rejected.
+
+    Returns
+    -------
+    ndarray, shape (size,)
+        Array of accepted samples.
+    """
     samples = sp.stats.cauchy.rvs(loc=loc, scale=scale, size=3*size)
     samples = samples[abs(samples) < cut]
     if len(samples) >= size:
@@ -21,6 +39,7 @@ def gen_lorentzian(loc, scale, size, cut):
 
 
 def main():
+    """Entry point for the lyatools-add-zerr CLI command."""
     submit_utils.set_umask()
     parser = argparse.ArgumentParser()
 

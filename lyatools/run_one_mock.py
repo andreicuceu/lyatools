@@ -22,6 +22,24 @@ MOCK_ANALYSIS_TYPES = [
 
 
 class MockRun:
+    """Pipeline runner for a single mock realization.
+
+    Parameters
+    ----------
+    config : ConfigParser
+        Full configuration object (default + user sections merged).
+    mock_start_path : str or Path
+        Root directory of the mock generation tree.
+    analysis_start_path : str or Path
+        Root directory of the analysis output tree.
+    mock_seed : int or str
+        Seed identifying this mock realization.
+    skewers_start_path : str or Path, optional
+        Alternative root for the skewers tree.
+    qq_seeds : str or None, optional
+        Additional QQ seeds in 'cat_seed.qq_seed' format.
+    """
+
     def __init__(
         self, config, mock_start_path, analysis_start_path, mock_seed,
         skewers_start_path=None, qq_seeds=None
@@ -171,6 +189,15 @@ class MockRun:
             self.qq_special_args, self.bal_flag, self.dla_flag = self.get_qq_special_args()
 
     def run_mock(self):
+        """Execute all enabled pipeline stages sequentially for this mock.
+
+        Returns
+        -------
+        corr_dict : dict
+            Mapping from correlation type key to (cf_path, exp_path) tuples.
+        job_id : int or None
+            SLURM job ID of the last submitted job.
+        """
         job_id = None
         job_id_deltas = None
 
@@ -214,6 +241,18 @@ class MockRun:
         return corr_dict, job_id
 
     def run_lyacolore(self, job_id):
+        """Submit the LyaCoLoRe skewer generation job if transmission files are absent.
+
+        Parameters
+        ----------
+        job_id : int or None
+            SLURM job ID to depend on.
+
+        Returns
+        -------
+        int or None
+            Updated SLURM job ID.
+        """
         submit_utils.print_spacer_line()
         check_transmission_files = list(self.qq_tree.skewers_path.glob("*/*/transmission-*.fits*"))
         if len(check_transmission_files) < 1:
@@ -224,6 +263,20 @@ class MockRun:
         return job_id
 
     def create_qq_catalog(self, job_id=None, run_local=True):
+        """Submit the gen_qso_catalog job to create the seeded QSO input catalog.
+
+        Parameters
+        ----------
+        job_id : int or None, optional
+            SLURM job ID to depend on.
+        run_local : bool, optional
+            If True, submit a SLURM job; if False, return the command string.
+
+        Returns
+        -------
+        int or str or None
+            SLURM job ID, command string (run_local=False), or None if catalog exists.
+        """
         seed_cat_path = self.qq_tree.qq_dir / "seed_zcat.fits"
         assert self.qq_special_args is not None
 
@@ -241,6 +294,18 @@ class MockRun:
         return job_id
 
     def run_qq(self, job_id):
+        """Submit the QuickQuasars job and catalog-building jobs for this mock.
+
+        Parameters
+        ----------
+        job_id : int or None
+            SLURM job ID to depend on.
+
+        Returns
+        -------
+        int or None
+            SLURM job ID of the last catalog job.
+        """
         # TODO Figure out a way to check if QQ run already exists
         # Run quickquasars
         submit_utils.print_spacer_line()
@@ -264,6 +329,20 @@ class MockRun:
         return job_id
 
     def make_zerr_cat(self, qq_job_id, run_local=True):
+        """Submit the redshift-error injection job to create a perturbed QSO catalog.
+
+        Parameters
+        ----------
+        qq_job_id : int or None
+            SLURM job ID to depend on.
+        run_local : bool, optional
+            If True, submit a SLURM job; if False, return the command string.
+
+        Returns
+        -------
+        int or str or None
+            SLURM job ID, command string (run_local=False), or qq_job_id if catalog exists.
+        """
         distribution = self.inject_zerr_config.get('distribution')
         amplitude = self.inject_zerr_config.get('amplitude')
 
@@ -301,6 +380,18 @@ class MockRun:
         return zerr_job_id
 
     def run_deltas(self, job_id):
+        """Submit delta extraction jobs (picca or QSOnic) for this mock.
+
+        Parameters
+        ----------
+        job_id : int or None
+            SLURM job ID to depend on.
+
+        Returns
+        -------
+        list of int
+            SLURM job IDs for the submitted delta extraction jobs.
+        """
         no_zerr = not self.inject_zerr_config.getboolean('zerr_in_deltas', False)
         qso_cat = self.get_analysis_qso_cat(no_zerr=no_zerr)
 
@@ -358,6 +449,18 @@ class MockRun:
             return job_id
 
     def run_pk1d(self, delta_job_ids):
+        """Submit Pk1D computation jobs for this mock.
+
+        Parameters
+        ----------
+        delta_job_ids : list of int
+            SLURM job IDs of delta extraction jobs to depend on.
+
+        Returns
+        -------
+        list of int
+            SLURM job IDs for the submitted Pk1D jobs.
+        """
         job_id = make_pk1d_runs(
             self.analysis_tree, self.pk1d_config, self.job_config,
             delta_job_ids=delta_job_ids
@@ -365,6 +468,20 @@ class MockRun:
         return job_id
 
     def run_correlations(self, delta_job_ids):
+        """Submit correlation function jobs for this mock.
+
+        Parameters
+        ----------
+        delta_job_ids : list of int
+            SLURM job IDs of delta extraction jobs to depend on.
+
+        Returns
+        -------
+        corr_paths : list of Path
+            Paths to the output correlation files.
+        corr_job_ids : list of int
+            SLURM job IDs for the submitted correlation jobs.
+        """
         qso_cat = self.get_analysis_qso_cat()
 
         corr_types = []
@@ -390,6 +507,28 @@ class MockRun:
         return corr_paths, corr_job_ids
 
     def run_export(self, corr_paths, corr_job_ids, run_local=True):
+        """Submit export and full-covariance jobs for this mock.
+
+        Parameters
+        ----------
+        corr_paths : list of Path
+            Paths to the input correlation files.
+        corr_job_ids : list of int
+            SLURM job IDs of the correlation jobs to depend on.
+        run_local : bool, optional
+            If True, submit SLURM jobs; if False, return commands for MPI export.
+
+        Returns
+        -------
+        corr_dict : dict
+            Mapping from correlation type key to (cf_path, exp_path) tuples.
+        job_ids : list of int or None
+            SLURM job IDs for the export and covariance jobs.
+        export_commands : list of str or None
+            Export commands when run_local is False; None otherwise.
+        export_cov_commands : list of str or None
+            Covariance commands when run_local is False; None otherwise.
+        """
         if corr_paths is None:
             raise ValueError(
                 'Export runs must include correlation runs as well. '
@@ -413,6 +552,24 @@ class MockRun:
         return corr_dict, [job_id, job_id_cov], export_commands, export_cov_commands
 
     def run_vega(self, corr_dict, export_job_id, run_local=True):
+        """Build the Vega config and submit the BAO fit job for this mock.
+
+        Parameters
+        ----------
+        corr_dict : dict
+            Mapping from correlation type key to (cf_path, exp_path) tuples.
+        export_job_id : int or None
+            SLURM job ID of the export job to depend on.
+        run_local : bool, optional
+            If True, submit a SLURM job; if False, return the vega command string.
+
+        Returns
+        -------
+        job_id : int or None
+            SLURM job ID, or export_job_id if config could not be built.
+        command : str or None
+            run_vega.py command string; None if the fit is not ready to run.
+        """
         if not corr_dict:
             raise ValueError(
                 'Vega runs must include correlation and export runs as well. '
@@ -430,6 +587,18 @@ class MockRun:
         return job_id, command
 
     def get_analysis_qso_cat(self, no_zerr=False):
+        """Return the path to the QSO catalog to use for analysis.
+
+        Parameters
+        ----------
+        no_zerr : bool, optional
+            If True, return the catalog without injected redshift errors.
+
+        Returns
+        -------
+        Path
+            Path to the selected QSO catalog file.
+        """
         if self.custom_qso_catalog is not None:
             qso_cat = submit_utils.find_path(self.custom_qso_catalog)
         elif self.mock_analysis_type == 'raw_master':
@@ -440,6 +609,20 @@ class MockRun:
         return qso_cat
 
     def get_zcat_path(self, no_bal_mask=False, no_zerr=False):
+        """Construct the path to the QSO catalog file based on active processing flags.
+
+        Parameters
+        ----------
+        no_bal_mask : bool, optional
+            If True, return the unmasked catalog (ignore BAL mask settings).
+        no_zerr : bool, optional
+            If True, return the catalog without injected redshift errors.
+
+        Returns
+        -------
+        Path
+            Path to the catalog FITS file inside qq_tree.qq_dir.
+        """
         zcat_name = 'zcat'
         if self.only_qso_targets_flag:
             zcat_name = 'zcat_only_qso_targets'
@@ -460,6 +643,17 @@ class MockRun:
         return zcat_file
 
     def get_qq_special_args(self):
+        """Parse the qq_run_type digit codes into QuickQuasars CLI arguments.
+
+        Returns
+        -------
+        qq_special_args : list of str
+            Extra CLI arguments to pass to quickquasars.
+        bal_flag : bool
+            Whether the run includes BALs (digit '4' present).
+        dla_flag : bool
+            Whether the run includes DLAs (digit '1' present).
+        """
         split_qq_run_type = self.qq_tree.qq_run_name.split('-')
         if '_' in split_qq_run_type[1]:
             raise ValueError(

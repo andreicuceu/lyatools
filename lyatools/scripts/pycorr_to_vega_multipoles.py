@@ -34,10 +34,21 @@ import numpy as np
 
 
 def _to_ell_major(arr, n_ells, n_s):
-    """Return a multipole array with shape (n_ells, n_s).
+    """Normalise a multipole array to ell-major layout (n_ells, n_s).
 
-    pycorr versions differ in whether they return xi_ell as (n_ells, n_s) or
-    (n_s, n_ells); normalise to ell-major here.
+    Parameters
+    ----------
+    arr : array-like
+        Input multipole array; shape may be (n_ells, n_s), (n_s, n_ells), or flat.
+    n_ells : int
+        Number of multipole orders.
+    n_s : int
+        Number of separation bins.
+
+    Returns
+    -------
+    ndarray, shape (n_ells, n_s)
+        Multipole array in ell-major order.
     """
     arr = np.asarray(arr, dtype=float)
     if arr.ndim == 1:
@@ -56,6 +67,7 @@ def _to_ell_major(arr, n_ells, n_s):
 
 
 def main():
+    """Entry point for the pycorr_to_vega_multipoles standalone script."""
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('input', help='Input pycorr .npy correlation file.')

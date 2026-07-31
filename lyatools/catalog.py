@@ -4,6 +4,15 @@ from pathlib import Path
 
 
 def make_catalog(spec_dir, name):
+    """Build a redshift catalog from spectra using desi_zcatalog.
+
+    Parameters
+    ----------
+    spec_dir : str or Path
+        Directory containing the spectra files.
+    name : str
+        Name of the output catalog file.
+    """
     # Make the text of the script
     text = '#!/bin/bash -l\n\n'
     text += 'source /global/common/software/desi/desi_environment.sh\n'

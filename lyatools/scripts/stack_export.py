@@ -7,6 +7,7 @@ from lyatools.stack import stack_export_correlations
 
 
 def main():
+    """Entry point for the lyatools-stack-export CLI command."""
     submit_utils.set_umask()
     parser = argparse.ArgumentParser()
 

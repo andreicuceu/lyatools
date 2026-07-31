@@ -8,6 +8,7 @@ from lyatools.run_all_mocks import MockBatchRun
 
 
 def main():
+    """Entry point for the lyatools-run CLI command."""
     submit_utils.set_umask()
     parser = argparse.ArgumentParser()
 

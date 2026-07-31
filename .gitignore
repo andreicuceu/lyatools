@@ -5,3 +5,6 @@ lyatools/__pycache__/
 
 lyatools/scripts/__pycache__/
 .ipynb_checkpoints/
+
+CLAUDE.md
+.claude/

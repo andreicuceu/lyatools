@@ -15,7 +15,27 @@ def make_dla_catalog(
     input_dir, output_dir, mask_nhi_cut=None, sigma_nhi_errors=None,
     mask_snr_cut=None, completeness=1.0, seed=0, nproc=None
 ):
+    """Build DLA catalogs from QuickQuasars truth files, with NHI/SNR cuts and completeness.
 
+    Parameters
+    ----------
+    input_dir : str or Path
+        Path to the spectra-16 directory containing truth files.
+    output_dir : str or Path
+        Output directory for the DLA catalog files.
+    mask_nhi_cut : float, optional
+        Minimum log10(NHI) for DLAs to include in the mask catalog.
+    sigma_nhi_errors : float, optional
+        Standard deviation of Gaussian noise added to log10(NHI).
+    mask_snr_cut : float, optional
+        Minimum QSO SNR for DLAs to be included in the mask catalog.
+    completeness : float, optional
+        Fraction of DLAs to retain in the mask catalog (between 0 and 1).
+    seed : int, optional
+        Random seed for NHI errors and completeness downsampling.
+    nproc : int, optional
+        Number of parallel worker processes.
+    """
     spec_dir = submit_utils.find_path(input_dir)
     truth_files = spec_dir.glob("*/*/truth-*.fits*")
 
@@ -88,6 +108,18 @@ def make_dla_catalog(
 
 
 def _get_dla_catalog(truth_file):
+    """Read DLA metadata from a single QuickQuasars truth FITS file.
+
+    Parameters
+    ----------
+    truth_file : Path or str
+        Path to a truth-*.fits file containing the DLA_META extension.
+
+    Returns
+    -------
+    ndarray or None
+        Structured array with FINAL_DTYPE, or None if no DLAs are present.
+    """
     hdul = fitsio.FITS(truth_file)
 
     hdr_dla = hdul['DLA_META'].read_header()
@@ -111,6 +143,20 @@ def _get_dla_catalog(truth_file):
 
 
 def _read_snr_catalog(path, targetids):
+    """Read and align the SNR catalog to a given array of TARGETIDs.
+
+    Parameters
+    ----------
+    path : Path
+        Path to the SNR catalog FITS file.
+    targetids : ndarray of int
+        Array of TARGETIDs whose SNR values are needed.
+
+    Returns
+    -------
+    ndarray
+        SNR catalog rows sorted and indexed to match the order of targetids.
+    """
     if not path.is_file():
         raise FileNotFoundError('SNR catalog not found.')
 
@@ -132,6 +178,20 @@ def _read_snr_catalog(path, targetids):
 
 
 def _reduce_completeness(catalog, completeness):
+    """Randomly downsample a catalog to the given completeness fraction.
+
+    Parameters
+    ----------
+    catalog : ndarray
+        Input catalog to downsample.
+    completeness : float
+        Fraction of entries to retain; must be between 0 and 1.
+
+    Returns
+    -------
+    ndarray
+        Downsampled catalog.
+    """
     if completeness > 1 or completeness < 0:
         raise ValueError('Completeness fraction must be between 0 and 1')
     rand = np.random.rand(catalog.size)
@@ -143,6 +203,7 @@ def _reduce_completeness(catalog, completeness):
 
 
 def main():
+    """Entry point for the lyatools-make-dla-cat CLI command."""
     submit_utils.set_umask()
     parser = argparse.ArgumentParser()
 

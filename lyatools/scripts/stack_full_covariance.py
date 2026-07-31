@@ -8,6 +8,20 @@ from lyatools import submit_utils
 from picca.utils import compute_cov
 
 def read_corr(files):
+    """Read and combine correlation data from a list of FITS files sharing common healpix pixels.
+
+    Parameters
+    ----------
+    files : list of str or Path
+        Paths to the correlation FITS files for one correlation type across multiple mocks.
+
+    Returns
+    -------
+    xi : ndarray
+        Stacked correlation array, restricted to common healpix pixels.
+    weights : ndarray
+        Corresponding weight array.
+    """
     xi = []
     weights = []
     hp_ids = []
@@ -33,6 +47,22 @@ def read_corr(files):
     return xi, weights
 
 def read_all(files, nproc):
+    """Read correlation data from all correlation types in parallel and stack them.
+
+    Parameters
+    ----------
+    files : list of list of str or Path
+        Outer list iterates over mocks; each element is a tuple of per-type correlation paths.
+    nproc : int
+        Number of parallel worker processes.
+
+    Returns
+    -------
+    xi : ndarray
+        Stacked correlations with shape (n_mocks, n_bins).
+    weights : ndarray
+        Corresponding weights with the same shape.
+    """
     with Pool(processes=nproc) as pool:
         results = list(pool.imap(read_corr, files))
     xi = np.vstack([res[0] for res in results])
@@ -40,6 +70,7 @@ def read_all(files, nproc):
     return xi, weights
 
 def main():
+    """Entry point for the lyatools-stack-fullcov CLI command."""
     submit_utils.set_umask()
     parser = argparse.ArgumentParser()
 

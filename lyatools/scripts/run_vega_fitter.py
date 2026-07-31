@@ -11,6 +11,7 @@ from lyatools.vegafit import run_vega_fitter
 
 
 def main():
+    """Entry point for the lyatools-run-vega CLI command."""
     submit_utils.set_umask()
     parser = argparse.ArgumentParser()
 

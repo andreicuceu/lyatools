@@ -8,6 +8,18 @@ import lyatools
 
 
 def get_seed_list(qq_seeds):
+    """Parse a seed specification string into a sorted list of integer seeds.
+
+    Parameters
+    ----------
+    qq_seeds : str
+        Comma-separated integers or ranges, e.g. '0,2,5-8'.
+
+    Returns
+    -------
+    list of int
+        Sorted list of seed integers.
+    """
     # Get list of seeds
     seed_list = qq_seeds.split(',')
 
@@ -30,28 +42,31 @@ def make_header(machine: str = 'perl', queue: str = 'regular', nodes: int = int(
                 omp_threads: int = int(128), time: Union[str, float] = '01:00:00',
                 job_name: str = 'run_script', err_file: Union[str, Path] = 'run-%j.err',
                 out_file: Union[str, Path] = 'run-%j.out'):
-    """
-    Makes a string header for submitting slurm jobs at NERSC. Supports both Perlmutter and Cori.
-    Args:
-        machine: string - default: 'perl'
-            Which machine to use, choose from ['perl', 'cori'].
-        queue: string - default: 'regular'
-            Which queue to submit to.
-        nodes: int - default: 1
-            How many nodes to request.
-        time: string - default: '01:00:00'
-            What amount of time to request, in "hh:mm:ss" format. If given as
-            a float, a warning will be raised and it will be converted to the
-            desired format.
-        job_name: string - default: 'run_script'
-            What name to give the job.
-        err_file: string - default: 'run-%j.err'
-            Name of file to write errors to.
-        out_file: string - default: 'run-%j.out'
-            Name of file to write output to.
-    Returns:
-        header: string
-            Contents of header as a string.
+    """Generate a SLURM batch script header string for NERSC Perlmutter or Cori.
+
+    Parameters
+    ----------
+    machine : str, optional
+        Target machine; one of 'perl' (Perlmutter) or 'cori'.
+    queue : str, optional
+        SLURM QOS/queue name (e.g. 'regular', 'debug').
+    nodes : int, optional
+        Number of compute nodes to request.
+    omp_threads : int, optional
+        OMP_NUM_THREADS value; max 256 for Perlmutter, 64 for Cori.
+    time : str or float, optional
+        Walltime as 'hh:mm:ss' or as a float number of hours.
+    job_name : str, optional
+        SLURM job name.
+    err_file : str or Path, optional
+        Path for the SLURM error log file.
+    out_file : str or Path, optional
+        Path for the SLURM output log file.
+
+    Returns
+    -------
+    str
+        SLURM header as a string ready to prepend to a bash script.
     """
     if isinstance(time, float):
         time = convert_job_time(time)
@@ -87,6 +102,15 @@ def make_header(machine: str = 'perl', queue: str = 'regular', nodes: int = int(
 
 
 def write_script(script_path, text):
+    """Write text to a script file and make it executable.
+
+    Parameters
+    ----------
+    script_path : str or Path
+        Destination path for the script file.
+    text : str
+        Script content to write.
+    """
     with open(script_path, 'w+') as f:
         f.write(text)
 
@@ -94,14 +118,21 @@ def write_script(script_path, text):
 
 
 def run_job(script, dependency_ids=None, no_submit=False):
-    """Make a job script and run it
+    """Submit a SLURM script with optional job dependencies.
 
     Parameters
     ----------
-    script : str
-        Path where script will pe written
+    script : str or Path
+        Path to the SLURM script to submit.
+    dependency_ids : int or list of int, optional
+        SLURM job IDs that must complete successfully before this job starts.
     no_submit : bool, optional
-        flag for submitting the job, by default False
+        If True, print the sbatch command without submitting.
+
+    Returns
+    -------
+    int or None
+        SLURM job ID, or None if no_submit is True.
     """
     dependency = ""
     if isinstance(dependency_ids, int) and dependency_ids > 0:
@@ -192,13 +223,19 @@ def make_file_executable(f: Path) -> None:
 
 
 def find_path(path, enforce=True):
-    """ Find paths on the system.
+    """Resolve a path that may be absolute or relative to the lyatools package or tests directory.
+
     Parameters
     ----------
-    path : string
-        Input path. Can be absolute or relative to lyatools
-    enforce : bool
-        Flag for enforcing that the path exists
+    path : str
+        Input path; absolute, or relative to the lyatools package, tests/, or repo root.
+    enforce : bool, optional
+        If True, raise RuntimeError when the path cannot be found; otherwise warn and return as-is.
+
+    Returns
+    -------
+    Path
+        Resolved absolute path.
     """
     input_path = Path(os.path.expandvars(path))
 
@@ -232,6 +269,20 @@ def find_path(path, enforce=True):
 
 
 def append_string_to_correlation_path(path, string):
+    """Insert a string before the .fits.gz extension of a correlation file path.
+
+    Parameters
+    ----------
+    path : Path
+        Path to the correlation file (must end with .fits.gz).
+    string : str
+        String to insert before the extension (e.g. '-exp', '_shuffled').
+
+    Returns
+    -------
+    Path
+        New path with the string inserted before .fits.gz.
+    """
     # This assumes that correlations are .fits.gz files, which should be the case by construction
     corr_name_replace = path.name.replace('.fits.gz',f'{string}.fits.gz')
     return path.parents[0] / corr_name_replace

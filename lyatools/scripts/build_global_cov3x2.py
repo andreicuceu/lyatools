@@ -142,10 +142,21 @@ def write_fits(cov, output_path, lya_cov_path, qso_cov_path,
     Parameters
     ----------
     cov : 2D ndarray
+        Combined block-diagonal covariance matrix.
     output_path : str
-    lya_cov_path, qso_cov_path : str  (stored in header for provenance)
-    s_min, s_max : float
+        Output FITS file path.
+    lya_cov_path : str
+        Path to the source LyA covariance file (stored in header for provenance).
+    qso_cov_path : str
+        Path to the source QSO multipole covariance file (stored in header).
+    s_min : float
+        Lower separation cut for the QSO auto block in Mpc/h.
+    s_max : float
+        Upper separation cut for the QSO auto block in Mpc/h.
     n_multipoles : int
+        Number of QSO auto multipoles.
+    lya_cov_scale : float, optional
+        Scale factor applied to the LyA covariance block (stored in header).
     """
     n = cov.shape[0]
     col = fits.Column(name='COV', format=f'{n}D', array=cov)
@@ -167,6 +178,7 @@ def write_fits(cov, output_path, lya_cov_path, qso_cov_path,
 
 
 def main():
+    """Entry point for the build_global_cov3x2 standalone script."""
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(

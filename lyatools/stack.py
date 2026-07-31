@@ -5,6 +5,20 @@ from picca.utils import smooth_cov, compute_cov
 
 
 def get_shuffled_correlations(files, headers_to_check_match_values):
+    """Read and stack shuffled correlation data from a list of FITS files.
+
+    Parameters
+    ----------
+    files : list of Path or str
+        Paths to the shuffled correlation FITS files.
+    headers_to_check_match_values : dict
+        Header keyword/value pairs that must match across files.
+
+    Returns
+    -------
+    ndarray, shape (N, 1)
+        Weighted-average shuffled correlation as a column vector.
+    """
     xi_shuffled_list = []
     for file in files:
         with fitsio.FITS(file) as hdul:
@@ -26,15 +40,20 @@ def get_shuffled_correlations(files, headers_to_check_match_values):
 
 def stack_export_correlations(
         input_files, output_file, smooth_cov_flag=True, dmat_path=None, shuffled_correlations=None):
-    """Stacks correlation functions measured in different mocks.
+    """Stack and export correlation functions from multiple mocks into a single picca-format file.
+
     Parameters
     ----------
-    input_files : list
-        List of the paths to the input correlations to be stacked.
-    output_file : string
-        Path to the output file.
-    dmat_path : string
-        Path to distortion matrix file, by default None
+    input_files : list of str or Path
+        Paths to the input correlation FITS files to stack.
+    output_file : str or Path
+        Path for the output stacked correlation file.
+    smooth_cov_flag : bool, optional
+        Whether to use the smoothed covariance estimator (default True).
+    dmat_path : str or Path, optional
+        Path to the distortion matrix FITS file; identity matrix used if None.
+    shuffled_correlations : list of str or Path, optional
+        Shuffled correlation files to subtract from each input file before stacking.
     """
     # specify which header entries we want to check are consistent across all files being stacked
     headers_to_check_match = ['NP', 'NT', 'OMEGAM', 'OMEGAR', 'OMEGAK', 'WL', 'NSIDE']
