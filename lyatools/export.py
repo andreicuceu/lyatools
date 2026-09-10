@@ -497,7 +497,7 @@ def mpi_export(export_commands, export_cov_commands, analysis_tree, job, corr_jo
     individual_cov_commands = []
     smooth_cov_commands = []
     for command in export_cov_commands:
-        if 'write_full_covariance_matrix' in command:
+        if 'write_full_covariance' in command:
             individual_cov_commands += [command]
         elif 'write_smooth_covariance' in command:
             smooth_cov_commands += [command]
