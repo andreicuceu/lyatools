@@ -171,23 +171,38 @@ def export_full_cov(corr_paths, analysis_tree, config, job, corr_job_ids=None, r
 
     commands = []
     if not output_path.is_file():
-        command = '/global/cfs/projectdirs/desi/science/lya/y1-kp6/iron-tests'
-        command += '/correlations/scripts/write_full_covariance_matrix_flex_size_shuffled.py '
-        for key, path in ordered_cf_paths.items():
-            type = key.split('_')
-            field = f'{type[1]}-{type[2]}'
-            if len(type) > 3:
-                field += f'-{type[3]}'
-            command += f'--{field} {path} '
+        if any(["-shuff" in key for key in ordered_cf_paths.keys()]):
+            print("Warning: Shuffled correlations detected. The full covariance matrix "
+                  "will be computed using an old script in "
+                  "/global/cfs/projectdirs/desi/science/lya/y1-kp6/iron-tests/correlations/scripts/"
+                  "that does not support np version 2.x.")
+            # TODO: fix this
+            # this is outdated, but we need to check that the 
+            # write_full_covariance_matrix_flex_size_shuffled script is properly added to picca
+            command = '/global/cfs/projectdirs/desi/science/lya/y1-kp6/iron-tests'
+            command += '/correlations/scripts/write_full_covariance_matrix_flex_size_shuffled.py '
+            for key, path in ordered_cf_paths.items():
+                type = key.split('_')
+                field = f'{type[1]}-{type[2]}'
+                if len(type) > 3:
+                    field += f'-{type[3]}'
+                command += f'--{field} {path} '
+
+        else:
+            command = 'picca_write_full_covariance_matrix.py -c '
+            # note that the order of the correlation types is important here, as it will determine 
+            # the order of the blocks in the covariance matrix
+            for path in ordered_cf_paths.values():
+                command += f'{path} '
+
 
         command += f'-o {output_path}\n'
         commands += [command]
 
     if not output_path_smoothed.is_file():
-        command = '/global/cfs/cdirs/desicollab/science/lya/y1-kp6/iron-tests/'
-        command += 'correlations/scripts/write_smooth_covariance_flex_size.py '
+        command = 'picca_write_smooth_covariance.py '
         command += f'--input-cov {output_path} --output-cov {output_path_smoothed} '
-        command += f'--block-types {block_types_str}\n'
+        command += f'--correlation-types {block_types_str}\n'
         commands += [command]
 
     # stacked_cov_flag = config.getboolean('stacked_cov_flag', False)
