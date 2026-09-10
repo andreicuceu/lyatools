@@ -189,7 +189,7 @@ def export_full_cov(corr_paths, analysis_tree, config, job, corr_job_ids=None, r
                 command += f'--{field} {path} '
 
         else:
-            command = 'picca_write_full_covariance_matrix.py -c '
+            command = 'picca_write_full_covariance.py -c '
             # note that the order of the correlation types is important here, as it will determine 
             # the order of the blocks in the covariance matrix
             for path in ordered_cf_paths.values():
