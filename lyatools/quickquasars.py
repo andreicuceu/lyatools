@@ -180,19 +180,13 @@ def create_qq_script(qq_tree, config, job, qq_args, qq_seed):
     text += 'echo "n files =" $nfiles\n'
     text += 'echo "n files per node =" $nfilespernode\n\n'
 
-    text += 'first=1\n'
-    text += 'last=$nfilespernode\n'
     text += f'for node in `seq {nodes}` ; do\n'
     text += '    echo "starting node $node"\n\n'
-    text += '    # list of files to run\n'
-    text += f'    if (( $node == {nodes} )) ; then\n'
-    text += '        last=""\n'
-    text += '    fi\n\n'
-    text += '    echo ${first}-${last}\n'
-    text += '    tfiles=`echo $files | cut -d " " -f ${first}-${last}`\n'
-    text += '    first=$(( first + nfilespernode ))\n'
-    text += '    last=$(( last + nfilespernode ))\n'
-
+    text += '    # every nodes-th file, starting at this node: the healpixes that hold quasars are\n'
+    text += '    # not spread evenly over the sorted list, so contiguous slices left some nodes\n'
+    text += '    # with several times the work of others\n'
+    text += f'    tfiles=`echo $files | tr " " "\\n" | awk -v n={nodes} -v k=$node '
+    text += "'NR % n == k % n' | tr \"\\n\" \" \"`\n\n"
     text += qq_run
 
     text += '    echo $command\n'
