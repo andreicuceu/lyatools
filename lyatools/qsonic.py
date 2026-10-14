@@ -109,6 +109,7 @@ def run_qsonic(
 
     deltas_dir = deltas_dirname / 'Delta'
     dir_handlers.check_dir(deltas_dir)
+    dir_handlers.check_dir(deltas_dirname / 'Log')
 
     # Create the path and name for the config file
     type = 'true' if true_continuum else 'fitted'
@@ -200,6 +201,11 @@ def run_qsonic(
             command_lines.append(f'--fiducial-varlss {raw_stats_file}')
 
     text += ' \\\n'.join(command_lines) + '\n'
+
+    attributes_file = deltas_dir / 'attributes.fits'
+    attributes_file_gz = deltas_dir / 'attributes.fits.gz'
+    output_file = deltas_dirname / "Log" / "delta_attributes.fits.gz"
+    text += f"gzip -k {attributes_file} && mv {attributes_file_gz} {output_file}\n"
 
     submit_utils.write_script(script_path, text)
 
