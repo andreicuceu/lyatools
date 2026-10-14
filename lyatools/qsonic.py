@@ -109,6 +109,7 @@ def run_qsonic(
 
     deltas_dir = deltas_dirname / 'Delta'
     dir_handlers.check_dir(deltas_dir)
+    dir_handlers.check_dir(deltas_dirname / 'Log')
 
     # Create the path and name for the config file
     type = 'true' if true_continuum else 'fitted'
@@ -127,58 +128,84 @@ def run_qsonic(
 
     # Create the script
     text = header
-    # env_command = job.get('env_command')
-    text += 'source /global/cfs/projectdirs/desi/science/lya/scripts/activate_qsonic.sh \n\n'
-    text += f'srun -n {config.get("num_mpi")} -c 2 qsonic-fit '
-    text += f'-i {qq_tree.spectra_dir} '
-    text += f'-o {deltas_dir} '
-    text += f'--catalog {qso_cat} '
-    text += '--mock-analysis '
-    text += '--skip-resomat '
-    text += '--smoothing-scale 0 '
-    text += f'--skip {config.get("min_forest_fraction")} '
-    text += f'--wave1 {config.get("lambda_min")} '
-    text += f'--wave2 {config.get("lambda_max")} '
-    text += f'--forest-w1 {lambda_rest_min} '
-    text += f'--forest-w2 {lambda_rest_max} '
+    env_command = config.get('env_command')
+    text += f'{env_command}\n\n'
+    command_lines = []
+    command_lines.append(f'srun -n {config.get("num_mpi")} -c 2 qsonic-fit')
+    command_lines.append(f'-i {qq_tree.spectra_dir}')
+    command_lines.append(f'-o {deltas_dir}')
+    command_lines.append(f'--catalog {qso_cat}')
+    command_lines.append('--mock-analysis')
+    command_lines.append('--skip-resomat')
+    command_lines.append(f'--arms {config.get("arms_to_read")}')
+    command_lines.append('--smoothing-scale 0')
+    command_lines.append(f'--skip {config.get("min_forest_fraction")}')
+    command_lines.append(f'--skip-min-pixels {config.get("num_pix_min")}')
+    command_lines.append(f'--num-iterations {config.get("number_of_iterations")}')
+    command_lines.append(f'--eta-varlss {config.get("var_lss_mod")}')
+    command_lines.append(f'--wave1 {config.get("lambda_min")}')
+    command_lines.append(f'--wave2 {config.get("lambda_max")}')
+    command_lines.append(f'--forest-w1 {lambda_rest_min}')
+    command_lines.append(f'--forest-w2 {lambda_rest_max}')
+    command_lines.append(f'--rfdwave {config.get("delta_lambda")}')
+    command_lines.append(f'--cont-order {config.get("cont_order")}')
 
     if config.getboolean("save_by_healpix"):
-        text += '--save-by-hpx '
+        command_lines.append('--save-by-hpx')
     if config.getboolean("force_stack_delta_to_zero"):
-        text += '--normalize-stacked-flux '
+        command_lines.append('--normalize-stacked-flux')
     if config.getboolean("var_fit_eta"):
-        text += '--var-fit-eta '
+        command_lines.append('--var-fit-eta')
     if config.getboolean("var_use_cov"):
-        text += '--var-use-cov '
+        command_lines.append('--var-use-cov')
+    nside_opt = config.get("nside", None)
+    if nside_opt is not None:
+        command_lines.append(f'--nside {nside_opt}')
 
     mask_dla_flag = config.getboolean('mask_DLAs')
     if mask_dla_flag:
         assert mask_dla_cat is not None
         print(f'Asked for DLA masking. Assuming dla mask catalog exists: {mask_dla_cat}')
-        text += f'--dla-mask {mask_dla_cat} '
+        command_lines.append(f'--dla-mask {mask_dla_cat}')
+        if not config.getboolean('mask_associated_metals_dla'):
+            print('Asked for NOT masking associated metals.')
+            command_lines.append('--dla-dont-mask-metals')
 
-    # TODO Add BAL masking
+    mask_bal_flag = config.getboolean('mask_BALs')
+    if mask_bal_flag:
+        if mask_bal_cat is None:
+            print('Asked for BAL masking but did not provide a mask catalog.'
+                  'Assuming BAL catalog is in the quasar catalog.')
+            command_lines.append('--bal-mask')
+        else:
+            print(f'Asked for BAL masking. Assuming bal mask catalog exists: {mask_bal_cat}')
+            command_lines.append(f'--bal-mask-catalog {mask_bal_cat}')
 
     if true_continuum:
-        text += '--true-continuum '
+        command_lines.append('--true-continuum')
 
     if config.getboolean('use_fid_meanflux'):
         if region_name == 'lya':
             raw_stats_file = submit_utils.find_path(config.get('raw_stats_file_lya'))
-            text += f'--fiducial-meanflux {raw_stats_file} '
+            command_lines.append(f'--fiducial-meanflux {raw_stats_file}')
         elif region_name == 'lyb':
             raw_stats_file = submit_utils.find_path(config.get('raw_stats_file_lyb'))
-            text += f'--fiducial-meanflux {raw_stats_file} '
+            command_lines.append(f'--fiducial-meanflux {raw_stats_file}')
 
     if config.getboolean('use_fid_varlss'):
         if region_name == 'lya':
             raw_stats_file = submit_utils.find_path(config.get('raw_stats_file_lya'))
-            text += f'--fiducial-varlss {raw_stats_file} '
+            command_lines.append(f'--fiducial-varlss {raw_stats_file}')
         elif region_name == 'lyb':
             raw_stats_file = submit_utils.find_path(config.get('raw_stats_file_lyb'))
-            text += f'--fiducial-varlss {raw_stats_file} '
+            command_lines.append(f'--fiducial-varlss {raw_stats_file}')
 
-    text += '\n'
+    text += ' \\\n'.join(command_lines) + '\n\n'
+
+    attributes_file = deltas_dir / 'attributes.fits'
+    attributes_file_gz = deltas_dir / 'attributes.fits.gz'
+    output_file = deltas_dirname / "Log" / "delta_attributes.fits.gz"
+    text += f"gzip -k {attributes_file} && mv {attributes_file_gz} {output_file}\n"
 
     submit_utils.write_script(script_path, text)
 
