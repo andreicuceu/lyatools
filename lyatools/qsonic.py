@@ -200,7 +200,7 @@ def run_qsonic(
             raw_stats_file = submit_utils.find_path(config.get('raw_stats_file_lyb'))
             command_lines.append(f'--fiducial-varlss {raw_stats_file}')
 
-    text += ' \\\n'.join(command_lines) + '\n'
+    text += ' \\\n'.join(command_lines) + '\n\n'
 
     attributes_file = deltas_dir / 'attributes.fits'
     attributes_file_gz = deltas_dir / 'attributes.fits.gz'
