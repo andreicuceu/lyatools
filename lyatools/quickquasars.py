@@ -2,6 +2,18 @@ from . import submit_utils
 from lyatools import qq_run_args
 
 
+# Python run inside the job script (stdin of python3): prints the skewer files whose healpixel has quasars
+PIXEL_FILTER = '''import re, sys
+import fitsio, healpy, numpy as np
+cat = fitsio.read(sys.argv[1], columns=['RA', 'DEC'])
+pix = set(np.unique(healpy.ang2pix(16, cat['RA'], cat['DEC'], lonlat=True, nest=True)).tolist())
+for name in open(sys.argv[2]).read().split():
+    m = re.search(r'transmission-16-(\\d+)\\.', name)
+    if m is None or int(m.group(1)) in pix:
+        print(name)
+'''
+
+
 def create_qq_catalog(qq_tree, seed_cat_path, config, job, seed, prev_job_id=None, run_local=True):
     """Build and submit a job to generate the seeded QSO input catalog for QuickQuasars.
 
@@ -109,7 +121,7 @@ def run_qq(qq_tree, config, job, seed_cat_path, qq_seed, qq_special_args, prev_j
     print('Found the following arguments to pass to quickquasars:')
     print(qq_args)
 
-    qq_script = create_qq_script(qq_tree, config, job, qq_args, qq_seed)
+    qq_script = create_qq_script(qq_tree, config, job, qq_args, qq_seed, seed_cat_path=seed_cat_path)
 
     job_id = submit_utils.run_job(
         qq_script, dependency_ids=prev_job_id, no_submit=job.getboolean('no_submit'))
@@ -117,7 +129,7 @@ def run_qq(qq_tree, config, job, seed_cat_path, qq_seed, qq_special_args, prev_j
     return job_id
 
 
-def create_qq_script(qq_tree, config, job, qq_args, qq_seed):
+def create_qq_script(qq_tree, config, job, qq_args, qq_seed, seed_cat_path=None):
     """Write the QuickQuasars SLURM bash script to disk and return its path.
 
     Parameters
@@ -132,6 +144,9 @@ def create_qq_script(qq_tree, config, job, qq_args, qq_seed):
         Assembled CLI argument string to pass to quickquasars.
     qq_seed : int
         Random seed (used in the job name).
+    seed_cat_path : Path, optional
+        Seeded QSO input catalog. With the config option ``only_pixels_with_quasars`` (default
+        True) the job only runs the skewer files whose healpixel holds quasars of this catalog.
 
     Returns
     -------
@@ -174,6 +189,21 @@ def create_qq_script(qq_tree, config, job, qq_args, qq_seed):
         text += f'files=`ls -1 {qq_tree.skewers_path}/*/*/transmission*.fits* | head -10`\n'
     else:
         text += f'files=`ls -1 {qq_tree.skewers_path}/*/*/transmission*.fits*`\n'
+
+    if seed_cat_path is not None and config.getboolean('only_pixels_with_quasars', True):
+        # Most of the 3072 healpixes hold no quasar of the catalog and quickquasars writes nothing for
+        # them ("No intersection with catalog"), but it still reads their skewer files and the empty
+        # files shift the split between nodes. Keep the files whose healpixel (nside 16, nested, as in
+        # the file names) has quasars; if anything goes wrong keep all the files.
+        text += 'echo "keeping only the skewer files whose healpixel holds quasars of the catalog ..."\n'
+        text += 'listfile=`mktemp`\n'
+        text += 'echo $files | tr " " "\\n" > $listfile\n'
+        text += f'python3 - {seed_cat_path} $listfile > $listfile.kept << \'PYEOF\' || cp $listfile $listfile.kept\n'
+        text += PIXEL_FILTER
+        text += 'PYEOF\n'
+        text += '[ -s $listfile.kept ] || cp $listfile $listfile.kept\n'
+        text += 'files=`cat $listfile.kept`\n'
+        text += 'rm -f $listfile $listfile.kept\n\n'
 
     text += 'nfiles=`echo $files | wc -w`\n'
     text += f'nfilespernode=$(( $nfiles / {nodes} + 1 ))\n\n'
