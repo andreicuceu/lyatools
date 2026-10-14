@@ -41,7 +41,8 @@ def get_seed_list(qq_seeds):
 def make_header(machine: str = 'perl', queue: str = 'regular', nodes: int = int(1),
                 omp_threads: int = int(128), time: Union[str, float] = '01:00:00',
                 job_name: str = 'run_script', err_file: Union[str, Path] = 'run-%j.err',
-                out_file: Union[str, Path] = 'run-%j.out'):
+                out_file: Union[str, Path] = 'run-%j.out', gpu: bool = False,
+                account: str = None):
     """Generate a SLURM batch script header string for NERSC Perlmutter or Cori.
 
     Parameters
@@ -62,6 +63,11 @@ def make_header(machine: str = 'perl', queue: str = 'regular', nodes: int = int(
         Path for the SLURM error log file.
     out_file : str or Path, optional
         Path for the SLURM output log file.
+    gpu : bool, optional
+        Request a full Perlmutter GPU node (4 GPUs and all its CPU cores) instead of a CPU node,
+        for the picca scripts that have a ``--gpu`` flag. Only valid for machine 'perl'.
+    account : str, optional
+        SLURM account; defaults to 'desi', or 'desi_g' when ``gpu`` is set.
 
     Returns
     -------
@@ -83,6 +89,13 @@ def make_header(machine: str = 'perl', queue: str = 'regular', nodes: int = int(
         raise ValueError(f'make_header called with unknown machine name {machine}.'
                          ' Choose from ["perl", "cori"].')
 
+    if gpu:
+        if machine != 'perl':
+            raise ValueError('make_header: GPU nodes are only available with machine="perl".')
+        machine_string = 'gpu'
+    if account is None:
+        account = 'desi_g' if gpu else 'desi'
+
     header = ''
     header += '#!/bin/bash -l\n\n'
 
@@ -93,7 +106,10 @@ def make_header(machine: str = 'perl', queue: str = 'regular', nodes: int = int(
     header += f'#SBATCH --error {err_file}\n'
     header += f'#SBATCH --output {out_file}\n'
     header += f'#SBATCH -C {machine_string}\n'
-    header += '#SBATCH -A desi\n\n'
+    if gpu:
+        header += '#SBATCH --gpus-per-node 4\n'
+        header += '#SBATCH --exclusive\n'
+    header += f'#SBATCH -A {account}\n\n'
 
     header += 'umask 0007\n'
     header += f'export OMP_NUM_THREADS={omp_threads}\n\n'
