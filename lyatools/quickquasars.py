@@ -172,6 +172,10 @@ def create_qq_script(qq_tree, config, job, qq_args, qq_seed, seed_cat_path=None)
     # Create the main qq run command
     qq_run = f'    command="srun -N 1 -n 1 -c {nproc} '
     qq_run += f'quickquasars -i $tfiles --nproc {nproc} '
+    mem_per_worker = config.getfloat('mem_per_worker', None)
+    if mem_per_worker is not None:
+        # lowers --nproc if the job's memory does not fit that many workers
+        qq_run += f'--mem-per-worker {mem_per_worker} '
     qq_run += f'--outdir {qq_tree.spectra_dir} {qq_args}"\n'
 
     # Make the text body of the script.
