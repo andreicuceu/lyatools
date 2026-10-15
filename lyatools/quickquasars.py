@@ -164,7 +164,7 @@ def create_qq_script(qq_tree, config, job, qq_args, qq_seed, seed_cat_path=None)
     time = submit_utils.convert_job_time(slurm_hours)
     header = submit_utils.make_header(
         job.get('nersc_machine'), slurm_queue, nodes, time=time,
-        omp_threads=nproc, job_name=f'qq_{qq_seed}',
+        omp_threads=config.getint('omp_threads', nproc), job_name=f'qq_{qq_seed}',
         err_file=qq_tree.runfiles_dir/'run-%j.err',
         out_file=qq_tree.runfiles_dir/'run-%j.out'
     )
