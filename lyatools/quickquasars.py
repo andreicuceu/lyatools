@@ -170,7 +170,11 @@ def create_qq_script(qq_tree, config, job, qq_args, qq_seed, seed_cat_path=None)
     )
 
     # Create the main qq run command
-    qq_run = f'    command="srun -N 1 -n 1 -c {nproc} '
+    # Perlmutter CPU nodes have 128 cores and 256 logical CPUs; srun -c N gives the step N logical CPUs, so
+    # -c {nproc} left the workers half as many cores (nproc 48 -> 24 cores) and made the run ~2.8 times slower.
+    # Give the step the whole node (the workers are processes of that one step).
+    cpus_per_task = config.getint('cpus_per_task', 256)
+    qq_run = f'    command="srun -N 1 -n 1 -c {cpus_per_task} '
     qq_run += f'quickquasars -i $tfiles --nproc {nproc} '
     mem_per_worker = config.getfloat('mem_per_worker', None)
     if mem_per_worker is not None:
