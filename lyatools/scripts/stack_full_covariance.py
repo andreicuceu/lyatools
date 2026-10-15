@@ -39,7 +39,7 @@ def read_corr(files):
         xi.append(txi)
     
     common_hp = reduce(np.intersect1d, hp_ids)
-    masks = [np.in1d(hp_ids_i, common_hp) for hp_ids_i in hp_ids]
+    masks = [np.isin(hp_ids_i, common_hp) for hp_ids_i in hp_ids]
 
     xi = np.hstack([xi_i[mask] for xi_i, mask in zip(xi, masks)])
     weights = np.hstack([weights_i[mask] for weights_i, mask in zip(weights, masks)])

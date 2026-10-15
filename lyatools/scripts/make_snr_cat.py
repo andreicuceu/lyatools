@@ -162,7 +162,7 @@ def getsnr(specfile, catalog):
         fm = desispec.io.read_fibermap(specfile)
 
         # pare catalog to match spectra file fibermap
-        tidmask = np.in1d(catalog['TARGETID'], fm['TARGETID'])
+        tidmask = np.isin(catalog['TARGETID'], fm['TARGETID'])
         scat = catalog[tidmask]
 
         if len(scat) < 1:
