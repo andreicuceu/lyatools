@@ -117,13 +117,21 @@ def read_mock_catalog(mockpath, balmask):
             vmin = np.full((len(catalog), balcat['VMIN_CIV_450'].shape[1]), -1.)
             vmax = np.full((len(catalog), balcat['VMIN_CIV_450'].shape[1]), -1.)
 
-            for i, tid in enumerate(catalog['TARGETID']):
-                if np.any(tid == balcat['TARGETID']):
-                    match = balcat[balcat['TARGETID'] == tid]
-                    ai[i] = match['AI_CIV']
-                    nciv[i] = match['NCIV_450']
-                    vmin[i] = match['VMIN_CIV_450']
-                    vmax[i] = match['VMAX_CIV_450']
+            # row of the BAL catalog of every quasar that has one (a lookup on the sorted TARGETIDs instead of
+            # comparing every quasar to the whole BAL catalog; assigning a one-row column to a scalar is an
+            # error in numpy >= 2.5)
+            bal_ids = np.asarray(balcat['TARGETID'])
+            if len(np.unique(bal_ids)) != len(bal_ids):
+                raise ValueError('duplicate TARGETID in the BAL catalog')
+            order = np.argsort(bal_ids)
+            sorted_ids = bal_ids[order]
+            pos = np.minimum(np.searchsorted(sorted_ids, catalog['TARGETID']), len(sorted_ids) - 1)
+            found = sorted_ids[pos] == catalog['TARGETID']
+            rows = order[pos[found]]
+            ai[found] = balcat['AI_CIV'][rows]
+            nciv[found] = balcat['NCIV_450'][rows]
+            vmin[found] = balcat['VMIN_CIV_450'][rows]
+            vmax[found] = balcat['VMAX_CIV_450'][rows]
 
             catalog.add_columns([ai, nciv, vmin, vmax],
                                 names=['AI_CIV', 'NCIV_450', 'VMIN_CIV_450', 'VMAX_CIV_450'])
