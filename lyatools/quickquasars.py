@@ -180,6 +180,10 @@ def create_qq_script(qq_tree, config, job, qq_args, qq_seed, seed_cat_path=None)
     if mem_per_worker is not None:
         # lowers --nproc if the job's memory does not fit that many workers
         qq_run += f'--mem-per-worker {mem_per_worker} '
+    fiber_chunk = config.getint('fiber_chunk', None)
+    if fiber_chunk is not None:
+        # simulates the quasars of a healpix in chunks of this many: same spectra, less memory per worker
+        qq_run += f'--fiber-chunk {fiber_chunk} '
     qq_run += f'--outdir {qq_tree.spectra_dir} {qq_args}"\n'
 
     # Make the text body of the script.
