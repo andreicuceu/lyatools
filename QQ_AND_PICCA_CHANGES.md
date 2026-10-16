@@ -14,6 +14,20 @@ scripts run (marked "default changed" below); every one can be set back from the
 | `mem_per_worker` | not set | Passes `--mem-per-worker` (lowers `--nproc` to what the job's memory fits). |
 | `fiber_chunk` | not set | Passes `--fiber-chunk` (needs the desisim branch; same spectra, about half the memory per worker). |
 
+Notes on calling it:
+
+- `cpus_per_task` only sets the `-c` of the `srun` line that lyatools writes into the quickquasars job script; the
+  number of workers is still `nproc` (default 32 in lyatools; the DR2 jobs used 48). So by default the workers now
+  run on a step that owns the whole node: 256 is the number of logical CPUs of a Perlmutter CPU node (128 cores, 2
+  threads each). On another machine, or in a job that does not have a whole CPU node, set `cpus_per_task` to the
+  number of CPUs the job has, or `srun` will refuse the step.
+- Calling `quickquasars` directly (not through lyatools) is not affected: it takes `--nproc` and uses whatever CPUs
+  its process is bound to. Whoever writes the `srun`/`sbatch` line has to give it all the CPUs.
+- `fiber_chunk` and `mem_per_worker` pass `--fiber-chunk` and `--mem-per-worker`, which exist only in the desisim
+  `gpu-port` branch. Leave them out of the ini file if the job loads an older desisim.
+- More workers per node have not been tried. With `fiber_chunk = 200` a worker needs 4 to 5 GB at its peak and 48
+  workers used 209 GB of a 503 GB node, so there is room to test `nproc` above 48.
+
 Also **default changed**: the skewer files are dealt out to the nodes round-robin (every `nodes`-th file) instead
 of in contiguous slices. The healpixes with quasars are not spread evenly over the sorted list, so contiguous
 slices gave the nodes 63k to 413k quasars (mock-15); round-robin gives 299k to 308k.
