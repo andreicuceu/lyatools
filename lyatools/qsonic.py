@@ -127,8 +127,8 @@ def run_qsonic(
 
     # Create the script
     text = header
-    # env_command = job.get('env_command')
-    text += 'source /global/cfs/projectdirs/desi/science/lya/scripts/activate_qsonic.sh\n\n'
+    env_command = config.get('env_command')
+    text += f'{env_command}\n\n'
     command_lines = []
     command_lines.append(f'srun -n {config.get("num_mpi")} -c 2 qsonic-fit')
     command_lines.append(f'-i {qq_tree.spectra_dir}')
