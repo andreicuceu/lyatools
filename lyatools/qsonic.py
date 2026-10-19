@@ -136,6 +136,7 @@ def run_qsonic(
     command_lines.append(f'--catalog {qso_cat}')
     command_lines.append('--mock-analysis')
     command_lines.append('--skip-resomat')
+    command_lines.append(f'--arms {config.get("arms_to_read")}')
     command_lines.append('--smoothing-scale 0')
     command_lines.append(f'--skip {config.get("min_forest_fraction")}')
     command_lines.append(f'--skip-min-pixels {config.get("num_pix_min")}')
@@ -144,6 +145,8 @@ def run_qsonic(
     command_lines.append(f'--wave2 {config.get("lambda_max")}')
     command_lines.append(f'--forest-w1 {lambda_rest_min}')
     command_lines.append(f'--forest-w2 {lambda_rest_max}')
+    command_lines.append(f'--rfdwave {config.get("delta_lambda")}')
+    command_lines.append(f'--cont-order {config.get("cont_order")}')
 
     if config.getboolean("save_by_healpix"):
         command_lines.append('--save-by-hpx')
