@@ -207,8 +207,10 @@ def create_config(
 
     add_optical_depth = config.getboolean('add_optical_depth_correction')
     if add_optical_depth:
-        out_config['corrections'] = {'num corrections': '1'}
-        out_config['correction type 0'] = 'OpticalDepthCorrection'
+        out_config['corrections'] = {
+            'num corrections': '1',
+            'correction type 0': 'OpticalDepthCorrection'
+        }
         out_config['correction arguments 0'] = {
             'optical depth absorber': config.get('optical_depth_absorber'),
             'optical depth gamma': config.get('optical_depth_gamma'),
