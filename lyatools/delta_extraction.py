@@ -302,10 +302,15 @@ def create_config(
                 'type': fit_type,
                 'interpolation type': '2D',
                 'limit z': '1.8, 5.',
-                'num z bins': '5',
             }
+            num_z_bins = config.getint('num_z_bins', 5)
+            out_config['expected flux']['num z bins'] = str(num_z_bins)
+            infer_z_bins = config.getboolean('infer_z_bins', False)
+            out_config['expected flux']['infer z bins'] = str(infer_z_bins)
         else: 
             raise RuntimeError(f'fit_type {fit_type} not recognized')
+        num_iterations = config.getint('num_iterations', 5)
+        out_config['expected flux']['num iterations'] = str(num_iterations)
 
 
     with open(config_path, 'w') as configfile:
