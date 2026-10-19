@@ -140,6 +140,7 @@ def run_qsonic(
     command_lines.append('--smoothing-scale 0')
     command_lines.append(f'--skip {config.get("min_forest_fraction")}')
     command_lines.append(f'--skip-min-pixels {config.get("num_pix_min")}')
+    command_lines.append(f'--num-iterations {config.get("number_of_iterations")}')
     command_lines.append(f'--eta-varlss {config.get("var_lss_mod")}')
     command_lines.append(f'--wave1 {config.get("lambda_min")}')
     command_lines.append(f'--wave2 {config.get("lambda_max")}')
