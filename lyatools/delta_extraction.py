@@ -205,7 +205,7 @@ def create_config(
     if config.getint('max_num_spec', -1) > 0:
         out_config['data']['max num spec'] = config.get('max_num_spec')
 
-    add_optical_depth = config.getboolean('add_optical_depth')
+    add_optical_depth = config.getboolean('add_optical_depth_correction')
     if add_optical_depth:
         out_config['corrections'] = {'num corrections': '1'}
         out_config['correction type 0'] = 'OpticalDepthCorrection'
