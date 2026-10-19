@@ -205,7 +205,18 @@ def create_config(
     if config.getint('max_num_spec', -1) > 0:
         out_config['data']['max num spec'] = config.get('max_num_spec')
 
-    out_config['corrections'] = {'num corrections': '0'}
+    add_optical_depth = config.getboolean('add_optical_depth')
+    if add_optical_depth:
+        out_config['corrections'] = {'num corrections': '1'}
+        out_config['correction type 0'] = 'OpticalDepthCorrection'
+        out_config['correction arguments 0'] = {
+            'optical depth absorber': config.get('optical_depth_absorber'),
+            'optical depth gamma': config.get('optical_depth_gamma'),
+            'optical depth tau': config.get('optical_depth_tau'),
+
+        }
+    else:
+        out_config['corrections'] = {'num corrections': '0'}
 
     mask_dla_flag = config.getboolean('mask_DLAs')
     mask_bal_flag = config.getboolean('mask_BALs')
