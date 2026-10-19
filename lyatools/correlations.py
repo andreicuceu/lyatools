@@ -156,7 +156,7 @@ def run_correlation(
         return output_path, None
 
     # Get setting we need
-    env_command = job.get('env_command')
+    env_command = config.get('env_command')
     nside = config.getint('nside')
     rp_min = config.getfloat('rp_min')
     rp_max = config.getfloat('rp_max')
