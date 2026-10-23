@@ -117,6 +117,18 @@ def make_header(machine: str = 'perl', queue: str = 'regular', nodes: int = int(
     return header
 
 
+LYA_REST_WAVELENGTH = 1215.67   # [A]
+DLA_MASK_LAMBDA_MIN = 3600.     # [A] default: only DLAs whose Lya is observed (start of the DESI spectra) are masked
+
+
+def dla_catalog_name(mask_nhi_cut, mask_snr_cut, completeness, lambda_min=DLA_MASK_LAMBDA_MIN):
+    """File name of the DLA catalog used for masking; a lambda_min other than the default is added to it."""
+    name = f'dla_cat_nhi_{mask_nhi_cut:.2f}_snr_{mask_snr_cut:.1f}_completeness_{completeness:.2f}'
+    if lambda_min != DLA_MASK_LAMBDA_MIN:
+        name += f'_lmin_{lambda_min:.0f}'
+    return name + '.fits'
+
+
 def write_script(script_path, text):
     """Write text to a script file and make it executable.
 

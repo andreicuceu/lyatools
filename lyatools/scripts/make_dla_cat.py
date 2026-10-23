@@ -13,7 +13,7 @@ FINAL_DTYPE = np.dtype(
 
 def make_dla_catalog(
     input_dir, output_dir, mask_nhi_cut=None, sigma_nhi_errors=None,
-    mask_snr_cut=None, completeness=1.0, seed=0, nproc=None
+    mask_snr_cut=None, completeness=1.0, seed=0, nproc=None, lambda_min=submit_utils.DLA_MASK_LAMBDA_MIN
 ):
     """Build DLA catalogs from QuickQuasars truth files, with NHI/SNR cuts and completeness.
 
@@ -35,6 +35,9 @@ def make_dla_catalog(
         Random seed for NHI errors and completeness downsampling.
     nproc : int, optional
         Number of parallel worker processes.
+    lambda_min : float, optional
+        Only DLAs whose Lya is observed, 1215.67 (1 + Z) >= lambda_min [A], are masked: the cores of the others fall outside
+        the spectra, where no DLA finder could detect them in the data. Default 3600 (start of the DESI spectra); 0 keeps them all.
     """
     spec_dir = submit_utils.find_path(input_dir)
     truth_files = spec_dir.glob("*/*/truth-*.fits*")
@@ -90,18 +93,22 @@ def make_dla_catalog(
     mask = mask_catalog['SNR'] > mask_snr_cut
     mask_catalog = mask_catalog[mask]
 
+    # Mask only the DLAs whose Lya is observed
+    if lambda_min > 0:
+        mask = submit_utils.LYA_REST_WAVELENGTH * (1 + mask_catalog['Z']) >= lambda_min
+        mask_catalog = mask_catalog[mask]
+
     # Reduce catalog completeness
     mask_catalog = _reduce_completeness(mask_catalog, completeness)
 
-    dla_cat_name = f'dla_cat_nhi_{mask_nhi_cut:.2f}_snr_{mask_snr_cut:.1f}'
-    dla_cat_name += f'_completeness_{completeness:.2f}.fits'
+    dla_cat_name = submit_utils.dla_catalog_name(mask_nhi_cut, mask_snr_cut, completeness, lambda_min)
 
     output_file = submit_utils.find_path(output_dir) / dla_cat_name
 
     if not output_file.is_file():
         print(
             f'Writing catalog for masking DLAs with NHI > {mask_nhi_cut:.2f},'
-            f' SNR > {mask_snr_cut:.1f} and completeness {completeness:.2f}'
+            f' SNR > {mask_snr_cut:.1f}, Lya above {lambda_min:.0f} A and completeness {completeness:.2f}'
         )
         with fitsio.FITS(output_file, 'rw') as file:
             file.write(mask_catalog, extname='DLACAT')
@@ -227,6 +234,11 @@ def main():
                         help=('SNR cut used to select DLAs for masking. '
                               '(Only QSOs with SNR larger than this will have their DLAs masked)'))
 
+    parser.add_argument("--lambda-min", type=float, default=submit_utils.DLA_MASK_LAMBDA_MIN, required=False,
+                        help=('Only DLAs whose Lya is observed, 1215.67 (1 + Z) >= lambda_min [A], are masked '
+                              '(default 3600, the start of the DESI spectra; 0 keeps them all). A value other than '
+                              'the default is added to the catalog name'))
+
     parser.add_argument("-s", "--seed", type=int, required=False, default=0,
                         help="Seed for random implementations")
 
@@ -237,7 +249,7 @@ def main():
 
     make_dla_catalog(
         args.input_dir, args.output_dir, args.mask_nhi_cut, args.nhi_error_amplitude,
-        args.mask_snr_cut, args.completeness, seed=args.seed, nproc=args.nproc
+        args.mask_snr_cut, args.completeness, seed=args.seed, nproc=args.nproc, lambda_min=args.lambda_min
     )
 
 

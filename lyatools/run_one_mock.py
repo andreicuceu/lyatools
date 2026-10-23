@@ -450,9 +450,9 @@ class MockRun:
             mask_nhi_cut = self.qq_config.getfloat('dla_mask_nhi_cut')
             mask_snr_cut = self.qq_config.getfloat('dla_mask_snr_cut')
             completeness = self.qq_config.getfloat('dla_completeness')
+            lambda_min = self.qq_config.getfloat('dla_mask_lambda_min', submit_utils.DLA_MASK_LAMBDA_MIN)
 
-            dla_cat_name = f'dla_cat_nhi_{mask_nhi_cut:.2f}_snr_{mask_snr_cut:.1f}'
-            dla_cat_name += f'_completeness_{completeness:.2f}.fits'
+            dla_cat_name = submit_utils.dla_catalog_name(mask_nhi_cut, mask_snr_cut, completeness, lambda_min)
             mask_dla_cat = self.qq_tree.qq_dir / dla_cat_name
 
         mask_bal_cat = self.qq_tree.qq_dir / 'bal_cat.fits'

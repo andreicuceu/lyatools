@@ -325,18 +325,18 @@ def make_catalogs(qq_tree, config, job, dla_flag, bal_flag, qq_job_id, only_qso_
     mask_nhi_cut = config.getfloat('dla_mask_nhi_cut')
     mask_snr_cut = config.getfloat('dla_mask_snr_cut')
     completeness = config.getfloat('dla_completeness')
+    lambda_min = config.getfloat('dla_mask_lambda_min', submit_utils.DLA_MASK_LAMBDA_MIN)
 
-    dla_cat_name = f'dla_cat_nhi_{mask_nhi_cut:.2f}_snr_{mask_snr_cut:.1f}'
-    dla_cat_name += f'_completeness_{completeness:.2f}.fits'
+    dla_cat_name = submit_utils.dla_catalog_name(mask_nhi_cut, mask_snr_cut, completeness, lambda_min)
     dla_cat_check2 = qq_tree.qq_dir / dla_cat_name
     dla_cat_exist = dla_cat_check.is_file() and dla_cat_check2.is_file()
     if dla_flag and not dla_cat_exist:
         command = f'lyatools-make-dla-cat -i {qq_tree.spectra_dir} -o {qq_tree.qq_dir} '
-        command += f'--mask-nhi-cut {mask_nhi_cut} --mask-snr-cut {mask_snr_cut} '
+        command += f'--mask-nhi-cut {mask_nhi_cut} --mask-snr-cut {mask_snr_cut} --lambda-min {lambda_min} '
 
         nhi_errors = config.getfloat('dla_nhi_errors', None)
         if nhi_errors is not None:
-            command += f'--nhi-errors {nhi_errors} '
+            command += f'--nhi-error-amplitude {nhi_errors} '
         command += f'--completeness {completeness} --seed {qq_tree.mock_seed} --nproc {128}\n\n'
 
         print('Submitting DLA catalog job')
