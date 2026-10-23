@@ -41,6 +41,23 @@ a minute, so 300 mocks take about 5 minutes). The walltime of that job grows wit
 `seed_catalog_hours` in `[quickquasars]` sets it by hand.
 `selection_method = tiles` gives back the previous tile-circle method. The skewers folders are only created when `run_lyacolore = True`.
 
+## quickquasars options (lyatools 1.1, new desisim)
+
+lyatools 1.1 needs the desisim with the Lya coverage, DLA+, `--no-lya-transmission` and the quickquasars cleanup. That quickquasars always writes the zbest files
+and no longer has `--zbest`, `--bbflux`, `--zmin` or the other options of the old footprint and density modes, so configs and run types of older
+lyatools versions do not run with it (use the previous lyatools and desisim to reproduce older mocks). The digits of `qq_run_type` (e.g. `matterhorn-124`) are:
+
+| digit | quickquasars options |
+|---|---|
+| 1 | `--dla file --dlaplus`: DLAs of the transmission files, with the higher Lyman lines (DLA+) |
+| 2 | `--metals ...` with `metal_strengths` (or the named tuning `metal_strengths_label`, e.g. `lyacolore-2lpt`) |
+| 3 | `--metals-from-file all` |
+| 4 | `--balprob 0.16` |
+| 6 | `--no-lya-transmission`: no Lya absorption; with 1 and/or 2, DLA-only, metal-only or both (not with 3) |
+
+The DLA catalog used for masking keeps only DLAs whose Lya is observed, 1215.67 (1 + z_DLA) >= `dla_mask_lambda_min` (default 3600 A, the start
+of the DESI spectra); `dla_mask_lambda_min = 0` gives the catalogs of the DR2 mocks. See `examples/desi_dr3_mocks.ini`.
+
 ## Instructions for running DESI Y1 Lyman-alpha mocks at NERSC
 Here are instructions to setup the same environment as the one used to run the set of Y1 mocks for Key Project 6 in DESI Y1. 
 
