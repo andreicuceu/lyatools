@@ -72,6 +72,9 @@ class QQTree:
         Additional QQ seeds in 'cat_seed.qq_seed' format.
     spectra_dirname : str, optional
         Name of the spectra subdirectory (default 'spectra-16').
+    create_skewers_dirs : bool, optional
+        Create the skewers folders (skewers-<seed>, scripts, logs) if they do not exist. Only a LyaCoLoRe run (run_lyacolore = True)
+        writes there; otherwise a missing skewers folder is left alone and reported (the stages that need it fail with a clear message).
     """
     mock_start_path: Union[str, Path]
 
@@ -86,6 +89,7 @@ class QQTree:
     skewers_start_path: Union[str, None] = None
     qq_seeds: Union[str, None] = None
     spectra_dirname: str = 'spectra-16'
+    create_skewers_dirs: bool = False
 
     skewers_path: Path = field(init=False)
     qq_dir: Path = field(init=False)
@@ -114,11 +118,14 @@ class QQTree:
         self.skewers_path = self.skewers_path / self.skewers_name / self.skewers_version
         self.skewers_path = self.skewers_path / f'skewers-{self.mock_seed}'
         if not self.skewers_path.is_dir():
-            print(
-                f'WARNING: The skewers path does not exist: {self.skewers_path}. Creating folder.')
-            check_dir(self.skewers_path)
-            check_dir(self.skewers_path / 'scripts')
-            check_dir(self.skewers_path / 'logs')
+            if self.create_skewers_dirs:
+                print(f'WARNING: The skewers path does not exist: {self.skewers_path}. Creating folder.')
+                check_dir(self.skewers_path)
+                check_dir(self.skewers_path / 'scripts')
+                check_dir(self.skewers_path / 'logs')
+            else:
+                print(f'WARNING: The skewers path does not exist: {self.skewers_path}. Not creating it '
+                      '(only run_lyacolore = True does); stages that need the skewers will fail.')
 
         # This is the path to the quickquasars run for this mock
         # E.g. desi/mocks/lya_forest/london/qq_desi_y3/v5.9.4/mock-0/jura-124

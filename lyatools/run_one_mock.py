@@ -116,7 +116,8 @@ class MockRun:
             # Initialize the QQ tree as well since lyacolore needs it
             self.qq_tree = dir_handlers.QQTree(
                 mock_start_path, skewers_name, skewers_version, mock_seed, survey_name,
-                qq_version, qq_run_type, skewers_start_path, qq_seeds, spectra_dirname
+                qq_version, qq_run_type, skewers_start_path, qq_seeds, spectra_dirname,
+                create_skewers_dirs=self.run_lyacolore_flag
             )
 
         if self.mock_analysis_type == 'raw_master':
@@ -143,7 +144,8 @@ class MockRun:
         else:
             self.qq_tree = dir_handlers.QQTree(
                 mock_start_path, skewers_name, skewers_version, mock_seed, survey_name,
-                qq_version, qq_run_type, skewers_start_path, qq_seeds, spectra_dirname
+                qq_version, qq_run_type, skewers_start_path, qq_seeds, spectra_dirname,
+                create_skewers_dirs=self.run_lyacolore_flag
             )
             self.analysis_tree = dir_handlers.AnalysisTree(
                 analysis_start_path, skewers_version, mock_seed, survey_name,
