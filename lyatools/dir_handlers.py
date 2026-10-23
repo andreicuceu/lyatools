@@ -92,6 +92,8 @@ class QQTree:
     create_skewers_dirs: bool = False
 
     skewers_path: Path = field(init=False)
+    version_dir: Path = field(init=False)
+    coverage_dir: Path = field(init=False)
     qq_dir: Path = field(init=False)
     spectra_dir: Path = field(init=False)
     runfiles_dir: Path = field(init=False)
@@ -138,6 +140,10 @@ class QQTree:
         check_dir(self.qq_dir)
         self.qq_dir = self.qq_dir / f'{self.skewers_version}.{self.qq_version}'
         check_dir(self.qq_dir)
+        # Folder with the mock-<seed> folders of this run. The Lya coverages (one file per release, shared by all the mocks) live in a subfolder of it,
+        # so that several releases made on the same mocks stay separated. It is only created when a coverage file is built.
+        self.version_dir = self.qq_dir
+        self.coverage_dir = self.version_dir / 'coverage'
         self.qq_dir = self.qq_dir / f'mock-{self.full_mock_seed}'
         check_dir(self.qq_dir)
         self.qq_dir = self.qq_dir / self.qq_run_name

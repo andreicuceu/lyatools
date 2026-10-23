@@ -26,6 +26,21 @@ To run Lyatools, you will also need two environment commands, one for picca, and
 
 You would then need to set the name of this function in the Lyatools config file: `env_command = piccaenv`. For the DESI environment, you can do the same if you want to have your own custom environment (see example below), but you can also comment out the `desi_env_command` option, which will just use the default DESI master branch at NERSC.
 
+## Seed catalogs: the Lya coverage of a release
+
+`gen_qso_catalog` (desisim) gives the mock Lya quasar targets the footprint, completeness (QSO targets and non-QSO targets, i.e. quasars selected
+as ELG or other classes) and exposure times of a data release (whole nominal passes of 1000 s). By default (`selection_method = randoms` in
+`[quickquasars]`) it uses the **Lya coverage** of the release, `lya_<release>_coverage.fits`, made by `build_lya_coverage` from the LSS randoms.
+
+lyatools builds the coverage first, once per run, in the directory where the mocks are stored
+(`<mock_start_path>/<survey_name>/<skewers_version>.<qq_version>/coverage/`, one file per release), and every seed catalog waits for that job. An existing coverage file is reused,
+and `lya_coverage = /path/to/coverage.fits` points to one elsewhere. Set `lss_randoms_dir` (the LSS directory with `rancomb_*dark*wdupspec_zdone.fits`)
+and `input_data_catalog`; the SLURM environment (`desi_env_command`) must provide a desisim with `build_lya_coverage`. With
+`run_mocks_individually = False` all the seed catalogs of the run are made in one job, 64 at the same time (they are independent and take about 1.7 GB each; a wave takes about
+a minute, so 300 mocks take about 5 minutes). The walltime of that job grows with the number of mocks (2 minutes plus 3 per wave of 64, at least 10 minutes);
+`seed_catalog_hours` in `[quickquasars]` sets it by hand.
+`selection_method = tiles` gives back the previous tile-circle method. The skewers folders are only created when `run_lyacolore = True`.
+
 ## Instructions for running DESI Y1 Lyman-alpha mocks at NERSC
 Here are instructions to setup the same environment as the one used to run the set of Y1 mocks for Key Project 6 in DESI Y1. 
 

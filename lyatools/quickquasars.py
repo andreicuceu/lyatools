@@ -1,4 +1,5 @@
 from . import submit_utils
+from .lya_coverage import get_selection_method, get_lya_coverage_path
 from lyatools import qq_run_args
 
 
@@ -24,7 +25,7 @@ def create_qq_catalog(qq_tree, seed_cat_path, config, job, seed, prev_job_id=Non
     seed_cat_path : Path
         Output path for the seed catalog file.
     config : SectionProxy
-        QuickQuasars configuration section.
+        QuickQuasars configuration section (selection_method, lya_coverage, release, input_data_catalog).
     job : SectionProxy
         Job configuration section.
     seed : int
@@ -47,6 +48,11 @@ def create_qq_catalog(qq_tree, seed_cat_path, config, job, seed, prev_job_id=Non
 
     command = f'gen_qso_catalog -i {master_cat_path} -o {seed_cat_path} --seed {seed}'
     command += f' --release {release} --input-data {input_data_catalog}'
+    selection_method = get_selection_method(config)
+    command += f' --selection-method {selection_method}'
+    if selection_method == 'randoms':
+        # Lya coverage of the release (built once by make_lya_coverage, see lyatools.lya_coverage)
+        command += f' --lya-coverage {get_lya_coverage_path(qq_tree, config)}'
     if config.getboolean('invert_cat_seed', False):
         command += ' --invert'
     if config.getboolean('include_nonqso_targets', True):

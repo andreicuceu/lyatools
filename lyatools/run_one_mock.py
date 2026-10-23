@@ -4,6 +4,7 @@ from . import submit_utils, dir_handlers
 from lyatools.lyacolore import run_lyacolore
 from lyatools.raw_deltas import make_raw_deltas
 from lyatools.quickquasars import run_qq, create_qq_catalog, make_catalogs
+from lyatools.lya_coverage import make_lya_coverage
 from lyatools.delta_extraction import make_picca_delta_runs
 from lyatools.qsonic import make_qsonic_runs
 from lyatools.correlations import make_correlation_runs
@@ -210,6 +211,8 @@ class MockRun:
             job_id = self.run_lyacolore(job_id)
 
         if self.mock_analysis_type == 'raw' or self.run_qq_flag:
+            # The Lya coverage of the release is built first (once, in the mock directory); the seed catalog waits for it.
+            job_id = self.make_lya_coverage(job_id)
             job_id = self.create_qq_catalog(job_id)
 
         if self.run_qq_flag:
@@ -266,6 +269,29 @@ class MockRun:
             print(f'Found transmission files in {self.qq_tree.skewers_path}. Skipping lyacolore.')
         return job_id
 
+    def make_lya_coverage(self, job_id=None, run_local=True):
+        """Build the Lya coverage of the release (once per run, in the directory of the mocks) if it is needed and missing.
+
+        The seed catalogs made with selection_method = randoms (default) read this file. The build job is submitted by the first mock
+        that needs it; the others reuse it. Nothing is done if the previous method (tiles) is selected, if the file already exists, or if
+        this mock's seed catalog already exists.
+
+        Parameters
+        ----------
+        job_id : int or list of int or None, optional
+            Job ids to keep in the dependency (e.g. the LyaCoLoRe job).
+        run_local : bool, optional
+            If True, submit the job; if False, return the command string (or None).
+
+        Returns
+        -------
+        int or list of int or None or str
+            Job ids the seed catalog has to wait for.
+        """
+        if (self.qq_tree.qq_dir / "seed_zcat.fits").is_file():
+            return job_id if run_local else None
+        return make_lya_coverage(self.qq_tree, self.qq_config, self.job_config, prev_job_id=job_id, run_local=run_local)
+
     def create_qq_catalog(self, job_id=None, run_local=True):
         """Submit the gen_qso_catalog job to create the seeded QSO input catalog.
 
@@ -283,6 +309,10 @@ class MockRun:
         """
         seed_cat_path = self.qq_tree.qq_dir / "seed_zcat.fits"
         assert self.qq_special_args is not None
+        master_path = self.qq_tree.skewers_path / 'master.fits'
+        if not seed_cat_path.is_file() and not self.run_lyacolore_flag and not master_path.is_file():
+            raise FileNotFoundError(f'Master catalog {master_path} not found. Set run_lyacolore = True to generate the skewers or point '
+                                    'skewers_start_path to existing ones.')
 
         # Make QQ input catalog
         if seed_cat_path.is_file():

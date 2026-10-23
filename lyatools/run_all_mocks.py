@@ -3,6 +3,7 @@ import copy
 
 from . import submit_utils, dir_handlers
 from lyatools.run_one_mock import MockRun
+from lyatools.lya_coverage import merge_job_ids, run_seed_catalog_batch
 from lyatools.export import stack_correlations, stack_full_covariance, mpi_export
 from lyatools.vegafit import run_vega_mpi
 
@@ -154,19 +155,41 @@ class MockBatchRun:
         all_export_commands = []
         all_export_cov_commands = []
         all_vega_commands = []
+        # Stage 1: skewers (LyaCoLoRe) of every mock, then the Lya coverage of the release (once) and ALL the seed catalogs in one batch job.
+        # The catalogs are independent of each other (20-30 s and about 2 GB each, on one core); they only wait for the skewers and the Lya coverage.
+        lyacolore_job_ids = {}
+        catalog_commands = []
+        for mock_obj in self.run_mock_objects:
+            job_id = None
+            if mock_obj.run_lyacolore_flag:
+                job_id = mock_obj.run_lyacolore(job_id)
+            lyacolore_job_ids[id(mock_obj)] = job_id
+
+            if mock_obj.mock_analysis_type == 'raw' or mock_obj.run_qq_flag:
+                command = mock_obj.create_qq_catalog(None, run_local=False)
+                if isinstance(command, str):
+                    catalog_commands.append(command)
+
+        batch_job_id = None
+        if catalog_commands:
+            submit_utils.print_spacer_line()
+            map_deps = None
+            for mock_obj in self.run_mock_objects:
+                if mock_obj.mock_analysis_type == 'raw' or mock_obj.run_qq_flag:
+                    map_deps = mock_obj.make_lya_coverage(map_deps)
+            deps = merge_job_ids(list(lyacolore_job_ids.values()), map_deps)
+            batch_job_id = run_seed_catalog_batch(
+                catalog_commands, self.run_mock_objects[0].qq_tree, self.job_config, prev_job_id=deps,
+                hours=self.run_mock_objects[0].qq_config.getfloat('seed_catalog_hours', None))
+        else:
+            batch_job_id = merge_job_ids(list(lyacolore_job_ids.values()))
+
+        # Stage 2: the rest of the pipeline, mock by mock
         for mock_obj in self.run_mock_objects:
             submit_utils.print_spacer_line()
             print('Running mock:', mock_obj.analysis_tree.full_mock_seed)
 
-            job_id = None
-            if mock_obj.run_lyacolore_flag:
-                submit_utils.print_spacer_line()
-                job_id = mock_obj.run_lyacolore(job_id)
-
-            if mock_obj.mock_analysis_type == 'raw' or mock_obj.run_qq_flag:
-                submit_utils.print_spacer_line()
-                # TODO parallelize this
-                job_id = mock_obj.create_qq_catalog(job_id, run_local=True)
+            job_id = batch_job_id
 
             if mock_obj.run_qq_flag:
                 submit_utils.print_spacer_line()
