@@ -696,6 +696,11 @@ class MockRun:
                 ' E.g. Use jura-124-test instead of jura-124_test'
             )
 
+        if '6' in split_qq_run_type[1] and '3' in split_qq_run_type[1]:
+            raise ValueError(
+                f'qq_run_type {split_qq_run_type[1]}: 6 (no Lya absorption) cannot go with 3 (metals from the files,'
+                ' which are part of the Lya skewers). Use 2 for metal-only spectra.')
+
         qq_special_args = []
         for digit in split_qq_run_type[1]:
             if digit == '0':
@@ -713,10 +718,15 @@ class MockRun:
             qq_special_args += [qq_run_args.QQ_RUN_CODES[digit]]
 
             if digit == '2':
+                # explicit strengths, else a named tuning of desisim (metal_strengths_label), else the default of the mock type
                 metal_strengths = self.qq_config.get('metal_strengths')
-                if metal_strengths is None:
-                    metal_strengths = qq_run_args.QQ_DEFAULT_METAL_STRENGTHS[self.mock_type]
-                qq_special_args += [f'--metal-strengths {metal_strengths}']
+                metal_strengths_label = self.qq_config.get('metal_strengths_label')
+                if metal_strengths is None and metal_strengths_label is not None:
+                    qq_special_args += [f'--metal-strengths-label {metal_strengths_label}']
+                else:
+                    if metal_strengths is None:
+                        metal_strengths = qq_run_args.QQ_DEFAULT_METAL_STRENGTHS[self.mock_type]
+                    qq_special_args += [f'--metal-strengths {metal_strengths}']
 
         dla_flag = '1' in split_qq_run_type[1]
         bal_flag = '4' in split_qq_run_type[1]
