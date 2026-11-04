@@ -728,6 +728,11 @@ class MockRun:
                         metal_strengths = qq_run_args.QQ_DEFAULT_METAL_STRENGTHS[self.mock_type]
                     qq_special_args += [f'--metal-strengths {metal_strengths}']
 
+        # specsim configuration of quickquasars (name or yaml path), e.g. a copy of desi.yaml that points to other throughput files
+        specsim_config = self.qq_config.get('specsim_config')
+        if specsim_config is not None:
+            qq_special_args += [f'--specsim-config {specsim_config}']
+
         dla_flag = '1' in split_qq_run_type[1]
         bal_flag = '4' in split_qq_run_type[1]
 
