@@ -110,8 +110,12 @@ def stack_export_correlations(
         r_par_min = np.min([r_par_min, header['RPMIN']])
         r_par_max = np.max([r_par_max, header['RPMAX']])
         r_trans_max = np.max([r_trans_max, header['RTMAX']])
-        z_cut_min = np.min([z_cut_min, header['ZCUTMIN']])
-        z_cut_max = np.max([z_cut_max, header['ZCUTMAX']])
+        # picca >= 9.21 writes the redshift cuts as ZMIN/ZMAX, which may be absent or empty
+        zmin_key, zmax_key = ('ZCUTMIN', 'ZCUTMAX') if 'ZCUTMIN' in header else ('ZMIN', 'ZMAX')
+        if header.get(zmin_key) is not None:
+            z_cut_min = np.min([z_cut_min, header[zmin_key]])
+        if header.get(zmax_key) is not None:
+            z_cut_max = np.max([z_cut_max, header[zmax_key]])
 
         # Add the correlations to the stack
         xi.append(hdul[2]["DA"][:])
