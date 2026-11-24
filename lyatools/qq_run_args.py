@@ -8,7 +8,7 @@ QQ_DEFAULTS = [
 # Digits of the qq_run_type (e.g. jura-124): 1 DLAs from the transmission files with the higher Lyman lines (DLA+),
 # 2 metals, 3 metals from the files, 4 BALs, 6 no Lya absorption (with 1 and/or 2: DLA-only, metal-only or both).
 QQ_RUN_CODES = {
-    '1': '--dla file --dlaplus',
+    '1': '--dla file',
     '2': '--metals LYB LY3 LY4 LY5 SiII(1260) SiIII(1207) SiII(1193) SiII(1190)',
     '3': '--metals-from-file all',
     '4': '--balprob 0.16',
