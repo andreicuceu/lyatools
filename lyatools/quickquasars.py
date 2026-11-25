@@ -2,6 +2,18 @@ from . import submit_utils
 from lyatools import qq_run_args
 
 
+# Python run inside the job script (stdin of python3): prints the skewer files whose healpixel has quasars
+PIXEL_FILTER = '''import re, sys
+import fitsio, healpy, numpy as np
+cat = fitsio.read(sys.argv[1], columns=['RA', 'DEC'])
+pix = set(np.unique(healpy.ang2pix(16, cat['RA'], cat['DEC'], lonlat=True, nest=True)).tolist())
+for name in open(sys.argv[2]).read().split():
+    m = re.search(r'transmission-16-(\\d+)\\.', name)
+    if m is None or int(m.group(1)) in pix:
+        print(name)
+'''
+
+
 def create_qq_catalog(qq_tree, seed_cat_path, config, job, seed, prev_job_id=None, run_local=True):
     """Build and submit a job to generate the seeded QSO input catalog for QuickQuasars.
 
@@ -109,7 +121,7 @@ def run_qq(qq_tree, config, job, seed_cat_path, qq_seed, qq_special_args, prev_j
     print('Found the following arguments to pass to quickquasars:')
     print(qq_args)
 
-    qq_script = create_qq_script(qq_tree, config, job, qq_args, qq_seed)
+    qq_script = create_qq_script(qq_tree, config, job, qq_args, qq_seed, seed_cat_path=seed_cat_path)
 
     job_id = submit_utils.run_job(
         qq_script, dependency_ids=prev_job_id, no_submit=job.getboolean('no_submit'))
@@ -117,7 +129,7 @@ def run_qq(qq_tree, config, job, seed_cat_path, qq_seed, qq_special_args, prev_j
     return job_id
 
 
-def create_qq_script(qq_tree, config, job, qq_args, qq_seed):
+def create_qq_script(qq_tree, config, job, qq_args, qq_seed, seed_cat_path=None):
     """Write the QuickQuasars SLURM bash script to disk and return its path.
 
     Parameters
@@ -132,6 +144,9 @@ def create_qq_script(qq_tree, config, job, qq_args, qq_seed):
         Assembled CLI argument string to pass to quickquasars.
     qq_seed : int
         Random seed (used in the job name).
+    seed_cat_path : Path, optional
+        Seeded QSO input catalog. With the config option ``only_pixels_with_quasars`` (default
+        True) the job only runs the skewer files whose healpixel holds quasars of this catalog.
 
     Returns
     -------
@@ -149,14 +164,26 @@ def create_qq_script(qq_tree, config, job, qq_args, qq_seed):
     time = submit_utils.convert_job_time(slurm_hours)
     header = submit_utils.make_header(
         job.get('nersc_machine'), slurm_queue, nodes, time=time,
-        omp_threads=nproc, job_name=f'qq_{qq_seed}',
+        omp_threads=config.getint('omp_threads', 1), job_name=f'qq_{qq_seed}',
         err_file=qq_tree.runfiles_dir/'run-%j.err',
         out_file=qq_tree.runfiles_dir/'run-%j.out'
     )
 
     # Create the main qq run command
-    qq_run = f'    command="srun -N 1 -n 1 -c {nproc} '
+    # Perlmutter CPU nodes have 128 cores and 256 logical CPUs; srun -c N gives the step N logical CPUs, so
+    # -c {nproc} left the workers half as many cores (nproc 48 -> 24 cores) and made the run ~2.8 times slower.
+    # Give the step the whole node (the workers are processes of that one step).
+    cpus_per_task = config.getint('cpus_per_task', 256)
+    qq_run = f'    command="srun -N 1 -n 1 -c {cpus_per_task} '
     qq_run += f'quickquasars -i $tfiles --nproc {nproc} '
+    mem_per_worker = config.getfloat('mem_per_worker', None)
+    if mem_per_worker is not None:
+        # lowers --nproc if the job's memory does not fit that many workers
+        qq_run += f'--mem-per-worker {mem_per_worker} '
+    fiber_chunk = config.getint('fiber_chunk', None)
+    if fiber_chunk is not None:
+        # simulates the quasars of a healpix in chunks of this many: same spectra, less memory per worker
+        qq_run += f'--fiber-chunk {fiber_chunk} '
     qq_run += f'--outdir {qq_tree.spectra_dir} {qq_args}"\n'
 
     # Make the text body of the script.
@@ -175,24 +202,33 @@ def create_qq_script(qq_tree, config, job, qq_args, qq_seed):
     else:
         text += f'files=`ls -1 {qq_tree.skewers_path}/*/*/transmission*.fits*`\n'
 
+    if seed_cat_path is not None and config.getboolean('only_pixels_with_quasars', True):
+        # Most of the 3072 healpixes hold no quasar of the catalog and quickquasars writes nothing for
+        # them ("No intersection with catalog"), but it still reads their skewer files and the empty
+        # files shift the split between nodes. Keep the files whose healpixel (nside 16, nested, as in
+        # the file names) has quasars; if anything goes wrong keep all the files.
+        text += 'echo "keeping only the skewer files whose healpixel holds quasars of the catalog ..."\n'
+        text += 'listfile=`mktemp`\n'
+        text += 'echo $files | tr " " "\\n" > $listfile\n'
+        text += f'python3 - {seed_cat_path} $listfile > $listfile.kept << \'PYEOF\' || cp $listfile $listfile.kept\n'
+        text += PIXEL_FILTER
+        text += 'PYEOF\n'
+        text += '[ -s $listfile.kept ] || cp $listfile $listfile.kept\n'
+        text += 'files=`cat $listfile.kept`\n'
+        text += 'rm -f $listfile $listfile.kept\n\n'
+
     text += 'nfiles=`echo $files | wc -w`\n'
     text += f'nfilespernode=$(( $nfiles / {nodes} + 1 ))\n\n'
     text += 'echo "n files =" $nfiles\n'
     text += 'echo "n files per node =" $nfilespernode\n\n'
 
-    text += 'first=1\n'
-    text += 'last=$nfilespernode\n'
     text += f'for node in `seq {nodes}` ; do\n'
     text += '    echo "starting node $node"\n\n'
-    text += '    # list of files to run\n'
-    text += f'    if (( $node == {nodes} )) ; then\n'
-    text += '        last=""\n'
-    text += '    fi\n\n'
-    text += '    echo ${first}-${last}\n'
-    text += '    tfiles=`echo $files | cut -d " " -f ${first}-${last}`\n'
-    text += '    first=$(( first + nfilespernode ))\n'
-    text += '    last=$(( last + nfilespernode ))\n'
-
+    text += '    # every nodes-th file, starting at this node: the healpixes that hold quasars are\n'
+    text += '    # not spread evenly over the sorted list, so contiguous slices left some nodes\n'
+    text += '    # with several times the work of others\n'
+    text += f'    tfiles=`echo $files | tr " " "\\n" | awk -v n={nodes} -v k=$node '
+    text += "'NR % n == k % n' | tr \"\\n\" \" \"`\n\n"
     text += qq_run
 
     text += '    echo $command\n'
