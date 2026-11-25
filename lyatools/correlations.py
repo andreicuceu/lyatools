@@ -8,6 +8,10 @@ JOB_CONFIGS = {'cf_lya_lya': 1.5, 'dmat_lya_lya': 2.0, 'metal_dmat_lya_lya': 2.0
 CORR_TYPES = ['lya_lya', 'lya_lyb', 'lya_qso', 'lyb_qso']
 
 
+# picca scripts with a --gpu flag (the environment in env_command must have a picca that has it)
+GPU_SCRIPTS = ('cf', 'xcf', 'dmat', 'xdmat', 'metal_dmat')
+
+
 def make_correlation_runs(qso_cat, analysis_tree, config, job, corr_types, delta_job_ids=None):
     """Submit all correlation, distortion matrix, and metal matrix jobs for the given types.
 
@@ -123,20 +127,26 @@ def run_correlation(
     if slurm_hours is None:
         slurm_hours = JOB_CONFIGS[name]
 
-    # Make the header
-    header = submit_utils.make_header(
-        job.get('nersc_machine'), job.get('slurm_queue'),
-        time=slurm_hours, omp_threads=2, job_name=name,
-        err_file=analysis_tree.logs_dir/f'{name}-%j.err',
-        out_file=analysis_tree.logs_dir/f'{name}-%j.out'
-    )
-
     z_min_default, z_max_default = 0, 10
     zmin = config.getfloat('z_min', z_min_default)
     zmax = config.getfloat('z_max', z_max_default)
     script_type = name.split('_')[0]
     if metal_dmat:
         script_type = 'metal_' + name.split('_')[1]
+
+    # Run the pair loop on the GPUs of a GPU node (picca --gpu) if asked for and available
+    use_gpu = config.getboolean('gpu', False)
+    if use_gpu and script_type not in GPU_SCRIPTS:
+        print(f'{name}: picca_{script_type}.py has no --gpu flag, running it on a CPU node.')
+        use_gpu = False
+
+    # Make the header
+    header = submit_utils.make_header(
+        job.get('nersc_machine'), job.get('slurm_queue'),
+        time=slurm_hours, omp_threads=2, job_name=name,
+        err_file=analysis_tree.logs_dir/f'{name}-%j.err',
+        out_file=analysis_tree.logs_dir/f'{name}-%j.out', gpu=use_gpu
+    )
 
     name_string = config.get('name_string', None)
     rmu_binning = config.getboolean("r_mu_binning", False)
@@ -178,6 +188,8 @@ def run_correlation(
     text = header
     text += f'{env_command}\n\n'
     text += f'picca_{script_type}.py '
+    if use_gpu:
+        text += '--gpu '
     text += f'--out {output_path} '
 
     if cross and lyb:
