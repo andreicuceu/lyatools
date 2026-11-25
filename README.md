@@ -50,7 +50,7 @@ lyatools versions do not run with it (use the previous lyatools and desisim to r
 | digit | quickquasars options |
 |---|---|
 | 1 | `--dla file`: DLAs of the transmission files, always with the higher Lyman lines (DLA+; desisim PR #606 removed `--dlaplus`) |
-| 2 | `--metals ...` with `metal_strengths` (or the named tuning `metal_strengths_label`, e.g. `lyacolore-2lpt`) |
+| 2 | `--metals ...` with `metal_strengths` |
 | 3 | `--metals-from-file all` |
 | 4 | `--balprob 0.16` |
 | 6 | `--no-lya-transmission`: no Lya absorption; with 1 and/or 2, DLA-only, metal-only or both (not with 3) |

@@ -718,15 +718,11 @@ class MockRun:
             qq_special_args += [qq_run_args.QQ_RUN_CODES[digit]]
 
             if digit == '2':
-                # explicit strengths, else a named tuning of desisim (metal_strengths_label), else the default of the mock type
+                # explicit strengths, else the default of the mock type
                 metal_strengths = self.qq_config.get('metal_strengths')
-                metal_strengths_label = self.qq_config.get('metal_strengths_label')
-                if metal_strengths is None and metal_strengths_label is not None:
-                    qq_special_args += [f'--metal-strengths-label {metal_strengths_label}']
-                else:
-                    if metal_strengths is None:
-                        metal_strengths = qq_run_args.QQ_DEFAULT_METAL_STRENGTHS[self.mock_type]
-                    qq_special_args += [f'--metal-strengths {metal_strengths}']
+                if metal_strengths is None:
+                    metal_strengths = qq_run_args.QQ_DEFAULT_METAL_STRENGTHS[self.mock_type]
+                qq_special_args += [f'--metal-strengths {metal_strengths}']
 
         # specsim configuration of quickquasars (name or yaml path), e.g. a copy of desi.yaml that points to other throughput files
         specsim_config = self.qq_config.get('specsim_config')
