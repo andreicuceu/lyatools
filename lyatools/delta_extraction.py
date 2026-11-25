@@ -139,7 +139,7 @@ def run_delta_extraction(
 
     # Create the script
     text = header
-    env_command = job.get('env_command')
+    env_command = config.get('env_command')
     text += f'{env_command}\n\n'
     text += f'srun -n 1 -c {nproc} picca_delta_extraction.py {config_path}\n'
 

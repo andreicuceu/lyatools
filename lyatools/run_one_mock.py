@@ -70,6 +70,8 @@ class MockRun:
 
         if self.run_deltas_flag and self.run_qsonic_flag:
             raise ValueError('Cannot run deltas and qsonic at the same time.')
+        if self.run_qsonic_flag:
+            self.deltas_config = self.qsonic_config
 
         # Get the mock type
         self.mock_analysis_type = config['control'].get('mock_analysis_type')
