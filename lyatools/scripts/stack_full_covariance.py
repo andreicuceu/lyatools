@@ -117,3 +117,7 @@ def main():
     results.close()
 
     print('Done')
+
+
+if __name__ == '__main__':
+    main()
