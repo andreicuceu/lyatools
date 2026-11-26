@@ -113,7 +113,9 @@ def run_raw_deltas(
     # Make the python script
     text = '#!/usr/bin/env python\n\n'
     text += 'from picca import raw_io\n\n'
-    text += 'raw_io.convert_transmission_to_deltas('
+    # Guard needed: Python >= 3.14 starts Pool workers with forkserver, which re-imports this script
+    text += "if __name__ == '__main__':\n"
+    text += '    raw_io.convert_transmission_to_deltas('
     text += f'"{qso_cat}", "{deltas_output_dir}", "{skewers_path}", '
     text += f'lambda_min={lambda_min}, lambda_max={lambda_max}, '
     text += f'lambda_min_rest_frame={lambda_rest_min}, '
